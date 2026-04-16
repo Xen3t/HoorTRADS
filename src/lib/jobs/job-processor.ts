@@ -304,12 +304,18 @@ export async function processJob(
       const targetLanguages = [...new Set(tasks.map((t) => t.target_language))]
       const representative = tasks.find((t) => t.source_image_name.includes('1080x1080')) || tasks[0]
 
-      const preResult: PreTranslationResult = await preValidateTranslations(
-        representative.source_image_path,
-        targetLanguages,
-        {},
-        {}
-      )
+      let preResult: PreTranslationResult = { translations: {}, extractedZones: {} }
+      try {
+        const timeout = new Promise<PreTranslationResult>((resolve) =>
+          setTimeout(() => resolve({ translations: {}, extractedZones: {} }), 60_000)
+        )
+        preResult = await Promise.race([
+          preValidateTranslations(representative.source_image_path, targetLanguages, {}, {}),
+          timeout,
+        ])
+      } catch {
+        // Pre-translation failed — continue with empty translations (standard prompt fallback)
+      }
 
       // Save extracted zones + translations to job config for display in logs
       const jobRow2 = db.prepare('SELECT config FROM generation_jobs WHERE id = ?').get(jobId) as { config: string } | undefined
