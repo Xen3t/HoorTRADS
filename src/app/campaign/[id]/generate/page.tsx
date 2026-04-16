@@ -17,7 +17,7 @@ export default function GeneratePage() {
   const [isDone, setIsDone] = useState(false)
   const [isPendingTextReview, setIsPendingTextReview] = useState(false)
   const [completedImages, setCompletedImages] = useState<{ id: string; output_path: string }[]>([])
-  const [failedImages, setFailedImages] = useState<{ id: string; language?: string }[]>([])
+  const [failedImages, setFailedImages] = useState<{ id: string; language?: string; error_message?: string }[]>([])
   const [isAutoVerifying, setIsAutoVerifying] = useState(false)
   const [autoCorrectStats, setAutoCorrectStats] = useState<{ verified: number; corrected: number } | null>(null)
   const verificationEnabledRef = useRef(false)
@@ -175,20 +175,29 @@ export default function GeneratePage() {
             <p className="text-sm text-brand-red mb-2 font-semibold">
               {failedImages.length} image{failedImages.length > 1 ? 's' : ''} en échec
             </p>
-            <div className="flex flex-wrap justify-center gap-2">
-              {failedImages.slice(0, 10).map((img) => (
+            <div className="space-y-2">
+              {failedImages.slice(0, 5).map((img) => (
                 <div
                   key={img.id}
-                  className="w-12 h-12 bg-red-50 border border-red-200 rounded-[8px] flex items-center justify-center"
-                  title={img.language ? `Échec — ${img.language}` : 'Échec'}
+                  className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-[8px] px-3 py-2 text-left"
                 >
-                  <span className="text-brand-red text-lg">✗</span>
+                  <span className="text-brand-red text-sm mt-0.5">&#10005;</span>
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-text-primary">
+                      {img.language || 'Image'}
+                    </p>
+                    {img.error_message && (
+                      <p className="text-xs text-text-disabled break-words mt-0.5">
+                        {img.error_message.length > 150 ? img.error_message.slice(0, 150) + '...' : img.error_message}
+                      </p>
+                    )}
+                  </div>
                 </div>
               ))}
-              {failedImages.length > 10 && (
-                <div className="w-12 h-12 bg-red-50 border border-red-200 rounded-[8px] flex items-center justify-center text-xs text-brand-red font-semibold">
-                  +{failedImages.length - 10}
-                </div>
+              {failedImages.length > 5 && (
+                <p className="text-xs text-brand-red font-semibold text-center">
+                  +{failedImages.length - 5} autre{failedImages.length - 5 > 1 ? 's' : ''}
+                </p>
               )}
             </div>
           </div>

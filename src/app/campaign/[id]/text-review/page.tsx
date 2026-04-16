@@ -267,7 +267,19 @@ export default function TextReviewPage() {
     )
   }
 
-  if (zones.length === 0) {
+  // Determine which step failed (if any)
+  const isTranslationError = preTranslationError?.startsWith('translation:')
+  const hasNoZones = zones.length === 0
+  const hasNoTranslations = !hasNoZones && languages.length === 0
+
+  // Show error page for extraction failure OR translation failure
+  if (hasNoZones || (hasNoTranslations && preTranslationError)) {
+    const errorTitle = isTranslationError ? 'Traduction indisponible' : 'Extraction indisponible'
+    const errorDesc = isTranslationError
+      ? 'Les zones de texte ont été extraites mais la traduction a échoué.'
+      : 'Le modèle IA est temporairement surchargé ou a rencontré une erreur.'
+    const retryLabel = isTranslationError ? 'Relancer la traduction' : 'Relancer l\u2019extraction'
+
     return (
       <main className="min-h-screen flex items-start justify-center pt-16">
         <div className="text-center w-full" style={{ maxWidth: '640px' }}>
@@ -276,19 +288,19 @@ export default function TextReviewPage() {
               <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
                 <span className="text-xl">&#9888;</span>
               </div>
-              <p className="text-base font-bold text-text-primary mb-2">Extraction indisponible</p>
-              <p className="text-sm text-text-secondary mb-1">
-                Le modèle IA est temporairement surchargé ou a rencontré une erreur.
-              </p>
+              <p className="text-base font-bold text-text-primary mb-2">{errorTitle}</p>
+              <p className="text-sm text-text-secondary mb-1">{errorDesc}</p>
               <p className="text-xs text-text-disabled mb-6 font-mono bg-surface rounded-[8px] px-3 py-2 text-left break-words whitespace-pre-wrap">
                 {preTranslationError}
               </p>
               <div className="flex flex-col gap-3 items-center">
                 <button
-                  onClick={() => window.location.reload()}
+                  onClick={() => {
+                    window.location.href = `/campaign/${sessionId}/configure`
+                  }}
                   className="px-6 py-2.5 rounded-[10px] bg-brand-green text-white font-semibold text-sm hover:bg-brand-green-hover transition-colors"
                 >
-                  Relancer l&apos;extraction
+                  {retryLabel}
                 </button>
                 <button
                   onClick={async () => {
