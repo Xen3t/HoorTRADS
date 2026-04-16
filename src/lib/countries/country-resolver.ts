@@ -50,7 +50,7 @@ const COUNTRY_MAP: Record<string, CountryInfo> = {
 }
 
 const PRESETS: Record<string, string[]> = {
-  'All markets': Object.keys(COUNTRY_MAP).filter((c) => c !== 'FR'),
+  'Tous les marchés': Object.keys(COUNTRY_MAP).filter((c) => c !== 'FR'),
   'CASANOOV': ['DE', 'GB', 'ES', 'IT', 'BE', 'NL', 'PT', 'IE', 'SK', 'CZ', 'SE', 'DK'],
   'CAZEBOO': ['DE', 'GB', 'ES', 'IT', 'BE', 'NL', 'PT', 'IE'],
   'SICAAN': ['DE', 'ES', 'GR'],

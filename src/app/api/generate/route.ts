@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { stat } from 'fs/promises'
+import path from 'path'
 import { getDb } from '@/lib/db/database'
 import { getSessionById } from '@/lib/db/queries'
 import { createGenerationJob } from '@/lib/jobs/job-manager'
 import { processJob } from '@/lib/jobs/job-processor'
 import { GeminiClient } from '@/lib/gemini/gemini-client'
-import { MockGenerator } from '@/lib/gemini/mock-generator'
 import { scanFolderTree } from '@/lib/files/folder-scanner'
 
 export async function POST(request: NextRequest) {
@@ -51,10 +52,16 @@ export async function POST(request: NextRequest) {
     const selectedPaths: string[] = sessionConfig.selected_paths || [session.source_path]
 
     const allImages: { path: string; name: string }[] = []
-    for (const folderPath of selectedPaths) {
-      const scanResult = await scanFolderTree(folderPath)
-      for (const img of scanResult.images) {
-        allImages.push({ path: img.path, name: img.filename })
+    for (const p of selectedPaths) {
+      const s = await stat(p).catch(() => null)
+      if (!s) continue // path doesn't exist — skip silently
+      if (s.isFile()) {
+        allImages.push({ path: p, name: path.basename(p) })
+      } else if (s.isDirectory()) {
+        const scanResult = await scanFolderTree(p)
+        for (const img of scanResult.images) {
+          allImages.push({ path: img.path, name: img.filename })
+        }
       }
     }
 
@@ -75,9 +82,14 @@ export async function POST(request: NextRequest) {
     db.prepare("UPDATE sessions SET status = 'generating', current_step = 'generate', updated_at = datetime('now') WHERE id = ?").run(sessionId)
 
     // Start processing in background (non-blocking)
-    const generator = process.env.GEMINI_API_KEY
-      ? new GeminiClient()
-      : new MockGenerator(0.05)
+    // GeminiClient checks DB key first, then GEMINI_API_KEY env — throws if neither is set
+    let generator: GeminiClient
+    try {
+      generator = new GeminiClient()
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Clé API Gemini manquante ou invalide'
+      return NextResponse.json({ error: msg }, { status: 500 })
+    }
     processJob(db, job.id, generator).catch(() => {
       // Job processing errors are tracked per-task in the DB
     })

@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import type { GenerationTask } from '@/types/generation'
+import ScoreBadge from './ScoreBadge'
 
 interface TaskWithVersions extends GenerationTask {
   versions?: string[]
@@ -13,12 +14,14 @@ interface ImageDetailModalProps {
   jobId: string
   onClose: () => void
   onRegenerated: () => Promise<void>
+  onRegeneratingChange?: (taskId: string | null) => void
 }
 
-export default function ImageDetailModal({ task, jobId, onClose, onRegenerated }: ImageDetailModalProps) {
+export default function ImageDetailModal({ task, jobId, onClose, onRegenerated, onRegeneratingChange }: ImageDetailModalProps) {
   const [prompt, setPrompt] = useState('')
   const [isRegenerating, setIsRegenerating] = useState(false)
   const [versionIndex, setVersionIndex] = useState<number>(-1) // -1 = version actuelle
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   // Toutes les versions : historique + version actuelle à la fin
   const allVersions = [...(task.versions || []), ...(task.output_path ? [task.output_path] : [])]
@@ -31,8 +34,10 @@ export default function ImageDetailModal({ task, jobId, onClose, onRegenerated }
     setVersionIndex(-1)
   }, [task.output_path])
 
-  const handleRegenerate = async (withPrompt: boolean) => {
+  const doRegenerate = async ({ fromSource, withPrompt }: { fromSource: boolean; withPrompt: boolean }) => {
+    if (isRegenerating) return
     setIsRegenerating(true)
+    onRegeneratingChange?.(task.id)
     try {
       const res = await fetch(`/api/generate/${jobId}/regenerate`, {
         method: 'POST',
@@ -40,6 +45,8 @@ export default function ImageDetailModal({ task, jobId, onClose, onRegenerated }
         body: JSON.stringify({
           taskId: task.id,
           customPrompt: withPrompt ? prompt : undefined,
+          useSourceImage: fromSource,
+          imageOverridePath: fromSource ? undefined : (currentPath || undefined),
         }),
       })
       if (res.ok) {
@@ -49,23 +56,16 @@ export default function ImageDetailModal({ task, jobId, onClose, onRegenerated }
       }
     } finally {
       setIsRegenerating(false)
+      onRegeneratingChange?.(null)
     }
   }
 
-  const canGoPrev = allVersions.length > 1 && (versionIndex === -1 ? allVersions.length - 2 >= 0 : versionIndex > 0)
-  const canGoNext = versionIndex !== -1 && versionIndex < allVersions.length - 1
-
-  const goPrev = () => {
-    if (versionIndex === -1) setVersionIndex(allVersions.length - 2)
-    else setVersionIndex(versionIndex - 1)
+  const handleCtrlEnter = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && prompt.trim()) {
+      e.preventDefault()
+      doRegenerate({ fromSource: false, withPrompt: true })
+    }
   }
-
-  const goNext = () => {
-    if (versionIndex === allVersions.length - 1) setVersionIndex(-1)
-    else setVersionIndex(versionIndex + 1)
-  }
-
-  const displayIndex = versionIndex === -1 ? allVersions.length : versionIndex + 1
 
   return (
     <div
@@ -82,8 +82,8 @@ export default function ImageDetailModal({ task, jobId, onClose, onRegenerated }
         style={{ maxHeight: '90vh' }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Image preview — bounded height, never overflows */}
-        <div className="relative bg-surface flex items-center justify-center overflow-hidden flex-shrink-0 p-4" style={{ height: '55vh' }}>
+        {/* Image preview */}
+        <div className="relative bg-surface flex items-center justify-center overflow-hidden flex-shrink-0 p-4" style={{ height: '50vh' }}>
           {currentPath ? (
             <motion.img
               key={currentPath}
@@ -109,34 +109,32 @@ export default function ImageDetailModal({ task, jobId, onClose, onRegenerated }
               <p className="text-sm text-white font-semibold drop-shadow">Génération en cours...</p>
             </div>
           )}
-
-          {/* Navigation versions */}
-          {allVersions.length > 1 && !isRegenerating && (
-            <>
-              {canGoPrev && (
-                <button
-                  onClick={(e) => { e.stopPropagation(); goPrev() }}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-colors text-sm"
-                >
-                  ‹
-                </button>
-              )}
-              {canGoNext && (
-                <button
-                  onClick={(e) => { e.stopPropagation(); goNext() }}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-colors text-sm"
-                >
-                  ›
-                </button>
-              )}
-              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/50 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full">
-                v{displayIndex} / {allVersions.length}
-              </div>
-            </>
-          )}
         </div>
 
-        {/* Content — scrollable if needed */}
+        {/* Galerie des versions */}
+        {allVersions.length > 1 && !isRegenerating && (
+          <div className="flex items-end justify-center gap-2 px-4 py-2 bg-surface border-b border-border overflow-x-auto">
+            {allVersions.map((vPath, i) => {
+              const isActive = versionIndex === -1 ? i === allVersions.length - 1 : i === versionIndex
+              return (
+                <button
+                  key={vPath}
+                  onClick={() => setVersionIndex(i === allVersions.length - 1 ? -1 : i)}
+                  className={`shrink-0 rounded-[4px] overflow-hidden border-2 transition-all ${isActive ? 'border-brand-green scale-105' : 'border-transparent opacity-60 hover:opacity-100 hover:border-border'}`}
+                >
+                  <img
+                    src={`/api/serve-image?path=${encodeURIComponent(vPath)}&v=${vPath}`}
+                    alt={`v${i + 1}`}
+                    className="w-14 h-10 object-cover block"
+                  />
+                  <span className="block text-center text-[9px] text-text-disabled py-0.5">v{i + 1}</span>
+                </button>
+              )
+            })}
+          </div>
+        )}
+
+        {/* Content — scrollable si besoin */}
         <div className="p-5 overflow-y-auto">
           {/* Metadata */}
           <div className="flex items-center gap-3 mb-4">
@@ -153,59 +151,86 @@ export default function ImageDetailModal({ task, jobId, onClose, onRegenerated }
             )}
           </div>
 
-          {/* Prompt input */}
-          <textarea
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            placeholder="Prompt correctif..."
-            rows={2}
-            disabled={isRegenerating}
-            className="
-              w-full px-3 py-2 rounded-[8px] text-sm
-              border border-border bg-white
-              focus:border-brand-green focus:outline-none
-              transition-colors duration-200 resize-none
-              disabled:opacity-50
-            "
-          />
-          <p className="text-[11px] text-text-disabled mt-1">
-            Sélectionnez un mot pour l&apos;ajouter au glossaire
-          </p>
+          {/* Verification result */}
+          {task.verification_status && task.verification_notes && (() => {
+            const score = parseInt(task.verification_status) || 0
+            let notes: { score?: number; issues?: string[]; summary?: string; extractedText?: Record<string, string> } = {}
+            try { notes = JSON.parse(task.verification_notes) } catch {}
+            const borderColor = score >= 4 ? 'border-green-200 bg-green-50' : score >= 3 ? 'border-amber-200 bg-amber-50' : 'border-red-200 bg-red-50'
+            return (
+              <div className={`mb-4 p-3 rounded-[8px] border text-xs ${borderColor}`}>
+                <div className="flex items-center gap-3 mb-2">
+                  <ScoreBadge score={score} size="md" />
+                  <div>
+                    <p className="font-semibold text-text-primary text-sm">{notes.summary || 'Vérification effectuée'}</p>
+                    {notes.issues && notes.issues.length > 0 && (
+                      <ul className="mt-1 space-y-0.5 text-text-secondary">
+                        {notes.issues.map((issue, i) => <li key={i}>• {issue}</li>)}
+                      </ul>
+                    )}
+                  </div>
+                </div>
+                {notes.extractedText && Object.keys(notes.extractedText).length > 0 && (
+                  <div className="mt-2 pt-2 border-t border-black/10">
+                    <p className="text-[10px] font-bold text-text-disabled uppercase mb-1.5">Texte détecté</p>
+                    <div className="space-y-1">
+                      {Object.entries(notes.extractedText).map(([key, val]) => (
+                        <div key={key} className="flex gap-2">
+                          <span className="text-text-disabled capitalize w-20 shrink-0">{key.replace(/_/g, ' ')}</span>
+                          <span className="text-text-primary font-medium">{val}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })()}
+
+          {/* Prompt correctif */}
+          <div className="relative">
+            <textarea
+              ref={textareaRef}
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              onKeyDown={handleCtrlEnter}
+              placeholder="Prompt correctif..."
+              rows={2}
+              disabled={isRegenerating}
+              className="
+                w-full px-3 py-2 rounded-[8px] text-sm
+                border border-border bg-white
+                focus:border-brand-green focus:outline-none
+                transition-colors duration-200 resize-none
+                disabled:opacity-50
+              "
+            />
+            <span className="absolute bottom-2 right-2 text-[10px] text-text-disabled pointer-events-none select-none">
+              Ctrl + ↵
+            </span>
+          </div>
+
           <p className="text-[11px] text-amber-500 mt-1 mb-4">
             ⚠ Privilégiez un prompt correctif précis dès la première régénération — chaque itération supplémentaire peut affecter la fidélité du visuel.
           </p>
 
           {/* Actions */}
-          <div className="flex justify-end gap-2">
+          <div className="flex justify-end">
             <button
-              onClick={() => handleRegenerate(false)}
+              onClick={() => doRegenerate({ fromSource: true, withPrompt: false })}
               disabled={isRegenerating}
               className="
+                flex items-center gap-2
                 px-4 py-2 rounded-[8px] text-sm font-semibold
                 border border-border text-text-primary bg-white
                 hover:bg-surface transition-colors
                 disabled:opacity-50
               "
             >
-              {isRegenerating ? '...' : '⟳ Régénérer'}
-            </button>
-            <button
-              onClick={() => {
-                if (prompt.trim()) {
-                  handleRegenerate(true)
-                } else {
-                  onClose()
-                }
-              }}
-              disabled={isRegenerating}
-              className="
-                px-4 py-2 rounded-[8px] text-sm font-semibold
-                border border-brand-green text-brand-green bg-white
-                hover:bg-brand-green hover:text-white transition-colors
-                disabled:opacity-50
-              "
-            >
-              ✓ Valider
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/>
+              </svg>
+              {isRegenerating ? 'Génération...' : 'Régénérer depuis source FR'}
             </button>
           </div>
         </div>

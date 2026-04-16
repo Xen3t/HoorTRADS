@@ -10,6 +10,9 @@ import SessionCard from '@/components/home/SessionCard'
 import type { ImportedImage } from '@/types/images'
 import type { FolderNode, SubfolderEntry } from '@/types/folder'
 import type { Session } from '@/types/session'
+import NotificationToast from '@/components/shared/NotificationToast'
+import UserWidget from '@/components/home/UserWidget'
+import NotificationBell from '@/components/home/NotificationBell'
 
 interface FolderScanData {
   images: ImportedImage[]
@@ -28,6 +31,7 @@ export default function Home() {
   const [sessions, setSessions] = useState<Session[]>([])
   const [selectedFolders, setSelectedFolders] = useState<Set<string>>(new Set())
   const [showAllSessions, setShowAllSessions] = useState(false)
+
 
   const ALL_FLAGS = ['de', 'es', 'it', 'gb', 'nl', 'pt', 'pl', 'se', 'be', 'cz', 'dk', 'fi', 'gr', 'hr', 'hu', 'ie', 'lt', 'lv', 'ro', 'si', 'sk', 'lu']
   const [randomFlags, setRandomFlags] = useState(ALL_FLAGS.slice(0, 10))
@@ -117,15 +121,43 @@ export default function Home() {
       const result = await res.json()
       if (result.session?.id) {
         window.location.href = `/campaign/${result.session.id}/configure`
+      } else {
+        setToast({ message: 'Erreur lors de la création de la campagne. Réessayez.', variant: 'error' })
       }
     } catch {
-      // Session creation failed silently
+      setToast({ message: 'Impossible de créer la session. Vérifiez que le serveur est démarré.', variant: 'error' })
     }
   }
 
   const handleDropImport = (newImages: ImportedImage[]) => {
     setDragImages((prev) => [...prev, ...newImages])
     setFolderData(null)
+    if (!campaignName) setCampaignName('Campagne sans titre')
+  }
+
+  const handleContinueDrag = async () => {
+    if (dragImages.length === 0) return
+    try {
+      const res = await fetch('/api/sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: campaignName || 'Campagne sans titre',
+          image_count: dragImages.length,
+          source_path: dragImages[0]?.path ? dragImages[0].path.replace(/[\\/][^\\/]+$/, '') : '',
+          selected_paths: dragImages.map((img) => img.path),
+          current_step: 'configure',
+        }),
+      })
+      const result = await res.json()
+      if (result.session?.id) {
+        window.location.href = `/campaign/${result.session.id}/configure`
+      } else {
+        setToast({ message: 'Erreur lors de la création de la campagne. Réessayez.', variant: 'error' })
+      }
+    } catch {
+      setToast({ message: 'Impossible de créer la session. Vérifiez que le serveur est démarré.', variant: 'error' })
+    }
   }
 
   const handleToggleFolder = (folderName: string) => {
@@ -140,84 +172,30 @@ export default function Home() {
     })
   }
 
-  const handleSessionClick = (session: Session) => {
-    if (typeof window !== 'undefined') {
-      window.location.href = `/campaign/${session.id}/configure`
-    }
-  }
-
   const handleSessionDelete = async (session: Session) => {
     try {
-      await fetch(`/api/sessions/${session.id}`, { method: 'DELETE' })
-      setSessions((prev) => prev.filter((s) => s.id !== session.id))
+      const res = await fetch(`/api/sessions/${session.id}`, { method: 'DELETE' })
+      if (res.ok) {
+        setSessions((prev) => prev.filter((s) => s.id !== session.id))
+      }
     } catch {
-      // Delete failed silently
+      setToast({ message: 'Erreur lors de la suppression. Réessayez.', variant: 'error' })
     }
   }
 
   const hasContent = folderData !== null || dragImages.length > 0
 
-  const [showAdminPrompt, setShowAdminPrompt] = useState(false)
-  const [adminCode, setAdminCode] = useState('')
-  const [adminError, setAdminError] = useState(false)
-
-  const handleAdminAccess = () => {
-    if (adminCode === '1212') {
-      window.location.href = '/admin'
-    } else {
-      setAdminError(true)
-      setTimeout(() => setAdminError(false), 2000)
-    }
-  }
+  const [toast, setToast] = useState<{ message: string; variant: 'error' | 'success' | 'info' } | null>(null)
 
   return (
     <main className="min-h-screen px-8 pt-24 pb-12 relative overflow-hidden"
-      style={{ background: 'linear-gradient(180deg, #f8faf6 0%, #ffffff 40%, #f8f9fa 100%)' }}
+      style={{ background: 'linear-gradient(180deg, #ffffff 0%, #e8eaed 100%)' }}
     >
-      {/* Admin gear icon */}
-      <button
-        onClick={() => setShowAdminPrompt(!showAdminPrompt)}
-        className="absolute top-6 right-6 text-text-disabled hover:text-text-secondary transition-colors"
-        title="Admin"
-      >
-        <span className="text-lg">⚙️</span>
-      </button>
-
-      {/* Admin code prompt */}
-      <AnimatePresence>
-        {showAdminPrompt && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="absolute top-14 right-6 bg-white rounded-[12px] shadow-lg border border-border p-4 z-50"
-          >
-            <p className="text-xs font-semibold text-text-secondary mb-2">Accès admin</p>
-            <div className="flex gap-2">
-              <input
-                type="password"
-                value={adminCode}
-                onChange={(e) => { setAdminCode(e.target.value); setAdminError(false) }}
-                onKeyDown={(e) => e.key === 'Enter' && handleAdminAccess()}
-                placeholder="Code"
-                className={`
-                  w-32 px-3 py-1.5 rounded-[8px] text-sm
-                  border bg-white focus:outline-none
-                  ${adminError ? 'border-brand-red' : 'border-border focus:border-brand-green'}
-                `}
-                autoFocus
-              />
-              <button
-                onClick={handleAdminAccess}
-                className="px-3 py-1.5 bg-brand-green text-white text-xs font-semibold rounded-[8px] hover:bg-brand-green-hover"
-              >
-                →
-              </button>
-            </div>
-            {adminError && <p className="text-[10px] text-brand-red mt-1">Code invalide</p>}
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Top-right actions */}
+      <div className="absolute top-6 right-6 flex items-center gap-3">
+        <NotificationBell />
+        <UserWidget />
+      </div>
 
       {/* Decorative background shapes */}
       <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden">
@@ -297,7 +275,7 @@ export default function Home() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -15 }}
               transition={{ duration: 0.4 }}
-              className="bg-white rounded-[20px] shadow-sm border border-border p-8"
+              className="bg-white rounded-[16px] shadow-sm border border-border p-8"
             >
               {/* Folder picker */}
               <FolderPicker onImagesImported={handleFolderImport} />
@@ -324,7 +302,7 @@ export default function Home() {
               className="space-y-4"
             >
               {folderData && (
-                <div className="bg-white rounded-[20px] shadow-sm border border-border p-6">
+                <div className="bg-white rounded-[16px] shadow-sm border border-border p-6">
                   {/* Back button */}
                   <button
                     onClick={() => { setFolderData(null); setDragImages([]) }}
@@ -366,18 +344,30 @@ export default function Home() {
                         disabled:opacity-40 disabled:cursor-not-allowed
                       "
                     >
-                      Continuer vers la configuration →
+                      Upload
                     </motion.button>
                   </div>
                 </div>
               )}
 
               {dragImages.length > 0 && (
-                <div className="p-6 bg-surface rounded-[12px] shadow-sm text-left">
-                  <h2 className="text-lg font-semibold text-text-primary mb-4">
+                <div className="bg-white rounded-[16px] shadow-sm border border-border p-6 text-left">
+                  <button
+                    onClick={() => { setDragImages([]); setCampaignName('') }}
+                    className="text-xs text-text-disabled hover:text-text-secondary transition-colors mb-4"
+                  >
+                    ← Retour en arrière
+                  </button>
+
+                  <CampaignNameInput
+                    initialName={campaignName}
+                    onNameChange={setCampaignName}
+                  />
+                  <p className="text-sm text-text-secondary mt-2 mb-4">
                     {dragImages.length} image{dragImages.length > 1 ? 's' : ''} importée{dragImages.length > 1 ? 's' : ''}
-                  </h2>
-                  <div className="grid grid-cols-6 gap-2">
+                  </p>
+
+                  <div className="grid grid-cols-6 gap-2 mb-5">
                     {dragImages.slice(0, 12).map((img, i) => (
                       <motion.div
                         key={img.id}
@@ -395,6 +385,23 @@ export default function Home() {
                         +{dragImages.length - 12}
                       </div>
                     )}
+                  </div>
+
+                  <div className="text-center">
+                    <motion.button
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.3, delay: 0.2 }}
+                      onClick={handleContinueDrag}
+                      className="
+                        px-8 py-3 rounded-[12px]
+                        bg-brand-green text-white font-bold text-sm
+                        hover:bg-brand-green-hover hover:shadow-lg
+                        transition-all duration-200
+                      "
+                    >
+                      Upload
+                    </motion.button>
                   </div>
                 </div>
               )}
@@ -419,7 +426,7 @@ export default function Home() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3, delay: i * 0.05 }}
                 >
-                  <SessionCard session={session} onClick={handleSessionClick} onDelete={handleSessionDelete} />
+                  <SessionCard session={session} onDelete={handleSessionDelete} />
                 </motion.div>
               ))}
             </div>
@@ -434,6 +441,15 @@ export default function Home() {
           </motion.div>
         )}
       </div>
+      <AnimatePresence>
+        {toast && (
+          <NotificationToast
+            message={toast.message}
+            variant={toast.variant}
+            onDismiss={() => setToast(null)}
+          />
+        )}
+      </AnimatePresence>
     </main>
   )
 }

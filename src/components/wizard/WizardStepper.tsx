@@ -1,74 +1,56 @@
 'use client'
 
-import { motion } from 'framer-motion'
-
 export type StepStatus = 'pending' | 'active' | 'done'
 
 interface Step {
   label: string
   status: StepStatus
+  href?: string
 }
 
 interface WizardStepperProps {
   steps: Step[]
-  onStepClick?: (index: number) => void
 }
 
-export default function WizardStepper({ steps, onStepClick }: WizardStepperProps) {
+export default function WizardStepper({ steps }: WizardStepperProps) {
   return (
-    <div className="flex items-center justify-center gap-0 mb-8">
-      {steps.map((step, i) => (
-        <div key={step.label} className="flex items-center">
-          {/* Step circle + label */}
-          <button
-            onClick={() => step.status === 'done' && onStepClick?.(i)}
-            disabled={step.status === 'pending'}
-            className={`
-              flex items-center gap-2
-              ${step.status === 'done' ? 'cursor-pointer' : ''}
-              ${step.status === 'pending' ? 'cursor-default' : ''}
-            `}
-          >
-            <motion.div
-              className={`
-                w-8 h-8 rounded-full flex items-center justify-center
-                text-xs font-bold transition-all duration-300
-                ${step.status === 'active'
-                  ? 'bg-brand-green text-white shadow-[0_0_0_4px_#e8f2dc]'
-                  : step.status === 'done'
-                    ? 'bg-brand-green text-white'
-                    : 'bg-border/50 text-text-disabled/60'
-                }
-              `}
-              animate={step.status === 'active' ? { scale: [1, 1.05, 1] } : {}}
-              transition={{ duration: 1, repeat: Infinity, repeatDelay: 2 }}
-            >
-              {step.status === 'done' ? '✓' : i + 1}
-            </motion.div>
-            <span
-              className={`
-                text-xs font-semibold hidden sm:block
-                ${step.status === 'active' || step.status === 'done'
-                  ? 'text-brand-green'
-                  : 'text-text-disabled'
-                }
-              `}
-            >
-              {step.label}
-            </span>
-          </button>
+    <div className="flex items-center justify-center">
+      <div className="flex items-center bg-white rounded-[12px] border border-border shadow-sm p-1.5 gap-1">
+        {steps.map((step, i) => {
+          const isClickable = step.status === 'done' && step.href
+          const Tag = isClickable ? 'a' : 'span'
 
-          {/* Connector line */}
-          {i < steps.length - 1 && (
-            <div
+          return (
+            <Tag
+              key={step.label}
+              {...(isClickable ? { href: step.href } : {})}
+              style={step.status === 'done' ? { backgroundColor: 'var(--color-brand-green-light)' } : undefined}
               className={`
-                w-8 h-0.5 mx-2
-                ${step.status === 'done' ? 'bg-brand-green' : 'bg-border'}
+                relative flex items-center gap-2 px-4 py-2 rounded-[8px] text-sm font-semibold
+                transition-all duration-200 select-none
+                ${step.status === 'active'
+                  ? 'bg-brand-green text-white shadow-sm'
+                  : step.status === 'done'
+                    ? 'text-brand-green cursor-pointer'
+                    : 'text-text-disabled cursor-default'
+                }
               `}
-            />
-          )}
-        </div>
-      ))}
+            >
+              {step.status === 'done' ? (
+                <span className="w-5 h-5 rounded-full bg-brand-green text-white flex items-center justify-center text-[10px] font-bold shrink-0">✓</span>
+              ) : (
+                <span className={`
+                  w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0
+                  ${step.status === 'active' ? 'bg-white/30 text-white' : 'bg-border text-text-disabled'}
+                `}>
+                  {i + 1}
+                </span>
+              )}
+              {step.label}
+            </Tag>
+          )
+        })}
+      </div>
     </div>
   )
 }

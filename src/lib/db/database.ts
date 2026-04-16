@@ -26,6 +26,7 @@ export function closeDb(): void {
 }
 
 function runMigrations(database: Database.Database): void {
+  // Create tables first (before checking columns)
   database.exec(`
     CREATE TABLE IF NOT EXISTS sessions (
       id TEXT PRIMARY KEY,
@@ -88,5 +89,56 @@ function runMigrations(database: Database.Database): void {
       value TEXT NOT NULL,
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
+
+    CREATE TABLE IF NOT EXISTS users (
+      id TEXT PRIMARY KEY,
+      email TEXT NOT NULL UNIQUE,
+      name TEXT NOT NULL,
+      password_hash TEXT NOT NULL,
+      role TEXT NOT NULL DEFAULT 'graphiste',
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS auth_sessions (
+      token TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      expires_at TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    );
+
+    CREATE TABLE IF NOT EXISTS language_rules (
+      id TEXT PRIMARY KEY,
+      language_code TEXT NOT NULL,
+      rule TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS app_config (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL,
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
   `)
+
+  // Add columns if they don't exist yet — check via PRAGMA before altering
+  const hasColumn = (table: string, col: string): boolean => {
+    const cols = database.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[]
+    return cols.some((c) => c.name === col)
+  }
+
+  const migrations: [string, string][] = [
+    ['generation_tasks', 'verification_status'],
+    ['generation_tasks', 'verification_notes'],
+    ['generation_tasks', 'prompt_sent'],
+    ['generation_task_versions', 'prompt_sent'],
+    ['generation_task_versions', 'regen_label'],
+    ['sessions', 'user_id'],
+  ]
+
+  for (const [table, column] of migrations) {
+    if (!hasColumn(table, column)) {
+      database.exec(`ALTER TABLE ${table} ADD COLUMN ${column} TEXT`)
+    }
+  }
 }

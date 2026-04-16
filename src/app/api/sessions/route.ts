@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getDb } from '@/lib/db/database'
 import { getRecentSessions, createSession } from '@/lib/db/queries'
+import { getSession } from '@/lib/auth'
 
 export async function GET() {
   try {
@@ -16,11 +17,14 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { name, image_count, source_path, selected_paths, current_step } = body
+    const { name, image_count, source_path, selected_paths, current_step, configFileName, configFileContent } = body
 
     if (!name) {
       return NextResponse.json({ error: 'Session name is required' }, { status: 400 })
     }
+
+    const token = request.cookies.get('hoortrad_session')?.value
+    const authUser = token ? getSession(token) : null
 
     const db = getDb()
     const session = createSession(db, {
@@ -28,7 +32,13 @@ export async function POST(request: NextRequest) {
       image_count: image_count || 0,
       source_path,
       current_step,
-      config: selected_paths ? JSON.stringify({ selected_paths }) : undefined,
+      user_id: authUser?.id || null,
+      config: (selected_paths || configFileName)
+        ? JSON.stringify({
+            ...(selected_paths ? { selected_paths } : {}),
+            ...(configFileName ? { configFileName, configFileContent } : {}),
+          })
+        : undefined,
     })
 
     return NextResponse.json({ session }, { status: 201 })

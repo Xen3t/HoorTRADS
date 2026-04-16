@@ -2,13 +2,16 @@
 
 import { motion } from 'framer-motion'
 import type { GenerationTask } from '@/types/generation'
+import ScoreBadge from './ScoreBadge'
 
 interface ImageCardProps {
   task: GenerationTask
   size: 'large' | 'compact'
-  onClick: () => void
   onReload: () => void
   isRegenerating?: boolean
+  isSelected?: boolean
+  onToggleSelect?: (taskId: string) => void
+  selectionActive?: boolean
 }
 
 const BG_COLORS = [
@@ -21,7 +24,7 @@ function getColorForTask(task: GenerationTask): string {
   return BG_COLORS[hash % BG_COLORS.length]
 }
 
-export default function ImageCard({ task, size, onClick, onReload, isRegenerating = false }: ImageCardProps) {
+export default function ImageCard({ task, size, onReload, isRegenerating = false, isSelected = false, onToggleSelect, selectionActive = false }: ImageCardProps) {
   const isFailed = task.status === 'failed'
   const bgColor = getColorForTask(task)
 
@@ -35,18 +38,35 @@ export default function ImageCard({ task, size, onClick, onReload, isRegeneratin
         relative group rounded-[8px] overflow-hidden cursor-pointer
         transition-all duration-200 hover:shadow-default
         ${isFailed ? 'ring-2 ring-brand-red' : ''}
+        ${isSelected ? 'ring-2 ring-brand-teal' : ''}
       `}
-      onClick={onClick}
     >
       {/* Image */}
-      {/* Container has no fixed height — image dictates its own aspect ratio */}
       <div className={`relative ${bgColor} w-full`}>
         {task.output_path && task.status === 'done' ? (
-          <img
-            src={`/api/serve-image?path=${encodeURIComponent(task.output_path)}&v=${task.created_at}`}
-            alt={`${task.source_image_name} - ${task.country_code}`}
-            className={`w-full h-auto block transition-opacity duration-300 ${isRegenerating ? 'opacity-30' : 'opacity-100'}`}
-          />
+          <>
+            <img
+              src={`/api/serve-image?path=${encodeURIComponent(task.output_path)}&v=${task.created_at}`}
+              alt={`${task.source_image_name} - ${task.country_code}`}
+              loading="lazy"
+              className={`w-full h-auto block transition-opacity duration-300 ${isRegenerating ? 'opacity-30' : 'opacity-100'}`}
+            />
+            {/* Before/after: source FR overlay on hover */}
+            {task.source_image_path && (
+              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                <img
+                  src={`/api/serve-image?path=${encodeURIComponent(task.source_image_path)}`}
+                  alt="Source FR"
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute top-1.5 left-1/2 -translate-x-1/2">
+                  <span className="bg-black/70 text-white text-[9px] font-bold px-2 py-0.5 rounded-full tracking-wide">
+                    SOURCE FR
+                  </span>
+                </div>
+              </div>
+            )}
+          </>
         ) : (
           <div
             className="flex items-center justify-center"
@@ -78,6 +98,37 @@ export default function ImageCard({ task, size, onClick, onReload, isRegeneratin
         </div>
       </div>
 
+      {/* Checkbox — top left */}
+      {onToggleSelect && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onToggleSelect(task.id) }}
+          aria-label={isSelected ? 'Désélectionner' : 'Sélectionner'}
+          className={`
+            absolute top-1.5 left-1.5
+            w-5 h-5 rounded-[4px] border-2 flex items-center justify-center
+            transition-all duration-150
+            ${isSelected
+              ? 'bg-brand-teal border-brand-teal text-white'
+              : `border-white/70 bg-black/20 text-transparent ${selectionActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`
+            }
+          `}
+          title={isSelected ? 'Désélectionner' : 'Sélectionner'}
+        >
+          {isSelected && (
+            <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="2 6 5 9 10 3"/>
+            </svg>
+          )}
+        </button>
+      )}
+
+      {/* Score badge */}
+      {task.verification_status && (
+        <div className="absolute top-1.5 right-8">
+          <ScoreBadge score={parseInt(task.verification_status) || 0} size="sm" />
+        </div>
+      )}
+
       {/* Failed badge */}
       {isFailed && (
         <div className="absolute top-1.5 right-1.5">
@@ -93,6 +144,7 @@ export default function ImageCard({ task, size, onClick, onReload, isRegeneratin
           e.stopPropagation()
           onReload()
         }}
+        aria-label="Régénérer"
         className="
           absolute bottom-1.5 right-1.5
           w-6 h-6 rounded-full
@@ -102,7 +154,7 @@ export default function ImageCard({ task, size, onClick, onReload, isRegeneratin
           transition-opacity duration-200
           hover:bg-black/70
         "
-        title="Régénérer"
+        title="Régénérer depuis source FR"
       >
         ⟳
       </button>

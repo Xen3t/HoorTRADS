@@ -32,7 +32,7 @@ async function detectDimensions(sourceName: string, outputPath: string): Promise
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { sessionId, customPath, compressionTarget } = body
+    const { sessionId, customPath, compressionTarget, campaignName } = body
 
     if (!sessionId) {
       return NextResponse.json({ error: 'Session ID is required' }, { status: 400 })
@@ -49,10 +49,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No generation job found' }, { status: 404 })
     }
 
-    // Destination : custom path ou dossier source + _EXPORT
-    const destinationRoot = customPath?.trim()
-      || path.join(path.dirname(session.source_path || ''), `${sanitizeFilename(session.name)}_EXPORT`)
-
     // Get all completed tasks
     const tasks = db.prepare(
       "SELECT * FROM generation_tasks WHERE job_id = ? AND status = 'done'"
@@ -66,9 +62,22 @@ export async function POST(request: NextRequest) {
     const jobConfig = job.config ? JSON.parse(job.config) : {}
     const langToCountries: Record<string, string[]> = jobConfig.langToCountries || {}
 
+    // Validate customPath if provided — must be absolute, no ".." segments
+    if (customPath) {
+      const trimmed = customPath.trim()
+      if (trimmed.includes('..') || !path.isAbsolute(trimmed)) {
+        return NextResponse.json(
+          { error: 'Invalid export path: must be absolute without ".." segments' },
+          { status: 400 }
+        )
+      }
+    }
+
     const maxSizeBytes = (parseFloat(compressionTarget) || 1) * 1024 * 1024
     let exportedCount = 0
     const errors: string[] = []
+    // Track the first destination used for the success message
+    let firstDestinationRoot: string | null = null
 
     for (const task of tasks) {
       if (!task.output_path || !fs.existsSync(task.output_path)) {
@@ -77,8 +86,17 @@ export async function POST(request: NextRequest) {
       }
 
       try {
+        // Destination rooted at the source image's own folder — not the session root.
+        // This ensures e.g. C:\Campagnes\visuel_générique\ → C:\Campagnes\visuel_générique\RENDU\
+        // even when multiple subfolders are part of the same job.
+        const sourceDir = path.dirname(task.source_image_path)
+        // If the source is already inside a RENDU folder (ADS structure), use it directly
+        const isAlreadyInRendu = path.basename(sourceDir).toUpperCase() === 'RENDU'
+        const destinationRoot = customPath?.trim() || (isAlreadyInRendu ? sourceDir : path.join(sourceDir, 'RENDU'))
+        if (!firstDestinationRoot) firstDestinationRoot = destinationRoot
+
         const ext = path.extname(task.source_image_name).toLowerCase()
-        const opName = sanitizeFilename(session.name)
+        const opName = sanitizeFilename(campaignName || session.name)
         const dimensions = await detectDimensions(task.source_image_name, task.output_path)
 
         // Compress once if needed
@@ -94,11 +112,6 @@ export async function POST(request: NextRequest) {
         // Get all countries for this language
         const countries = langToCountries[task.target_language] || [task.country_code]
 
-        const sourceRelative = path.relative(
-          session.source_path || '',
-          path.dirname(task.source_image_path)
-        )
-
         for (const countryCode of countries) {
           // If multiple countries share this language, suffix with COUNTRY_LANG (e.g. BE_NL)
           const countryLabel = countries.length > 1
@@ -107,7 +120,7 @@ export async function POST(request: NextRequest) {
 
           // {nom_op}_{largeur}x{hauteur}_{code_pays}.{ext}
           const outputFilename = `${opName}_${dimensions}_${countryLabel}${ext}`
-          const outputDir = path.join(destinationRoot, countryCode, sourceRelative)
+          const outputDir = path.join(destinationRoot, countryCode)
           fs.mkdirSync(outputDir, { recursive: true })
           const outputPath = path.join(outputDir, outputFilename)
           fs.writeFileSync(outputPath, processedBuffer)
@@ -118,6 +131,18 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Write translations.json alongside the images
+    if (firstDestinationRoot) {
+      try {
+        const preTranslationLog = jobConfig.preTranslationLog
+        const approvedTranslations = jobConfig.approvedTranslations || preTranslationLog?.translations || jobConfig.translationsJSON
+        if (approvedTranslations && Object.keys(approvedTranslations).length > 0) {
+          const jsonPath = path.join(firstDestinationRoot, 'translations.json')
+          fs.writeFileSync(jsonPath, JSON.stringify(approvedTranslations, null, 2), 'utf-8')
+        }
+      } catch { /* non-bloquant */ }
+    }
+
     // Mark session as exported
     db.prepare(
       "UPDATE sessions SET status = 'exported', current_step = 'export', updated_at = datetime('now') WHERE id = ?"
@@ -125,10 +150,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      destinationPath: destinationRoot,
+      destinationPath: firstDestinationRoot,
       exportedCount,
       errors: errors.length > 0 ? errors : undefined,
-      message: `${exportedCount} images exportées vers ${destinationRoot}`,
+      message: `${exportedCount} images exportées vers ${firstDestinationRoot}`,
     })
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Export failed'

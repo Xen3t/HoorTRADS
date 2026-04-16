@@ -28,6 +28,7 @@ export default function CountryTagInput({
     const newCountries: CountryInfo[] = []
 
     for (const code of codes) {
+      if (code === 'FR') continue  // Source language — always French, never a target
       if (existingCodes.has(code)) continue
       const country = getCountryByCode(code)
       if (country) {
@@ -76,8 +77,9 @@ export default function CountryTagInput({
 
   const handlePreset = (presetName: string) => {
     const codes = getPreset(presetName)
-    // Replace all countries with the preset
+    // Replace all countries with the preset, excluding FR (source language)
     const countries = codes
+      .filter((code) => code !== 'FR')
       .map((code) => getCountryByCode(code))
       .filter((c): c is CountryInfo => c !== null)
     onCountriesChange(countries)
@@ -103,7 +105,7 @@ export default function CountryTagInput({
               onClick={() => handlePreset(name)}
               whileTap={{ scale: 0.95 }}
               className={`
-                px-3 py-1.5 rounded-[20px] text-xs font-semibold
+                px-3 py-1.5 rounded-full text-xs font-semibold
                 transition-all duration-200
                 ${isActive ? activeStyle : 'bg-surface text-text-secondary hover:bg-border'}
               `}
@@ -117,7 +119,7 @@ export default function CountryTagInput({
           <motion.button
             onClick={() => { onCountriesChange([]); setActivePreset(null) }}
             whileTap={{ scale: 0.95 }}
-            className="px-3 py-1.5 rounded-[20px] text-xs text-text-disabled hover:text-brand-red hover:bg-brand-red-light transition-all duration-200"
+            className="px-3 py-1.5 rounded-full text-xs text-text-disabled hover:text-brand-red hover:bg-brand-red-light transition-all duration-200"
           >
             Effacer
           </motion.button>
@@ -171,7 +173,7 @@ export default function CountryTagInput({
               transition={{ duration: 0.2 }}
               className="
                 inline-flex items-center gap-1.5
-                px-3 py-1.5 bg-surface rounded-[20px]
+                px-3 py-1.5 bg-surface rounded-full
                 text-sm font-semibold text-text-primary
               "
             >

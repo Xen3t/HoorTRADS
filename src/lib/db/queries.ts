@@ -12,8 +12,8 @@ export function createSession(db: Database.Database, input: CreateSessionInput):
   const now = new Date().toISOString()
 
   const stmt = db.prepare(`
-    INSERT INTO sessions (id, name, created_at, updated_at, status, image_count, market_count, current_step, source_path, config)
-    VALUES (?, ?, ?, ?, 'draft', ?, 0, ?, ?, NULL)
+    INSERT INTO sessions (id, name, created_at, updated_at, status, image_count, market_count, current_step, source_path, config, user_id)
+    VALUES (?, ?, ?, ?, 'draft', ?, 0, ?, ?, NULL, ?)
   `)
 
   stmt.run(
@@ -23,7 +23,8 @@ export function createSession(db: Database.Database, input: CreateSessionInput):
     now,
     input.image_count,
     input.current_step || 'configure',
-    input.source_path || null
+    input.source_path || null,
+    input.user_id || null
   )
 
   if (input.config) {

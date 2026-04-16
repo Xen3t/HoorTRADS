@@ -17,7 +17,7 @@ export default function FolderTree({ subfolders, selectedFolders, onToggleFolder
     .reduce((sum, f) => sum + f.imageCount, 0)
 
   return (
-    <div className="bg-surface rounded-[12px] p-4 text-left">
+    <div className="bg-white border border-border rounded-[12px] p-4 text-left">
       <div className="flex items-center justify-between mb-3">
         <span className="text-xs font-semibold text-text-secondary">Sélectionner les dossiers à traduire</span>
         <span className="text-xs text-text-disabled">{totalSelected} images sélectionnées</span>

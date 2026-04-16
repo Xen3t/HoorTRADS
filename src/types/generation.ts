@@ -24,6 +24,9 @@ export interface GenerationTask {
   output_path: string | null
   error_message: string | null
   created_at: string
+  verification_status: string | null  // score 0-100 stored as string
+  verification_notes: string | null   // JSON: { score, issues, summary, extractedText }
+  prompt_sent: string | null          // full prompt sent to Gemini (for debugging)
 }
 
 export interface GenerationProgress {
@@ -46,6 +49,7 @@ export interface ImageGenerator {
   generateImage(
     sourceImagePath: string,
     targetLanguage: string,
-    prompt: string
+    prompt: string,
+    resolution?: string
   ): Promise<GeneratedImage>
 }

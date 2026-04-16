@@ -16,8 +16,10 @@ export default function ExportPage() {
   const [exportMode, setExportMode] = useState<ExportMode>('auto')
   const [customPath, setCustomPath] = useState('')
   const [compressionTarget, setCompressionTarget] = useState('1')
+  const [campaignName, setCampaignName] = useState('')
   const [isExportingServer, setIsExportingServer] = useState(false)
   const [isExportingDrive, setIsExportingDrive] = useState(false)
+  const [exportProgress, setExportProgress] = useState(0)
   const [serverResult, setServerResult] = useState<string | null>(null)
   const [driveError, setDriveError] = useState<string | null>(null)
 
@@ -28,7 +30,15 @@ export default function ExportPage() {
         const sessRes = await fetch(`/api/sessions/${sessionId}`)
         const sessData = await sessRes.json()
         if (cancelled) return
-        if (sessData.session) setSession(sessData.session)
+        if (sessData.session) {
+          setSession(sessData.session)
+          try {
+            const cfg = sessData.session.config ? JSON.parse(sessData.session.config) : {}
+            setCampaignName(cfg.campaignName || sessData.session.name || '')
+          } catch {
+            setCampaignName(sessData.session.name || '')
+          }
+        }
 
         const jobRes = await fetch(`/api/generate/by-session/${sessionId}`)
         const jobData = await jobRes.json()
@@ -38,7 +48,7 @@ export default function ExportPage() {
           const imgData = await imgRes.json()
           if (!cancelled) setImageCount(imgData.total || 0)
         }
-      } catch {}
+      } catch (e) { console.error('[export] load', e) }
     }
     load()
     return () => { cancelled = true }
@@ -47,6 +57,10 @@ export default function ExportPage() {
   const handleExportServer = async () => {
     setIsExportingServer(true)
     setServerResult(null)
+    setExportProgress(0)
+    const progressInterval = setInterval(() => {
+      setExportProgress((p) => Math.min(p + Math.random() * 12, 90))
+    }, 300)
     try {
       const res = await fetch('/api/export/server', {
         method: 'POST',
@@ -56,13 +70,29 @@ export default function ExportPage() {
           mode: exportMode,
           customPath: exportMode === 'custom' ? customPath : undefined,
           compressionTarget: parseFloat(compressionTarget),
+          campaignName: campaignName.trim() || session?.name,
         }),
       })
+      if (!res.ok) return
       const data = await res.json()
       if (data.success) {
         setServerResult(data.message)
+        // Persiste le nom d'opération dans la config de session
+        try {
+          const existingConfig = session?.config ? JSON.parse(session.config) : {}
+          await fetch(`/api/sessions/${sessionId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              config: JSON.stringify({ ...existingConfig, campaignName: campaignName.trim() }),
+            }),
+          })
+        } catch (e) { console.error('[export] persist campaign name', e) }
       }
     } finally {
+      clearInterval(progressInterval)
+      setExportProgress(100)
+      setTimeout(() => setExportProgress(0), 800)
       setIsExportingServer(false)
     }
   }
@@ -107,6 +137,30 @@ export default function ExportPage() {
           </p>
         </motion.div>
 
+        {/* Campaign name override */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className="bg-white rounded-[12px] shadow-sm px-5 py-4 mb-4"
+        >
+          <p className="text-xs font-semibold text-text-secondary mb-2">Nom de l&apos;opération (préfixe fichier)</p>
+          <input
+            type="text"
+            value={campaignName}
+            onChange={(e) => setCampaignName(e.target.value)}
+            placeholder={session?.name || ''}
+            className="
+              w-full px-3 py-2 rounded-[8px] text-sm
+              border border-border bg-white text-text-primary
+              focus:border-brand-green focus:outline-none
+            "
+          />
+          <p className="text-[10px] text-text-disabled mt-1">
+            Exemple&nbsp;: <span className="font-mono">{(campaignName || session?.name || 'NomOp').replace(/[<>:"/\\|?*]/g, '_').replace(/\s+/g, '_')}_1920x1080_DE.jpg</span>
+          </p>
+        </motion.div>
+
         {/* Export mode selection */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
@@ -121,7 +175,7 @@ export default function ExportPage() {
             onClick={() => setExportMode('auto')}
             className={`
               w-full text-left p-3 rounded-[8px] mb-2 transition-colors
-              ${exportMode === 'auto' ? 'bg-brand-green-light border border-brand-green' : 'bg-surface hover:bg-border border border-transparent'}
+              ${exportMode === 'auto' ? 'bg-brand-green-light border border-brand-green' : 'bg-white hover:bg-surface border border-border'}
             `}
           >
             <div className="flex items-center gap-2">
@@ -131,7 +185,7 @@ export default function ExportPage() {
               <span className="text-sm font-semibold text-text-primary">Dossiers d&apos;origine</span>
             </div>
             <p className="text-xs text-text-secondary mt-1 ml-6">
-              Les images sont rangées dans le dossier RENDU/ de chaque source avec des sous-dossiers par pays (DE/, LU/, etc.)
+              Les images sont rangées dans un sous-dossier RENDU/ à l&apos;intérieur du dossier source, avec des sous-dossiers par pays (RENDU/DE/, RENDU/LU/, etc.)
             </p>
             {sourcePath && (
               <p className="text-[10px] text-brand-teal mt-1 ml-6 truncate">📁 {sourcePath}</p>
@@ -143,7 +197,7 @@ export default function ExportPage() {
             onClick={() => setExportMode('custom')}
             className={`
               w-full text-left p-3 rounded-[8px] transition-colors
-              ${exportMode === 'custom' ? 'bg-brand-green-light border border-brand-green' : 'bg-surface hover:bg-border border border-transparent'}
+              ${exportMode === 'custom' ? 'bg-brand-green-light border border-brand-green' : 'bg-white hover:bg-surface border border-border'}
             `}
           >
             <div className="flex items-center gap-2">
@@ -209,7 +263,7 @@ export default function ExportPage() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="flex items-center gap-2 px-4 py-3 bg-surface border border-border rounded-[12px] text-sm text-text-secondary mb-6"
+          className="flex items-center gap-2 px-4 py-3 bg-white border border-border rounded-[12px] text-sm text-text-secondary mb-6"
         >
           <span>ℹ️</span>
           <span>{imageCount} images + translations.json prêts à exporter</span>
@@ -220,38 +274,48 @@ export default function ExportPage() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.25 }}
-          className="space-y-3"
+          className="space-y-3 flex flex-col items-center"
         >
           <button
             onClick={handleExportServer}
             disabled={isExportingServer || (exportMode === 'custom' && !customPath.trim())}
             className="
-              w-full flex items-center justify-center gap-3
-              py-4 rounded-[12px]
-              bg-brand-green text-white font-bold text-base
+              inline-flex items-center justify-center gap-2
+              px-8 py-3 rounded-[12px]
+              bg-brand-green text-white font-bold text-sm
               hover:bg-brand-green-hover hover:shadow-lg
               transition-all duration-200
               disabled:opacity-50
             "
           >
-            <span className="text-xl">🖥️</span>
-            {isExportingServer ? 'Export en cours...' : 'Enregistrer sur le serveur'}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="2" y="3" width="20" height="14" rx="2"/><polyline points="8 21 12 17 16 21"/><line x1="12" y1="17" x2="12" y2="21"/>
+            </svg>
+            {isExportingServer ? 'Export en cours...' : 'Exporter'}
           </button>
+          {isExportingServer && (
+            <div className="w-full h-1.5 bg-border rounded-full overflow-hidden">
+              <div
+                className="h-full bg-brand-green rounded-full transition-all duration-300"
+                style={{ width: `${exportProgress}%` }}
+              />
+            </div>
+          )}
 
           <button
             onClick={handleExportDrive}
             disabled={isExportingDrive}
             className="
-              w-full flex items-center justify-center gap-3
-              py-4 rounded-[12px]
-              bg-brand-teal text-white font-bold text-base
+              inline-flex items-center justify-center gap-2
+              px-8 py-3 rounded-[12px]
+              bg-brand-teal text-white font-bold text-sm
               hover:bg-brand-teal-hover hover:shadow-lg
               transition-all duration-200
               disabled:opacity-50
             "
           >
             <span className="bg-white rounded-[4px] p-0.5 flex items-center justify-center">
-              <Image src="/google-drive.svg" alt="" width={16} height={16} />
+              <Image src="/google-drive.svg" alt="" width={14} height={14} />
             </span>
             {isExportingDrive ? 'Envoi en cours...' : 'Envoyer sur le drive IMGxHAxMKG'}
           </button>
@@ -278,21 +342,6 @@ export default function ExportPage() {
           </motion.div>
         )}
 
-        {serverResult && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            className="mt-8 text-center"
-          >
-            <button
-              onClick={() => { window.location.href = '/' }}
-              className="text-sm text-brand-teal hover:text-brand-teal-hover transition-colors font-semibold"
-            >
-              ← Retour à l&apos;accueil
-            </button>
-          </motion.div>
-        )}
       </div>
     </main>
   )

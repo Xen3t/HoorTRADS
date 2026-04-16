@@ -10,10 +10,17 @@ export default function GeneratePage() {
   const searchParams = useSearchParams()
   const sessionId = params.id as string
   const jobId = searchParams.get('jobId')
+  // rendering=1 means we came back from text-review and NB2 is already running
+  const isRenderingPhase = searchParams.get('rendering') === '1'
   const [progress, setProgress] = useState<GenerationProgress | null>(null)
   const [allCountries, setAllCountries] = useState<string[]>([])
   const [isDone, setIsDone] = useState(false)
+  const [isPendingTextReview, setIsPendingTextReview] = useState(false)
   const [completedImages, setCompletedImages] = useState<{ id: string; output_path: string }[]>([])
+  const [failedImages, setFailedImages] = useState<{ id: string; language?: string }[]>([])
+  const [isAutoVerifying, setIsAutoVerifying] = useState(false)
+  const [autoCorrectStats, setAutoCorrectStats] = useState<{ verified: number; corrected: number } | null>(null)
+  const verificationEnabledRef = useRef(false)
   const pollingRef = useRef<NodeJS.Timeout | null>(null)
 
   // Load session config to get all countries upfront
@@ -25,9 +32,12 @@ export default function GeneratePage() {
         if (!cancelled && data.session?.config) {
           const config = JSON.parse(data.session.config)
           if (config.countries) setAllCountries(config.countries.filter((c: string) => c !== 'FR'))
+          if (config.verificationEnabled) {
+            verificationEnabledRef.current = true
+          }
         }
       })
-      .catch(() => {})
+      .catch((e) => console.error('[generate] session load', e))
     return () => { cancelled = true }
   }, [sessionId])
 
@@ -46,17 +56,37 @@ export default function GeneratePage() {
           const imgData = await imgRes.json()
           const done = (imgData.tasks || []).filter((t: { status: string; output_path: string }) => t.status === 'done' && t.output_path)
           setCompletedImages(done)
+          const failed = (imgData.tasks || []).filter((t: { status: string }) => t.status === 'failed' || t.status === 'error')
+          setFailedImages(failed)
 
-          if (data.status === 'done' || data.status === 'failed') {
+          if (data.status === 'pending_text_review') {
             setIsDone(true)
+            setIsPendingTextReview(true)
             if (pollingRef.current) clearInterval(pollingRef.current)
             setTimeout(() => {
+              window.location.href = `/campaign/${sessionId}/text-review`
+            }, 800)
+          } else if (data.status === 'done' || data.status === 'failed') {
+            setIsDone(true)
+            if (pollingRef.current) clearInterval(pollingRef.current)
+
+            if (data.status === 'done' && verificationEnabledRef.current && !isRenderingPhase) {
+              setIsAutoVerifying(true)
+              try {
+                const res = await fetch(`/api/generate/${jobId}/auto-correct`, { method: 'POST' })
+                const stats = await res.json()
+                if (stats.verified) setAutoCorrectStats({ verified: stats.verified, corrected: stats.corrected })
+              } catch (e) { console.error('[generate] auto-correct', e) }
+              setIsAutoVerifying(false)
+            }
+
+            setTimeout(() => {
               window.location.href = `/campaign/${sessionId}/review`
-            }, 1500)
+            }, 1000)
           }
         }
-      } catch {
-        // Polling error — will retry
+      } catch (e) {
+        console.error('[generate] poll', e)
       }
     }
 
@@ -89,7 +119,15 @@ export default function GeneratePage() {
         </motion.div>
 
         <p className="text-text-secondary text-sm mb-8">
-          {isDone ? 'Traduction terminée !' : 'Traduction des visuels avec Gemini AI...'}
+          {isAutoVerifying
+            ? '🔍 Vérification & correction en cours...'
+            : autoCorrectStats
+            ? `✓ ${autoCorrectStats.verified} vérifiés · ${autoCorrectStats.corrected} corrigés`
+            : isDone
+            ? (isRenderingPhase ? 'Génération des visuels terminée !' : 'Extraction & traduction terminées !')
+            : isRenderingPhase
+            ? 'Génération des visuels avec Gemini NB2...'
+            : 'Extraction et traduction avec Gemini AI...'}
         </p>
 
         {/* Progress bar */}
@@ -109,7 +147,7 @@ export default function GeneratePage() {
         {allCountries.length > 0 && (
           <div className="flex flex-wrap justify-center gap-3 mb-8">
             {allCountries.map((code) => {
-              const isComplete = progress?.completedCountries.includes(code)
+              const isComplete = isPendingTextReview || progress?.completedCountries.includes(code)
               return (
                 <div
                   key={code}
@@ -131,11 +169,29 @@ export default function GeneratePage() {
           </div>
         )}
 
-        {/* Failed count */}
-        {progress && progress.failedTasks > 0 && (
-          <p className="text-sm text-brand-red mb-4">
-            {progress.failedTasks} image{progress.failedTasks > 1 ? 's' : ''} en échec
-          </p>
+        {/* Failed images */}
+        {failedImages.length > 0 && (
+          <div className="mb-4">
+            <p className="text-sm text-brand-red mb-2 font-semibold">
+              {failedImages.length} image{failedImages.length > 1 ? 's' : ''} en échec
+            </p>
+            <div className="flex flex-wrap justify-center gap-2">
+              {failedImages.slice(0, 10).map((img) => (
+                <div
+                  key={img.id}
+                  className="w-12 h-12 bg-red-50 border border-red-200 rounded-[8px] flex items-center justify-center"
+                  title={img.language ? `Échec — ${img.language}` : 'Échec'}
+                >
+                  <span className="text-brand-red text-lg">✗</span>
+                </div>
+              ))}
+              {failedImages.length > 10 && (
+                <div className="w-12 h-12 bg-red-50 border border-red-200 rounded-[8px] flex items-center justify-center text-xs text-brand-red font-semibold">
+                  +{failedImages.length - 10}
+                </div>
+              )}
+            </div>
+          </div>
         )}
 
         {/* Thumbnail grid */}
@@ -200,22 +256,16 @@ export default function GeneratePage() {
           )}
         </AnimatePresence>
 
-        {/* Continue button */}
+        {/* Auto-redirect en cours — message discret */}
         <AnimatePresence>
           {isDone && (
-            <motion.a
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              href={`/campaign/${sessionId}/review`}
-              className="
-                inline-block mt-6 px-8 py-3 rounded-[12px]
-                bg-brand-green text-white font-bold text-sm
-                hover:bg-brand-green-hover hover:shadow-lg
-                transition-all duration-200
-              "
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-xs text-text-disabled mt-6"
             >
-              Continuer vers la vérification →
-            </motion.a>
+              Redirection en cours...
+            </motion.p>
           )}
         </AnimatePresence>
       </div>

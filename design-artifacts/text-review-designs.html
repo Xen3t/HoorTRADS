@@ -1,0 +1,1441 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HoorTRADS — Text Review — 3 Propositions Design</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.0.0/css/flag-icons.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', sans-serif; background: #f0f2f5; color: #1a1a2e; }
+
+  /* Design tokens */
+  :root {
+    --green: #5d9228;
+    --green-light: #eef5e6;
+    --green-hover: #4a7520;
+    --teal: #38a0ad;
+    --teal-light: #e6f5f7;
+    --red: #dc4c3e;
+    --amber: #d97706;
+    --border: #e5e7eb;
+    --surface: #f8f9fa;
+    --text-primary: #1a1a2e;
+    --text-secondary: #6b7280;
+    --text-disabled: #9ca3af;
+    --radius: 12px;
+    --radius-sm: 8px;
+    --radius-pill: 20px;
+  }
+
+  /* Shared */
+  .design-separator {
+    text-align: center;
+    padding: 60px 20px 30px;
+  }
+  .design-separator h1 {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+  }
+  .design-separator p {
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+  .design-separator .badge {
+    display: inline-block;
+    background: var(--green);
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: var(--radius-pill);
+    margin-bottom: 12px;
+  }
+  .container { max-width: 1100px; margin: 0 auto; padding: 0 24px 80px; }
+
+  .fi { border-radius: 2px; }
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 14px;
+    border-radius: var(--radius-pill);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.15s;
+  }
+  .pill-active { background: var(--teal); color: white; }
+  .pill-inactive { background: var(--surface); color: var(--text-secondary); }
+  .pill-inactive:hover { background: var(--border); }
+
+  .btn-sm {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 10px;
+    border-radius: var(--radius-sm);
+    font-size: 11px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .score-dot {
+    width: 8px; height: 8px; border-radius: 50%; display: inline-block;
+  }
+  .score-good { background: var(--green); }
+  .score-warn { background: var(--amber); }
+  .score-bad { background: var(--red); }
+
+  .cta-float {
+    position: relative;
+    text-align: center;
+    margin-top: 40px;
+  }
+  .cta-float a {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 32px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, var(--green), var(--green-hover));
+    color: white;
+    font-weight: 700;
+    font-size: 14px;
+    text-decoration: none;
+    box-shadow: 0 8px 24px rgba(93,146,40,0.3);
+    transition: all 0.2s;
+  }
+  .cta-float a:hover { transform: scale(1.03); box-shadow: 0 12px 32px rgba(93,146,40,0.4); }
+
+  /* ───────────────────────────────── DESIGN A ───────────────────────────────── */
+  .da-card {
+    background: white;
+    border-radius: var(--radius);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    overflow: hidden;
+    margin-bottom: 12px;
+  }
+  .da-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .da-header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .da-header-left .lang-name { font-weight: 600; font-size: 14px; }
+  .da-header-left .lang-code { color: var(--text-disabled); font-weight: 400; }
+  .da-header-right { display: flex; gap: 8px; }
+  .da-row {
+    display: grid;
+    grid-template-columns: 180px 1fr 1fr;
+    border-bottom: 1px solid var(--border);
+  }
+  .da-row:last-child { border-bottom: none; }
+  .da-zone {
+    padding: 12px 16px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+  }
+  .da-zone-name { font-size: 11px; font-weight: 600; color: var(--text-secondary); margin-bottom: 2px; }
+  .da-zone-text { font-size: 12px; color: var(--text-primary); }
+  .da-cell {
+    padding: 12px 16px;
+    border-right: 1px solid var(--border);
+  }
+  .da-cell:last-child { border-right: none; }
+  .da-cell-label { font-size: 9px; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; color: var(--text-disabled); margin-bottom: 4px; }
+  .da-cell-value { font-size: 13px; color: var(--text-primary); }
+  .da-cell-value.editable { cursor: text; padding: 4px 8px; border-radius: 6px; }
+  .da-cell-value.editable:hover { background: var(--surface); }
+  .da-feedback {
+    padding: 10px 20px;
+    font-size: 12px;
+    border-top: 1px solid;
+  }
+  .da-feedback.good { background: var(--green-light); border-color: rgba(93,146,40,0.2); color: var(--green); }
+  .da-feedback.warn { background: #fffbeb; border-color: rgba(217,119,6,0.2); color: var(--amber); }
+
+  .da-tags { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
+  .da-tag {
+    font-size: 9px;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-weight: 600;
+  }
+  .da-tag-blue { background: #eff6ff; color: #2563eb; }
+  .da-tag-purple { background: #faf5ff; color: #9333ea; }
+  .da-tag-amber { background: #fffbeb; color: #d97706; }
+
+  /* ───────────────────────────────── DESIGN B ───────────────────────────────── */
+  .db-wrapper { display: grid; grid-template-columns: 240px 1fr; gap: 16px; }
+  .db-sidebar {
+    position: sticky;
+    top: 20px;
+    align-self: start;
+  }
+  .db-lang-list { display: flex; flex-direction: column; gap: 4px; }
+  .db-lang-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.15s;
+    border: none;
+    background: white;
+    width: 100%;
+    text-align: left;
+  }
+  .db-lang-item:hover { background: var(--surface); }
+  .db-lang-item.active { background: var(--teal); color: white; }
+  .db-lang-item .left { display: flex; align-items: center; gap: 8px; }
+  .db-lang-item .name { font-size: 13px; font-weight: 600; }
+  .db-lang-item .score-chip {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 10px;
+  }
+  .db-lang-item.active .score-chip { background: rgba(255,255,255,0.2); }
+
+  .db-main { }
+  .db-zone-card {
+    background: white;
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  .db-zone-header {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 4px;
+  }
+  .db-zone-header h4 { font-size: 13px; font-weight: 700; }
+  .db-col-label { font-size: 10px; text-transform: uppercase; font-weight: 600; color: var(--text-disabled); letter-spacing: 0.5px; margin-bottom: 6px; }
+  .db-col-text { font-size: 14px; line-height: 1.5; color: var(--text-primary); }
+  .db-col-text.editable {
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    border: 1.5px solid var(--border);
+    transition: border-color 0.15s;
+  }
+  .db-col-text.editable:hover { border-color: var(--teal); }
+  .db-col-text .diff-add { background: #dcfce7; padding: 0 2px; border-radius: 3px; }
+
+  .db-actions {
+    background: white;
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  /* ───────────────────────────────── DESIGN C ───────────────────────────────── */
+  .dc-table-wrap {
+    background: white;
+    border-radius: var(--radius);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    overflow: hidden;
+  }
+  .dc-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .dc-table th {
+    padding: 10px 16px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-disabled);
+    background: var(--surface);
+    border-bottom: 2px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 5;
+  }
+  .dc-table th.zone-col { width: 160px; }
+  .dc-table th.fr-col { width: 200px; }
+  .dc-table th.lang-col {
+    min-width: 180px;
+    cursor: pointer;
+  }
+  .dc-table th.lang-col:hover { background: var(--border); }
+  .dc-table td {
+    padding: 10px 16px;
+    font-size: 13px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  .dc-table tr:last-child td { border-bottom: none; }
+  .dc-table tr:hover td { background: #fafbfc; }
+  .dc-zone-td { background: var(--surface); font-weight: 600; font-size: 12px; color: var(--text-secondary); }
+  .dc-fr-td { color: var(--text-secondary); font-size: 13px; }
+  .dc-edit-td {
+    color: var(--text-primary);
+    cursor: text;
+    position: relative;
+  }
+  .dc-edit-td:hover { background: var(--green-light) !important; }
+  .dc-edit-td .edit-icon {
+    opacity: 0;
+    transition: opacity 0.15s;
+    font-size: 10px;
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    color: var(--text-disabled);
+  }
+  .dc-edit-td:hover .edit-icon { opacity: 1; }
+
+  .dc-lang-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .dc-lang-actions {
+    display: flex;
+    gap: 4px;
+    margin-left: auto;
+  }
+  .dc-lang-actions button {
+    font-size: 9px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: white;
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-weight: 600;
+  }
+  .dc-lang-actions button:hover { background: var(--surface); }
+
+  .dc-summary-row td {
+    background: var(--green-light) !important;
+    border-bottom: 2px solid var(--green) !important;
+  }
+
+  .dc-tabs {
+    display: flex;
+    gap: 2px;
+    background: var(--surface);
+    border-radius: var(--radius-sm);
+    padding: 3px;
+    margin-bottom: 16px;
+    width: fit-content;
+  }
+  .dc-tab {
+    padding: 6px 16px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s;
+    background: transparent;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .dc-tab.active { background: white; color: var(--text-primary); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  .dc-tab:hover:not(.active) { color: var(--text-primary); }
+
+  /* Scrollable horizontal */
+  .dc-scroll { overflow-x: auto; }
+
+  /* Header bar shared */
+  .sticky-header {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background: rgba(255,255,255,0.95);
+    backdrop-filter: blur(8px);
+    padding: 16px 0 12px;
+    border-bottom: 1px solid transparent;
+  }
+  .sticky-header h2 { font-size: 18px; font-weight: 700; }
+  .header-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .header-meta { font-size: 12px; color: var(--text-secondary); }
+  .pills-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+  /* Verification summary */
+  .verify-bar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 10px 16px;
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    font-weight: 600;
+    margin-top: 12px;
+  }
+  .verify-bar.ok { background: var(--green-light); border: 1px solid rgba(93,146,40,0.3); }
+  .verify-bar.warn { background: #fffbeb; border: 1px solid rgba(217,119,6,0.3); }
+  .verify-bar .stat { display: flex; align-items: center; gap: 4px; }
+
+  /* Score circle */
+  .score-circle {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 800;
+    color: white;
+    flex-shrink: 0;
+  }
+  .score-circle.good { background: var(--green); }
+  .score-circle.warn { background: var(--amber); }
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════════════════════════════════ -->
+<!-- DESIGN A — Cartes empilees par langue (design actuel ameliore)             -->
+<!-- ════════════════════════════════════════════════════════════════════════════ -->
+<div class="design-separator">
+  <span class="badge">DESIGN A</span>
+  <h1>Cartes par langue</h1>
+  <p>Chaque langue = un bloc. Proche du design actuel, plus raffine. Zones en grille 3 colonnes.</p>
+</div>
+
+<div class="container">
+  <!-- Sticky header -->
+  <div class="sticky-header">
+    <div class="header-row">
+      <h2>Verification des textes traduits</h2>
+      <span class="header-meta">4 zones &middot; 3 langues</span>
+    </div>
+    <div class="pills-row">
+      <button class="pill pill-active">Toutes</button>
+      <button class="pill pill-inactive"><span class="fi fi-de" style="font-size:10px"></span> DE</button>
+      <button class="pill pill-inactive"><span class="fi fi-es" style="font-size:10px"></span> ES</button>
+      <button class="pill pill-inactive"><span class="fi fi-it" style="font-size:10px"></span> IT</button>
+      <div style="flex:1"></div>
+      <button class="btn-sm" style="background:var(--surface);color:var(--text-secondary)">
+        Verifier toutes les langues
+      </button>
+    </div>
+  </div>
+
+  <!-- Verification summary -->
+  <div class="verify-bar ok">
+    <div class="score-circle good">4.2</div>
+    <span style="color:var(--green)">Excellent</span>
+    <div class="stat"><span style="color:var(--green)">2 &check;</span></div>
+    <div class="stat"><span style="color:var(--amber)">1 &#9888;</span></div>
+    <span style="margin-left:auto;color:var(--text-disabled)">3 langues analysees</span>
+  </div>
+
+  <!-- DE Card -->
+  <div class="da-card" style="margin-top:16px">
+    <div class="da-header">
+      <div class="da-header-left">
+        <span class="fi fi-de" style="font-size:18px"></span>
+        <span class="lang-name">Allemand <span class="lang-code">(DE)</span></span>
+        <span style="font-size:11px;padding:2px 8px;border-radius:10px;background:var(--green-light);color:var(--green);font-weight:600">
+          Excellent &middot; 4.5/5
+        </span>
+      </div>
+      <div class="da-header-right">
+        <button class="btn-sm" style="background:var(--surface);color:var(--text-secondary)">
+          Verifier <span class="fi fi-de" style="font-size:9px"></span> DE
+        </button>
+        <button class="btn-sm" style="background:var(--surface);color:var(--text-secondary)">
+          &starf; Corriger <span class="fi fi-de" style="font-size:9px"></span> DE via IA
+        </button>
+      </div>
+    </div>
+
+    <div class="da-row">
+      <div class="da-zone">
+        <div class="da-zone-name">headline</div>
+        <div class="da-zone-text">OFFRE FLASH</div>
+        <div class="da-tags"><span class="da-tag da-tag-blue">Bold</span><span class="da-tag da-tag-purple">UPPERCASE</span><span class="da-tag da-tag-amber">24px</span></div>
+      </div>
+      <div class="da-cell">
+        <div class="da-cell-label">FR source</div>
+        <div class="da-cell-value">OFFRE FLASH</div>
+      </div>
+      <div class="da-cell">
+        <div class="da-cell-label">DE</div>
+        <div class="da-cell-value editable">BLITZANGEBOT</div>
+      </div>
+    </div>
+    <div class="da-row">
+      <div class="da-zone">
+        <div class="da-zone-name">subline</div>
+        <div class="da-zone-text">Jusqu'a -50%</div>
+        <div class="da-tags"><span class="da-tag da-tag-blue">SemiBold</span></div>
+      </div>
+      <div class="da-cell">
+        <div class="da-cell-label">FR source</div>
+        <div class="da-cell-value">Jusqu'a -50%</div>
+      </div>
+      <div class="da-cell">
+        <div class="da-cell-label">DE</div>
+        <div class="da-cell-value editable">Bis zu -50%</div>
+      </div>
+    </div>
+    <div class="da-row">
+      <div class="da-zone">
+        <div class="da-zone-name">cta</div>
+        <div class="da-zone-text">J'EN PROFITE</div>
+        <div class="da-tags"><span class="da-tag da-tag-blue">Bold</span><span class="da-tag da-tag-purple">UPPERCASE</span></div>
+      </div>
+      <div class="da-cell">
+        <div class="da-cell-label">FR source</div>
+        <div class="da-cell-value">J'EN PROFITE</div>
+      </div>
+      <div class="da-cell">
+        <div class="da-cell-label">DE</div>
+        <div class="da-cell-value editable">JETZT SHOPPEN</div>
+      </div>
+    </div>
+    <div class="da-row">
+      <div class="da-zone">
+        <div class="da-zone-name">legal</div>
+        <div class="da-zone-text">*Conditions en magasin</div>
+      </div>
+      <div class="da-cell">
+        <div class="da-cell-label">FR source</div>
+        <div class="da-cell-value">*Conditions en magasin</div>
+      </div>
+      <div class="da-cell">
+        <div class="da-cell-label">DE</div>
+        <div class="da-cell-value editable">*Bedingungen im Geschaft</div>
+      </div>
+    </div>
+
+    <div class="da-feedback good">
+      &check; Traduction fidele et naturelle. Ton adapte au marche DACH.
+    </div>
+  </div>
+
+  <!-- ES Card -->
+  <div class="da-card">
+    <div class="da-header">
+      <div class="da-header-left">
+        <span class="fi fi-es" style="font-size:18px"></span>
+        <span class="lang-name">Espagnol <span class="lang-code">(ES)</span></span>
+        <span style="font-size:11px;padding:2px 8px;border-radius:10px;background:#fffbeb;color:var(--amber);font-weight:600">
+          Correct &middot; 3.5/5
+        </span>
+      </div>
+      <div class="da-header-right">
+        <button class="btn-sm" style="background:var(--surface);color:var(--text-secondary)">
+          Verifier <span class="fi fi-es" style="font-size:9px"></span> ES
+        </button>
+        <button class="btn-sm" style="background:var(--surface);color:var(--text-secondary)">
+          &starf; Corriger <span class="fi fi-es" style="font-size:9px"></span> ES via IA
+        </button>
+      </div>
+    </div>
+    <div class="da-row">
+      <div class="da-zone"><div class="da-zone-name">headline</div><div class="da-zone-text">OFFRE FLASH</div></div>
+      <div class="da-cell"><div class="da-cell-label">FR source</div><div class="da-cell-value">OFFRE FLASH</div></div>
+      <div class="da-cell"><div class="da-cell-label">ES</div><div class="da-cell-value editable">OFERTA RELAMPAGO</div></div>
+    </div>
+    <div class="da-row">
+      <div class="da-zone"><div class="da-zone-name">subline</div><div class="da-zone-text">Jusqu'a -50%</div></div>
+      <div class="da-cell"><div class="da-cell-label">FR source</div><div class="da-cell-value">Jusqu'a -50%</div></div>
+      <div class="da-cell"><div class="da-cell-label">ES</div><div class="da-cell-value editable">Hasta -50%</div></div>
+    </div>
+    <div class="da-row">
+      <div class="da-zone"><div class="da-zone-name">cta</div><div class="da-zone-text">J'EN PROFITE</div></div>
+      <div class="da-cell"><div class="da-cell-label">FR source</div><div class="da-cell-value">J'EN PROFITE</div></div>
+      <div class="da-cell"><div class="da-cell-label">ES</div><div class="da-cell-value editable">LO QUIERO</div></div>
+    </div>
+    <div class="da-row">
+      <div class="da-zone"><div class="da-zone-name">legal</div><div class="da-zone-text">*Conditions en magasin</div></div>
+      <div class="da-cell"><div class="da-cell-label">FR source</div><div class="da-cell-value">*Conditions en magasin</div></div>
+      <div class="da-cell"><div class="da-cell-label">ES</div><div class="da-cell-value editable">*Condiciones en tienda</div></div>
+    </div>
+    <div class="da-feedback warn">
+      &#9888; "Lo quiero" est trop familier pour un CTA e-commerce espagnol. Suggestion : "COMPRAR AHORA".
+    </div>
+  </div>
+
+  <div class="cta-float"><a href="#">Generer &rarr;</a></div>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════════════════════════════ -->
+<!-- DESIGN B — Sidebar langues + zones en cartes individuelles                 -->
+<!-- ════════════════════════════════════════════════════════════════════════════ -->
+<div style="background:var(--border);height:2px;margin:0 40px"></div>
+
+<div class="design-separator">
+  <span class="badge">DESIGN B</span>
+  <h1>Sidebar + Cartes zones</h1>
+  <p>Navigation par langue a gauche, zones affichees en cartes individuelles. Focus sur une langue a la fois.</p>
+</div>
+
+<div class="container">
+  <div class="db-wrapper">
+    <!-- Sidebar -->
+    <div class="db-sidebar">
+      <div style="margin-bottom:12px;padding:0 4px">
+        <p style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-disabled);letter-spacing:0.5px;margin-bottom:8px">Langues</p>
+      </div>
+      <div class="db-lang-list">
+        <button class="db-lang-item active">
+          <div class="left">
+            <span class="fi fi-de" style="font-size:14px"></span>
+            <span class="name">Allemand</span>
+          </div>
+          <span class="score-chip" style="background:rgba(255,255,255,0.2);color:white">4.5</span>
+        </button>
+        <button class="db-lang-item">
+          <div class="left">
+            <span class="fi fi-es" style="font-size:14px"></span>
+            <span class="name">Espagnol</span>
+          </div>
+          <span class="score-chip" style="background:#fffbeb;color:var(--amber)">3.5</span>
+        </button>
+        <button class="db-lang-item">
+          <div class="left">
+            <span class="fi fi-it" style="font-size:14px"></span>
+            <span class="name">Italien</span>
+          </div>
+          <span class="score-chip" style="background:var(--green-light);color:var(--green)">4.8</span>
+        </button>
+        <button class="db-lang-item">
+          <div class="left">
+            <span class="fi fi-pl" style="font-size:14px"></span>
+            <span class="name">Polonais</span>
+          </div>
+        </button>
+        <button class="db-lang-item">
+          <div class="left">
+            <span class="fi fi-pt" style="font-size:14px"></span>
+            <span class="name">Portugais</span>
+          </div>
+        </button>
+        <button class="db-lang-item">
+          <div class="left">
+            <span class="fi fi-nl" style="font-size:14px"></span>
+            <span class="name">Neerlandais</span>
+          </div>
+        </button>
+      </div>
+
+      <div style="margin-top:16px;padding:0 4px">
+        <button class="btn-sm" style="background:var(--surface);color:var(--text-secondary);width:100%;justify-content:center;padding:8px">
+          Verifier toutes les langues
+        </button>
+      </div>
+    </div>
+
+    <!-- Main content -->
+    <div class="db-main">
+      <div class="db-actions">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span class="fi fi-de" style="font-size:18px"></span>
+          <span style="font-weight:700;font-size:15px">Allemand</span>
+          <span style="font-size:11px;padding:3px 10px;border-radius:10px;background:var(--green-light);color:var(--green);font-weight:600">4.5/5 &mdash; Excellent</span>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn-sm" style="background:var(--surface);color:var(--text-secondary)">
+            Verifier <span class="fi fi-de" style="font-size:9px"></span> DE
+          </button>
+          <button class="btn-sm" style="background:var(--surface);color:var(--text-secondary)">
+            &starf; Corriger <span class="fi fi-de" style="font-size:9px"></span> DE via IA
+          </button>
+        </div>
+      </div>
+
+      <!-- Zone cards -->
+      <div class="db-zone-card">
+        <div class="db-zone-header">
+          <h4>headline</h4>
+          <div class="da-tags"><span class="da-tag da-tag-blue">Bold</span><span class="da-tag da-tag-purple">UPPERCASE</span><span class="da-tag da-tag-amber">24px</span></div>
+        </div>
+        <div>
+          <div class="db-col-label">FR Source</div>
+          <div class="db-col-text" style="color:var(--text-secondary)">OFFRE FLASH</div>
+        </div>
+        <div>
+          <div class="db-col-label">DE Traduction</div>
+          <div class="db-col-text editable">BLITZANGEBOT</div>
+        </div>
+      </div>
+
+      <div class="db-zone-card">
+        <div class="db-zone-header">
+          <h4>subline</h4>
+          <div class="da-tags"><span class="da-tag da-tag-blue">SemiBold</span></div>
+        </div>
+        <div>
+          <div class="db-col-label">FR Source</div>
+          <div class="db-col-text" style="color:var(--text-secondary)">Jusqu'a -50%</div>
+        </div>
+        <div>
+          <div class="db-col-label">DE Traduction</div>
+          <div class="db-col-text editable">Bis zu -50%</div>
+        </div>
+      </div>
+
+      <div class="db-zone-card">
+        <div class="db-zone-header">
+          <h4>cta</h4>
+          <div class="da-tags"><span class="da-tag da-tag-blue">Bold</span><span class="da-tag da-tag-purple">UPPERCASE</span></div>
+        </div>
+        <div>
+          <div class="db-col-label">FR Source</div>
+          <div class="db-col-text" style="color:var(--text-secondary)">J'EN PROFITE</div>
+        </div>
+        <div>
+          <div class="db-col-label">DE Traduction</div>
+          <div class="db-col-text editable">JETZT SHOPPEN</div>
+        </div>
+      </div>
+
+      <div class="db-zone-card">
+        <div class="db-zone-header">
+          <h4>legal</h4>
+        </div>
+        <div>
+          <div class="db-col-label">FR Source</div>
+          <div class="db-col-text" style="color:var(--text-secondary)">*Conditions en magasin</div>
+        </div>
+        <div>
+          <div class="db-col-label">DE Traduction</div>
+          <div class="db-col-text editable">*Bedingungen im Geschaft</div>
+        </div>
+      </div>
+
+      <!-- Feedback -->
+      <div style="padding:12px 16px;background:var(--green-light);border-radius:var(--radius-sm);font-size:12px;color:var(--green);margin-top:4px">
+        &check; Traduction fidele et naturelle. Ton adapte au marche DACH.
+      </div>
+    </div>
+  </div>
+
+  <div class="cta-float"><a href="#">Generer &rarr;</a></div>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════════════════════════════ -->
+<!-- DESIGN C — Tableau spreadsheet multi-langues                               -->
+<!-- ════════════════════════════════════════════════════════════════════════════ -->
+<div style="background:var(--border);height:2px;margin:0 40px"></div>
+
+<div class="design-separator">
+  <span class="badge">DESIGN C</span>
+  <h1>Tableau spreadsheet</h1>
+  <p>Vue comparative de toutes les langues en colonnes. Edition inline. Ideal pour comparer les traductions d'un coup d'oeil.</p>
+</div>
+
+<div class="container">
+  <div class="sticky-header">
+    <div class="header-row">
+      <h2>Verification des textes traduits</h2>
+      <span class="header-meta">4 zones &middot; 13 langues</span>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div class="dc-tabs" style="overflow-x:auto;flex-wrap:nowrap">
+        <button class="dc-tab active">Toutes</button>
+        <button class="dc-tab"><span class="fi fi-de" style="font-size:10px"></span> DE</button>
+        <button class="dc-tab"><span class="fi fi-es" style="font-size:10px"></span> ES</button>
+        <button class="dc-tab"><span class="fi fi-it" style="font-size:10px"></span> IT</button>
+        <button class="dc-tab"><span class="fi fi-pl" style="font-size:10px"></span> PL</button>
+        <button class="dc-tab"><span class="fi fi-pt" style="font-size:10px"></span> PT</button>
+        <button class="dc-tab"><span class="fi fi-nl" style="font-size:10px"></span> NL</button>
+        <button class="dc-tab"><span class="fi fi-gb" style="font-size:10px"></span> EN</button>
+        <button class="dc-tab"><span class="fi fi-se" style="font-size:10px"></span> SV</button>
+        <button class="dc-tab"><span class="fi fi-dk" style="font-size:10px"></span> DA</button>
+        <button class="dc-tab"><span class="fi fi-cz" style="font-size:10px"></span> CS</button>
+        <button class="dc-tab"><span class="fi fi-ro" style="font-size:10px"></span> RO</button>
+        <button class="dc-tab"><span class="fi fi-gr" style="font-size:10px"></span> EL</button>
+        <button class="dc-tab"><span class="fi fi-hu" style="font-size:10px"></span> HU</button>
+      </div>
+      <button class="btn-sm" style="background:var(--surface);color:var(--text-secondary);white-space:nowrap;margin-left:12px">
+        Verifier toutes les langues
+      </button>
+    </div>
+  </div>
+
+  <!-- Score summary row -->
+  <div style="display:flex;gap:6px;margin:16px 0;flex-wrap:wrap">
+    <div style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:white;border-radius:var(--radius-sm);box-shadow:0 1px 2px rgba(0,0,0,0.05)">
+      <span class="fi fi-de" style="font-size:12px"></span><span style="font-size:11px;font-weight:600">DE</span>
+      <span style="font-size:10px;font-weight:700;color:var(--green)">4.5</span><span class="score-dot score-good"></span>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:white;border-radius:var(--radius-sm);box-shadow:0 1px 2px rgba(0,0,0,0.05)">
+      <span class="fi fi-es" style="font-size:12px"></span><span style="font-size:11px;font-weight:600">ES</span>
+      <span style="font-size:10px;font-weight:700;color:var(--amber)">3.5</span><span class="score-dot score-warn"></span>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:white;border-radius:var(--radius-sm);box-shadow:0 1px 2px rgba(0,0,0,0.05)">
+      <span class="fi fi-it" style="font-size:12px"></span><span style="font-size:11px;font-weight:600">IT</span>
+      <span style="font-size:10px;font-weight:700;color:var(--green)">4.8</span><span class="score-dot score-good"></span>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:white;border-radius:var(--radius-sm);box-shadow:0 1px 2px rgba(0,0,0,0.05)">
+      <span class="fi fi-pl" style="font-size:12px"></span><span style="font-size:11px;font-weight:600">PL</span>
+      <span style="font-size:10px;font-weight:700;color:var(--green)">4.2</span><span class="score-dot score-good"></span>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:white;border-radius:var(--radius-sm);box-shadow:0 1px 2px rgba(0,0,0,0.05)">
+      <span class="fi fi-pt" style="font-size:12px"></span><span style="font-size:11px;font-weight:600">PT</span>
+      <span style="font-size:10px;font-weight:700;color:var(--green)">4.0</span><span class="score-dot score-good"></span>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:white;border-radius:var(--radius-sm);box-shadow:0 1px 2px rgba(0,0,0,0.05)">
+      <span class="fi fi-nl" style="font-size:12px"></span><span style="font-size:11px;font-weight:600">NL</span>
+      <span style="font-size:10px;font-weight:700;color:var(--green)">4.3</span><span class="score-dot score-good"></span>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:white;border-radius:var(--radius-sm);box-shadow:0 1px 2px rgba(0,0,0,0.05)">
+      <span class="fi fi-gb" style="font-size:12px"></span><span style="font-size:11px;font-weight:600">EN</span>
+      <span style="font-size:10px;font-weight:700;color:var(--green)">4.7</span><span class="score-dot score-good"></span>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:white;border-radius:var(--radius-sm);box-shadow:0 1px 2px rgba(0,0,0,0.05)">
+      <span class="fi fi-se" style="font-size:12px"></span><span style="font-size:11px;font-weight:600">SV</span>
+      <span style="font-size:10px;font-weight:700;color:var(--green)">4.1</span><span class="score-dot score-good"></span>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:white;border-radius:var(--radius-sm);box-shadow:0 1px 2px rgba(0,0,0,0.05)">
+      <span class="fi fi-dk" style="font-size:12px"></span><span style="font-size:11px;font-weight:600">DA</span>
+      <span style="font-size:10px;font-weight:700;color:var(--amber)">3.8</span><span class="score-dot score-warn"></span>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:white;border-radius:var(--radius-sm);box-shadow:0 1px 2px rgba(0,0,0,0.05)">
+      <span class="fi fi-cz" style="font-size:12px"></span><span style="font-size:11px;font-weight:600">CS</span>
+      <span style="font-size:10px;font-weight:700;color:var(--green)">4.4</span><span class="score-dot score-good"></span>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:white;border-radius:var(--radius-sm);box-shadow:0 1px 2px rgba(0,0,0,0.05)">
+      <span class="fi fi-ro" style="font-size:12px"></span><span style="font-size:11px;font-weight:600">RO</span>
+      <span style="font-size:10px;font-weight:700;color:var(--green)">4.0</span><span class="score-dot score-good"></span>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:white;border-radius:var(--radius-sm);box-shadow:0 1px 2px rgba(0,0,0,0.05)">
+      <span class="fi fi-gr" style="font-size:12px"></span><span style="font-size:11px;font-weight:600">EL</span>
+      <span style="font-size:10px;font-weight:700;color:var(--red)">2.8</span><span class="score-dot score-bad"></span>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:white;border-radius:var(--radius-sm);box-shadow:0 1px 2px rgba(0,0,0,0.05)">
+      <span class="fi fi-hu" style="font-size:12px"></span><span style="font-size:11px;font-weight:600">HU</span>
+      <span style="font-size:10px;font-weight:700;color:var(--green)">4.1</span><span class="score-dot score-good"></span>
+    </div>
+  </div>
+
+  <div class="dc-table-wrap">
+    <div class="dc-scroll">
+      <table class="dc-table">
+        <thead>
+          <tr>
+            <th class="zone-col" style="position:sticky;left:0;z-index:10;background:var(--surface)">Zone</th>
+            <th class="fr-col" style="position:sticky;left:160px;z-index:10;background:var(--surface)">FR Source</th>
+            <th class="lang-col"><div class="dc-lang-header"><span class="fi fi-de" style="font-size:11px"></span> DE<div class="dc-lang-actions"><button>Verifier</button><button>Corriger IA</button></div></div></th>
+            <th class="lang-col"><div class="dc-lang-header"><span class="fi fi-es" style="font-size:11px"></span> ES<div class="dc-lang-actions"><button>Verifier</button><button>Corriger IA</button></div></div></th>
+            <th class="lang-col"><div class="dc-lang-header"><span class="fi fi-it" style="font-size:11px"></span> IT<div class="dc-lang-actions"><button>Verifier</button><button>Corriger IA</button></div></div></th>
+            <th class="lang-col"><div class="dc-lang-header"><span class="fi fi-pl" style="font-size:11px"></span> PL<div class="dc-lang-actions"><button>Verifier</button><button>Corriger IA</button></div></div></th>
+            <th class="lang-col"><div class="dc-lang-header"><span class="fi fi-pt" style="font-size:11px"></span> PT<div class="dc-lang-actions"><button>Verifier</button><button>Corriger IA</button></div></div></th>
+            <th class="lang-col"><div class="dc-lang-header"><span class="fi fi-nl" style="font-size:11px"></span> NL<div class="dc-lang-actions"><button>Verifier</button><button>Corriger IA</button></div></div></th>
+            <th class="lang-col"><div class="dc-lang-header"><span class="fi fi-gb" style="font-size:11px"></span> EN<div class="dc-lang-actions"><button>Verifier</button><button>Corriger IA</button></div></div></th>
+            <th class="lang-col"><div class="dc-lang-header"><span class="fi fi-se" style="font-size:11px"></span> SV<div class="dc-lang-actions"><button>Verifier</button><button>Corriger IA</button></div></div></th>
+            <th class="lang-col"><div class="dc-lang-header"><span class="fi fi-dk" style="font-size:11px"></span> DA<div class="dc-lang-actions"><button>Verifier</button><button>Corriger IA</button></div></div></th>
+            <th class="lang-col"><div class="dc-lang-header"><span class="fi fi-cz" style="font-size:11px"></span> CS<div class="dc-lang-actions"><button>Verifier</button><button>Corriger IA</button></div></div></th>
+            <th class="lang-col"><div class="dc-lang-header"><span class="fi fi-ro" style="font-size:11px"></span> RO<div class="dc-lang-actions"><button>Verifier</button><button>Corriger IA</button></div></div></th>
+            <th class="lang-col"><div class="dc-lang-header"><span class="fi fi-gr" style="font-size:11px"></span> EL<div class="dc-lang-actions"><button>Verifier</button><button>Corriger IA</button></div></div></th>
+            <th class="lang-col"><div class="dc-lang-header"><span class="fi fi-hu" style="font-size:11px"></span> HU<div class="dc-lang-actions"><button>Verifier</button><button>Corriger IA</button></div></div></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="dc-zone-td" style="position:sticky;left:0;z-index:5;background:var(--surface)">headline<br><span style="font-size:9px;color:var(--text-disabled);font-weight:400">Bold &middot; UPPER &middot; 24px</span></td>
+            <td class="dc-fr-td" style="position:sticky;left:160px;z-index:5;background:white">OFFRE FLASH</td>
+            <td class="dc-edit-td">BLITZANGEBOT<span class="edit-icon">&#9998;</span></td>
+            <td class="dc-edit-td">OFERTA RELAMPAGO<span class="edit-icon">&#9998;</span></td>
+            <td class="dc-edit-td">OFFERTA LAMPO<span class="edit-icon">&#9998;</span></td>
+            <td class="dc-edit-td">OFERTA BLYSKAWICZNA<span class="edit-icon">&#9998;</span></td>
+            <td class="dc-edit-td">OFERTA RELAMPAGO<span class="edit-icon">&#9998;</span></td>
+            <td class="dc-edit-td">FLITSAANBIEDING<span class="edit-icon">&#9998;</span></td>
+            <td class="dc-edit-td">FLASH SALE<span class="edit-icon">&#9998;</span></td>
+            <td class="dc-edit-td">BLIXTDEAL<span class="edit-icon">&#9998;</span></td>
+            <td class="dc-edit-td">LYNUDSALG<span class="edit-icon">&#9998;</span></td>
+            <td class="dc-edit-td">BLESKOV&Aacute; NABIDKA<span class="edit-icon">&#9998;</span></td>
+            <td class="dc-edit-td">OFERTA FULGER<span class="edit-icon">&#9998;</span></td>
+            <td class="dc-edit-td" style="background:#fff0f0">&Pi;&Rho;&Omicron;&Sigma;&Phi;&Omicron;&Rho;&Alpha; &Alpha;&Sigma;&Tau;&Rho;&Alpha;&Pi;&Eta;<span style="font-size:9px;color:var(--red)"> &#9888;</span><span class="edit-icon">&#9998;</span></td>
+            <td class="dc-edit-td">VILLAM AJANLAT<span class="edit-icon">&#9998;</span></td>
+          </tr>
+          <tr>
+            <td class="dc-zone-td" style="position:sticky;left:0;z-index:5;background:var(--surface)">subline<br><span style="font-size:9px;color:var(--text-disabled);font-weight:400">SemiBold</span></td>
+            <td class="dc-fr-td" style="position:sticky;left:160px;z-index:5;background:white">Jusqu'a -50%</td>
+            <td class="dc-edit-td">Bis zu -50%<span class="edit-icon">&#9998;</span></td>
+            <td class="dc-edit-td">Hasta -50%<span class="edit-icon">&#9998;</span></td>
+            <td class="dc-edit-td">Fino a -50%<span class="edit-icon">&#9998;</span></td>
+            <td class="dc-edit-td">Do -50%<span class="edit-icon">&#9998;</span></td>
+            <td class="dc-edit-td">Ate -50%<span class="edit-icon">&#9998;</span></td>
+            <td class="dc-edit-td">Tot -50%<span class="edit-icon">&#9998;</span></td>
+            <td class="dc-edit-td">Up to -50%<span class="edit-icon">&#9998;</span></td>
+            <td class="dc-edit-td">Upp till -50%<span class="edit-icon">&#9998;</span></td>
+            <td class="dc-edit-td">Op til -50%<span class="edit-icon">&#9998;</span></td>
+            <td class="dc-edit-td">Az do -50%<span class="edit-icon">&#9998;</span></td>
+            <td class="dc-edit-td">Pana la -50%<span class="edit-icon">&#9998;</span></td>
+            <td class="dc-edit-td">&Epsilon;&omega;&sigmaf; -50%<span class="edit-icon">&#9998;</span></td>
+            <td class="dc-edit-td">Akar -50%<span class="edit-icon">&#9998;</span></td>
+          </tr>
+          <tr>
+            <td class="dc-zone-td" style="position:sticky;left:0;z-index:5;background:var(--surface)">cta<br><span style="font-size:9px;color:var(--text-disabled);font-weight:400">Bold &middot; UPPER</span></td>
+            <td class="dc-fr-td" style="position:sticky;left:160px;z-index:5;background:white">J'EN PROFITE</td>
+            <td class="dc-edit-td">JETZT SHOPPEN<span class="edit-icon">&#9998;</span></td>
+            <td class="dc-edit-td" style="background:#fffbeb">LO QUIERO <span style="font-size:9px;color:var(--amber)">&#9888;</span><span class="edit-icon">&#9998;</span></td>
+            <td class="dc-edit-td">ACQUISTA ORA<span class="edit-icon">&#9998;</span></td>
+            <td class="dc-edit-td">KUPUJ TERAZ<span class="edit-icon">&#9998;</span></td>
+            <td class="dc-edit-td">COMPRAR AGORA<span class="edit-icon">&#9998;</span></td>
+            <td class="dc-edit-td">NU SHOPPEN<span class="edit-icon">&#9998;</span></td>
+            <td class="dc-edit-td">SHOP NOW<span class="edit-icon">&#9998;</span></td>
+            <td class="dc-edit-td">HANDLA NU<span class="edit-icon">&#9998;</span></td>
+            <td class="dc-edit-td" style="background:#fffbeb">KOB NU <span style="font-size:9px;color:var(--amber)">&#9888;</span><span class="edit-icon">&#9998;</span></td>
+            <td class="dc-edit-td">NAKUPOVAT<span class="edit-icon">&#9998;</span></td>
+            <td class="dc-edit-td">CUMPARA ACUM<span class="edit-icon">&#9998;</span></td>
+            <td class="dc-edit-td" style="background:#fff0f0">&Alpha;&Gamma;&Omicron;&Rho;&Alpha;&Sigma;&Tau;&Epsilon; &Tau;&Omega;&Rho;&Alpha;<span style="font-size:9px;color:var(--red)"> &#9888;</span><span class="edit-icon">&#9998;</span></td>
+            <td class="dc-edit-td">VASAROLJ MOST<span class="edit-icon">&#9998;</span></td>
+          </tr>
+          <tr>
+            <td class="dc-zone-td" style="position:sticky;left:0;z-index:5;background:var(--surface)">legal</td>
+            <td class="dc-fr-td" style="position:sticky;left:160px;z-index:5;background:white">*Conditions en magasin</td>
+            <td class="dc-edit-td">*Bedingungen im Geschaft<span class="edit-icon">&#9998;</span></td>
+            <td class="dc-edit-td">*Condiciones en tienda<span class="edit-icon">&#9998;</span></td>
+            <td class="dc-edit-td">*Condizioni in negozio<span class="edit-icon">&#9998;</span></td>
+            <td class="dc-edit-td">*Warunki w sklepie<span class="edit-icon">&#9998;</span></td>
+            <td class="dc-edit-td">*Condicoes na loja<span class="edit-icon">&#9998;</span></td>
+            <td class="dc-edit-td">*Voorwaarden in de winkel<span class="edit-icon">&#9998;</span></td>
+            <td class="dc-edit-td">*Conditions in store<span class="edit-icon">&#9998;</span></td>
+            <td class="dc-edit-td">*Villkor i butik<span class="edit-icon">&#9998;</span></td>
+            <td class="dc-edit-td">*Betingelser i butikken<span class="edit-icon">&#9998;</span></td>
+            <td class="dc-edit-td">*Podminky v obchode<span class="edit-icon">&#9998;</span></td>
+            <td class="dc-edit-td">*Conditii in magazin<span class="edit-icon">&#9998;</span></td>
+            <td class="dc-edit-td">*&Omicron;&rho;&omicron;&iota; &sigma;&tau;&omicron; &kappa;&alpha;&tau;&alpha;&sigma;&tau;&eta;&mu;&alpha;<span class="edit-icon">&#9998;</span></td>
+            <td class="dc-edit-td">*Feltetelek az uzletben<span class="edit-icon">&#9998;</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Feedback per language -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;margin-top:12px">
+    <div style="padding:8px 12px;background:var(--green-light);border-radius:var(--radius-sm);font-size:10px;color:var(--green)">
+      <span class="fi fi-de" style="font-size:9px"></span> <strong>DE 4.5</strong> &mdash; Fidele et naturelle.
+    </div>
+    <div style="padding:8px 12px;background:#fffbeb;border-radius:var(--radius-sm);font-size:10px;color:var(--amber)">
+      <span class="fi fi-es" style="font-size:9px"></span> <strong>ES 3.5</strong> &mdash; CTA trop familier.
+    </div>
+    <div style="padding:8px 12px;background:var(--green-light);border-radius:var(--radius-sm);font-size:10px;color:var(--green)">
+      <span class="fi fi-it" style="font-size:9px"></span> <strong>IT 4.8</strong> &mdash; Excellent.
+    </div>
+    <div style="padding:8px 12px;background:var(--green-light);border-radius:var(--radius-sm);font-size:10px;color:var(--green)">
+      <span class="fi fi-pl" style="font-size:9px"></span> <strong>PL 4.2</strong> &mdash; Bon rendu.
+    </div>
+    <div style="padding:8px 12px;background:var(--green-light);border-radius:var(--radius-sm);font-size:10px;color:var(--green)">
+      <span class="fi fi-pt" style="font-size:9px"></span> <strong>PT 4.0</strong> &mdash; Correct.
+    </div>
+    <div style="padding:8px 12px;background:var(--green-light);border-radius:var(--radius-sm);font-size:10px;color:var(--green)">
+      <span class="fi fi-nl" style="font-size:9px"></span> <strong>NL 4.3</strong> &mdash; Naturel.
+    </div>
+    <div style="padding:8px 12px;background:var(--green-light);border-radius:var(--radius-sm);font-size:10px;color:var(--green)">
+      <span class="fi fi-gb" style="font-size:9px"></span> <strong>EN 4.7</strong> &mdash; Excellent.
+    </div>
+    <div style="padding:8px 12px;background:var(--green-light);border-radius:var(--radius-sm);font-size:10px;color:var(--green)">
+      <span class="fi fi-se" style="font-size:9px"></span> <strong>SV 4.1</strong> &mdash; Bon rendu.
+    </div>
+    <div style="padding:8px 12px;background:#fffbeb;border-radius:var(--radius-sm);font-size:10px;color:var(--amber)">
+      <span class="fi fi-dk" style="font-size:9px"></span> <strong>DA 3.8</strong> &mdash; CTA a revoir.
+    </div>
+    <div style="padding:8px 12px;background:var(--green-light);border-radius:var(--radius-sm);font-size:10px;color:var(--green)">
+      <span class="fi fi-cz" style="font-size:9px"></span> <strong>CS 4.4</strong> &mdash; Fidele.
+    </div>
+    <div style="padding:8px 12px;background:var(--green-light);border-radius:var(--radius-sm);font-size:10px;color:var(--green)">
+      <span class="fi fi-ro" style="font-size:9px"></span> <strong>RO 4.0</strong> &mdash; Correct.
+    </div>
+    <div style="padding:8px 12px;background:#fff0f0;border-radius:var(--radius-sm);font-size:10px;color:var(--red)">
+      <span class="fi fi-gr" style="font-size:9px"></span> <strong>EL 2.8</strong> &mdash; Problemes d'accentuation.
+    </div>
+    <div style="padding:8px 12px;background:var(--green-light);border-radius:var(--radius-sm);font-size:10px;color:var(--green)">
+      <span class="fi fi-hu" style="font-size:9px"></span> <strong>HU 4.1</strong> &mdash; Bon rendu.
+    </div>
+  </div>
+
+  <div class="cta-float"><a href="#">Generer &rarr;</a></div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════════ -->
+<!-- DESIGN D — Hybride : grille langues + panneau detail zone par zone         -->
+<!-- ════════════════════════════════════════════════════════════════════════════ -->
+<div style="background:var(--border);height:2px;margin:0 40px"></div>
+
+<div class="design-separator">
+  <span class="badge">DESIGN D</span>
+  <h1>Hybride &mdash; Grille langues + Detail en dessous</h1>
+  <p>Vue d'ensemble de toutes les langues en grille cliquable en haut. Clic sur une langue = panneau detail en dessous avec FR a cote, edition, feedback. Flux vertical naturel.</p>
+</div>
+
+<style>
+  /* DESIGN D */
+  .dd-layout { display: flex; flex-direction: column; gap: 20px; }
+
+  /* Left panel — language grid overview */
+  .dd-overview { }
+  .dd-overview-title {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-disabled);
+    margin-bottom: 10px;
+    padding: 0 4px;
+  }
+  .dd-lang-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
+    gap: 6px;
+  }
+  .dd-lang-tile {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    background: white;
+    border-radius: var(--radius-sm);
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+    overflow: hidden;
+  }
+  .dd-lang-tile:hover { border-color: var(--border); background: #fafbfc; }
+  .dd-lang-tile.active { border-color: var(--teal); background: var(--teal-light); }
+  .dd-lang-tile.has-error { border-left: 3px solid var(--red); }
+  .dd-lang-tile.has-warning { border-left: 3px solid var(--amber); }
+  .dd-lang-tile.is-ok { border-left: 3px solid var(--green); }
+  .dd-lang-tile .flag { font-size: 18px; flex-shrink: 0; }
+  .dd-lang-tile .info { flex: 1; min-width: 0; }
+  .dd-lang-tile .code { font-size: 13px; font-weight: 700; }
+  .dd-lang-tile .name { font-size: 10px; color: var(--text-disabled); }
+  .dd-lang-tile .tile-score {
+    font-size: 14px;
+    font-weight: 800;
+    flex-shrink: 0;
+  }
+  .dd-lang-tile .tile-score.good { color: var(--green); }
+  .dd-lang-tile .tile-score.warn { color: var(--amber); }
+  .dd-lang-tile .tile-score.bad { color: var(--red); }
+  .dd-lang-tile .tile-score.none { color: var(--text-disabled); font-size: 11px; font-weight: 400; }
+
+  .dd-lang-tile .status-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+  }
+
+  /* Bulk actions under grid */
+  .dd-bulk {
+    margin-top: 12px;
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+  .dd-bulk-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  /* Right panel — zone detail */
+  .dd-detail { }
+  .dd-detail-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    background: white;
+    border-radius: var(--radius) var(--radius) 0 0;
+    border-bottom: 2px solid var(--border);
+  }
+  .dd-detail-header-left { display: flex; align-items: center; gap: 12px; }
+  .dd-detail-header .lang-big { font-size: 24px; }
+  .dd-detail-header .lang-title { font-size: 16px; font-weight: 700; }
+  .dd-detail-header .lang-sub { font-size: 12px; color: var(--text-secondary); }
+
+  .dd-zone-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    background: white;
+    border-bottom: 1px solid var(--border);
+  }
+  .dd-zone-row:last-of-type { border-radius: 0 0 var(--radius) var(--radius); }
+
+  .dd-zone-left {
+    padding: 16px 20px;
+    border-right: 1px solid var(--border);
+    background: linear-gradient(135deg, var(--surface) 0%, white 100%);
+  }
+  .dd-zone-left .zone-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-disabled);
+    margin-bottom: 8px;
+  }
+  .dd-zone-left .zone-label .zone-name {
+    background: var(--surface);
+    padding: 2px 8px;
+    border-radius: 4px;
+    color: var(--text-secondary);
+  }
+  .dd-zone-left .zone-text {
+    font-size: 15px;
+    color: var(--text-primary);
+    line-height: 1.5;
+  }
+  .dd-zone-left .zone-tags { margin-top: 6px; display: flex; gap: 4px; }
+
+  .dd-zone-right { padding: 16px 20px; }
+  .dd-zone-right .zone-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-disabled);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .dd-zone-right .zone-edit {
+    font-size: 15px;
+    color: var(--text-primary);
+    line-height: 1.5;
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    border: 1.5px solid var(--border);
+    cursor: text;
+    transition: all 0.15s;
+    min-height: 44px;
+  }
+  .dd-zone-right .zone-edit:hover { border-color: var(--teal); background: var(--teal-light); }
+  .dd-zone-right .zone-edit:focus-within { border-color: var(--green); background: var(--green-light); outline: none; }
+
+  .dd-feedback-bar {
+    padding: 12px 20px;
+    font-size: 12px;
+    background: white;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .dd-feedback-bar.good { background: var(--green-light); border-color: rgba(93,146,40,0.2); }
+  .dd-feedback-bar.warn { background: #fffbeb; border-color: rgba(217,119,6,0.2); }
+  .dd-feedback-bar.bad { background: #fff0f0; border-color: rgba(220,76,62,0.2); }
+
+  /* Nav arrows */
+  .dd-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 20px;
+    background: white;
+    border-radius: 0 0 var(--radius) var(--radius);
+    border-top: 1px solid var(--border);
+  }
+  .dd-nav-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    font-weight: 600;
+    border: 1px solid var(--border);
+    background: white;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: all 0.15s;
+  }
+  .dd-nav-btn:hover { background: var(--surface); color: var(--text-primary); }
+  .dd-nav-btn.primary {
+    background: var(--teal);
+    color: white;
+    border-color: var(--teal);
+  }
+  .dd-nav-btn.primary:hover { opacity: 0.9; }
+
+  /* Summary bar */
+  .dd-summary {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    background: white;
+    border-radius: var(--radius-sm);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    margin-bottom: 16px;
+    font-size: 12px;
+  }
+  .dd-summary .stat-group { display: flex; align-items: center; gap: 4px; font-weight: 600; }
+</style>
+
+<div class="container" style="max-width:1200px">
+
+  <!-- Summary bar -->
+  <div class="dd-summary">
+    <div class="score-circle good" style="width:32px;height:32px;font-size:12px">4.1</div>
+    <span style="font-weight:600;color:var(--text-primary)">Score moyen</span>
+    <div style="width:1px;height:20px;background:var(--border)"></div>
+    <div class="stat-group"><span style="color:var(--green)">10 &check;</span></div>
+    <div class="stat-group"><span style="color:var(--amber)">2 &#9888;</span></div>
+    <div class="stat-group"><span style="color:var(--red)">1 &cross;</span></div>
+    <span style="margin-left:auto;color:var(--text-disabled)">13 langues &middot; 4 zones</span>
+  </div>
+
+  <div class="dd-layout">
+    <!-- LEFT — Language overview grid -->
+    <div class="dd-overview">
+      <p class="dd-overview-title">Langues (13)</p>
+      <div class="dd-lang-grid">
+        <!-- Active: DE -->
+        <div class="dd-lang-tile active is-ok">
+          <span class="fi fi-de flag"></span>
+          <div class="info"><div class="code">DE</div><div class="name">Allemand</div></div>
+          <span class="tile-score good">4.5</span>
+        </div>
+        <div class="dd-lang-tile has-warning">
+          <span class="fi fi-es flag"></span>
+          <div class="info"><div class="code">ES</div><div class="name">Espagnol</div></div>
+          <span class="tile-score warn">3.5</span>
+        </div>
+        <div class="dd-lang-tile is-ok">
+          <span class="fi fi-it flag"></span>
+          <div class="info"><div class="code">IT</div><div class="name">Italien</div></div>
+          <span class="tile-score good">4.8</span>
+        </div>
+        <div class="dd-lang-tile is-ok">
+          <span class="fi fi-pl flag"></span>
+          <div class="info"><div class="code">PL</div><div class="name">Polonais</div></div>
+          <span class="tile-score good">4.2</span>
+        </div>
+        <div class="dd-lang-tile is-ok">
+          <span class="fi fi-pt flag"></span>
+          <div class="info"><div class="code">PT</div><div class="name">Portugais</div></div>
+          <span class="tile-score good">4.0</span>
+        </div>
+        <div class="dd-lang-tile is-ok">
+          <span class="fi fi-nl flag"></span>
+          <div class="info"><div class="code">NL</div><div class="name">Neerlandais</div></div>
+          <span class="tile-score good">4.3</span>
+        </div>
+        <div class="dd-lang-tile is-ok">
+          <span class="fi fi-gb flag"></span>
+          <div class="info"><div class="code">EN</div><div class="name">Anglais</div></div>
+          <span class="tile-score good">4.7</span>
+        </div>
+        <div class="dd-lang-tile is-ok">
+          <span class="fi fi-se flag"></span>
+          <div class="info"><div class="code">SV</div><div class="name">Suedois</div></div>
+          <span class="tile-score good">4.1</span>
+        </div>
+        <div class="dd-lang-tile has-warning">
+          <span class="fi fi-dk flag"></span>
+          <div class="info"><div class="code">DA</div><div class="name">Danois</div></div>
+          <span class="tile-score warn">3.8</span>
+        </div>
+        <div class="dd-lang-tile is-ok">
+          <span class="fi fi-cz flag"></span>
+          <div class="info"><div class="code">CS</div><div class="name">Tcheque</div></div>
+          <span class="tile-score good">4.4</span>
+        </div>
+        <div class="dd-lang-tile is-ok">
+          <span class="fi fi-ro flag"></span>
+          <div class="info"><div class="code">RO</div><div class="name">Roumain</div></div>
+          <span class="tile-score good">4.0</span>
+        </div>
+        <div class="dd-lang-tile has-error">
+          <span class="fi fi-gr flag"></span>
+          <div class="info"><div class="code">EL</div><div class="name">Grec</div></div>
+          <span class="tile-score bad">2.8</span>
+        </div>
+        <div class="dd-lang-tile is-ok">
+          <span class="fi fi-hu flag"></span>
+          <div class="info"><div class="code">HU</div><div class="name">Hongrois</div></div>
+          <span class="tile-score good">4.1</span>
+        </div>
+      </div>
+
+      <!-- Bulk actions -->
+      <div class="dd-bulk">
+        <button class="dd-bulk-btn" style="background:var(--surface);color:var(--text-secondary)">
+          &#128270; Verifier toutes les langues
+        </button>
+        <button class="dd-bulk-btn" style="background:var(--teal);color:white">
+          &starf; Corriger toutes via IA
+        </button>
+      </div>
+    </div>
+
+    <!-- RIGHT — Detail panel for selected language -->
+    <div class="dd-detail">
+      <div class="dd-detail-header">
+        <div class="dd-detail-header-left">
+          <span class="fi fi-de lang-big"></span>
+          <div>
+            <div class="lang-title">Allemand <span style="color:var(--text-disabled);font-weight:400">(DE)</span></div>
+            <div class="lang-sub">Score : <strong style="color:var(--green)">4.5/5</strong> &mdash; Excellent</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn-sm" style="background:var(--surface);color:var(--text-secondary)">
+            &#128270; Verifier <span class="fi fi-de" style="font-size:9px"></span> DE
+          </button>
+          <button class="btn-sm" style="background:var(--surface);color:var(--text-secondary)">
+            &starf; Corriger <span class="fi fi-de" style="font-size:9px"></span> DE via IA
+          </button>
+        </div>
+      </div>
+
+      <!-- Zone: headline -->
+      <div class="dd-zone-row">
+        <div class="dd-zone-left">
+          <div class="zone-label">
+            <span>FR source</span>
+            <span class="zone-name">headline</span>
+          </div>
+          <div class="zone-text">OFFRE FLASH</div>
+          <div class="zone-tags">
+            <span class="da-tag da-tag-blue">Bold</span>
+            <span class="da-tag da-tag-purple">UPPERCASE</span>
+            <span class="da-tag da-tag-amber">24px</span>
+          </div>
+        </div>
+        <div class="dd-zone-right">
+          <div class="zone-label">
+            <span class="fi fi-de" style="font-size:10px"></span>
+            <span>Traduction DE</span>
+          </div>
+          <div class="zone-edit">BLITZANGEBOT</div>
+        </div>
+      </div>
+
+      <!-- Zone: subline -->
+      <div class="dd-zone-row">
+        <div class="dd-zone-left">
+          <div class="zone-label">
+            <span>FR source</span>
+            <span class="zone-name">subline</span>
+          </div>
+          <div class="zone-text">Jusqu'a -50%</div>
+          <div class="zone-tags">
+            <span class="da-tag da-tag-blue">SemiBold</span>
+          </div>
+        </div>
+        <div class="dd-zone-right">
+          <div class="zone-label">
+            <span class="fi fi-de" style="font-size:10px"></span>
+            <span>Traduction DE</span>
+          </div>
+          <div class="zone-edit">Bis zu -50%</div>
+        </div>
+      </div>
+
+      <!-- Zone: cta -->
+      <div class="dd-zone-row">
+        <div class="dd-zone-left">
+          <div class="zone-label">
+            <span>FR source</span>
+            <span class="zone-name">cta</span>
+          </div>
+          <div class="zone-text">J'EN PROFITE</div>
+          <div class="zone-tags">
+            <span class="da-tag da-tag-blue">Bold</span>
+            <span class="da-tag da-tag-purple">UPPERCASE</span>
+          </div>
+        </div>
+        <div class="dd-zone-right">
+          <div class="zone-label">
+            <span class="fi fi-de" style="font-size:10px"></span>
+            <span>Traduction DE</span>
+          </div>
+          <div class="zone-edit">JETZT SHOPPEN</div>
+        </div>
+      </div>
+
+      <!-- Zone: legal -->
+      <div class="dd-zone-row">
+        <div class="dd-zone-left">
+          <div class="zone-label">
+            <span>FR source</span>
+            <span class="zone-name">legal</span>
+          </div>
+          <div class="zone-text">*Conditions en magasin</div>
+        </div>
+        <div class="dd-zone-right">
+          <div class="zone-label">
+            <span class="fi fi-de" style="font-size:10px"></span>
+            <span>Traduction DE</span>
+          </div>
+          <div class="zone-edit">*Bedingungen im Geschaft</div>
+        </div>
+      </div>
+
+      <!-- Feedback -->
+      <div class="dd-feedback-bar good">
+        <span style="font-size:16px">&check;</span>
+        <span style="color:var(--green);font-weight:600">Traduction fidele et naturelle. Ton adapte au marche DACH.</span>
+      </div>
+
+      <!-- Navigation prev/next -->
+      <div class="dd-nav">
+        <button class="dd-nav-btn" style="opacity:0.3;pointer-events:none">
+          &larr; Precedent
+        </button>
+        <span style="font-size:11px;color:var(--text-disabled)">1 / 13</span>
+        <button class="dd-nav-btn primary">
+          Suivant &rarr; <span class="fi fi-es" style="font-size:10px"></span> ES
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="cta-float"><a href="#">Generer &rarr;</a></div>
+</div>
+
+<div style="height:80px"></div>
+
+</body>
+</html>

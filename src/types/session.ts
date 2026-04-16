@@ -1,6 +1,7 @@
 export type SessionStatus =
   | 'draft'
   | 'configuring'
+  | 'queued'
   | 'generating'
   | 'reviewing'
   | 'exporting'
@@ -25,4 +26,5 @@ export interface CreateSessionInput {
   source_path?: string
   current_step?: string
   config?: string
+  user_id?: string | null
 }

@@ -1,7 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { stat } from 'fs/promises'
+import { stat, realpath } from 'fs/promises'
+import path from 'path'
 import { scanFolderRequestSchema } from '@/types/images'
 import { scanFolderTree } from '@/lib/files/folder-scanner'
+
+// Reject paths that attempt to escape via .. or navigate to sensitive system directories
+function isSafePath(resolvedPath: string): boolean {
+  const normalized = resolvedPath.replace(/\\/g, '/').toLowerCase()
+  const blocked = ['/windows', '/program files', '/programdata', '/system volume information']
+  return !blocked.some((b) => normalized.includes(b))
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,6 +25,15 @@ export async function POST(request: NextRequest) {
 
     const { folderPath } = parsed.data
 
+    // Reject relative paths and paths with ..
+    if (folderPath.includes('..') || !path.isAbsolute(folderPath)) {
+      return NextResponse.json(
+        { error: 'Invalid path: must be absolute without ".." segments' },
+        { status: 400 }
+      )
+    }
+
+    let resolvedPath: string
     try {
       const folderStat = await stat(folderPath)
       if (!folderStat.isDirectory()) {
@@ -25,6 +42,7 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         )
       }
+      resolvedPath = await realpath(folderPath)
     } catch {
       return NextResponse.json(
         { error: `Folder not found or inaccessible: "${folderPath}"` },
@@ -32,7 +50,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const result = await scanFolderTree(folderPath)
+    if (!isSafePath(resolvedPath)) {
+      return NextResponse.json(
+        { error: 'Access denied: cannot scan system directories' },
+        { status: 403 }
+      )
+    }
+
+    const result = await scanFolderTree(resolvedPath)
 
     if (result.totalImages === 0) {
       return NextResponse.json(

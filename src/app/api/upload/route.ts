@@ -20,6 +20,7 @@ export async function POST(request: NextRequest) {
     const sessionDir = path.join(TEMP_DIR, sessionId)
     await mkdir(sessionDir, { recursive: true })
 
+    const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB per file
     const importedImages: ImportedImage[] = []
 
     for (const file of files) {
@@ -27,16 +28,22 @@ export async function POST(request: NextRequest) {
       if (!isValidImageFormat(file.name)) continue
 
       const buffer = Buffer.from(await file.arrayBuffer())
-      const filePath = path.join(sessionDir, file.name)
+
+      // Reject files that are too large
+      if (buffer.length > MAX_FILE_SIZE) continue
+
+      // Sanitize filename: strip path separators and ".." to prevent traversal
+      const safeName = path.basename(file.name).replace(/\.\./g, '_')
+      const filePath = path.join(sessionDir, safeName)
       await writeFile(filePath, buffer)
 
-      const ext = file.name.split('.').pop()?.toLowerCase() as ImportedImage['format']
+      const ext = safeName.split('.').pop()?.toLowerCase() as ImportedImage['format']
 
       importedImages.push({
         id: randomUUID(),
-        filename: file.name,
+        filename: safeName,
         path: filePath,
-        thumbnailUrl: `/api/upload/${sessionId}/${encodeURIComponent(file.name)}`,
+        thumbnailUrl: `/api/upload/${sessionId}/${encodeURIComponent(safeName)}`,
         format: ext,
         sizeBytes: buffer.length,
       })

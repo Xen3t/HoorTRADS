@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { resolveLanguages } from '@/lib/countries/country-resolver'
 import type { CountryInfo } from '@/types/countries'
 
+export type GenerationMethod = 'standard' | 'precision' | 'google'
 export type Resolution = '1K' | '2K'
 export type GenerationMode = 'standard' | 'batch'
 
@@ -23,19 +24,23 @@ function PillToggle<T extends string>({
   value,
   onChange,
 }: {
-  options: { label: string; value: T }[]
+  options: { label: string; value: T; disabled?: boolean }[]
   value: T
   onChange: (v: T) => void
 }) {
   return (
-    <div className="flex border border-border rounded-[20px] overflow-hidden">
+    <div className="inline-flex border border-border rounded-full overflow-hidden">
       {options.map((opt) => (
         <button
           key={opt.value}
-          onClick={() => onChange(opt.value)}
+          onClick={() => !opt.disabled && onChange(opt.value)}
+          disabled={opt.disabled}
+          title={opt.disabled ? 'Temporairement désactivé' : undefined}
           className={`
-            px-4 py-1.5 text-sm font-semibold transition-all duration-200
-            ${value === opt.value
+            px-4 py-1.5 text-sm font-semibold transition-all duration-200 outline-none
+            ${opt.disabled
+              ? 'bg-surface text-text-disabled cursor-not-allowed opacity-50'
+              : value === opt.value
               ? 'bg-brand-green text-white'
               : 'bg-white text-text-secondary hover:bg-surface'
             }
@@ -103,6 +108,12 @@ export default function AdvancedOptions({
             className="overflow-hidden"
           >
             <div className="mt-4 p-4 bg-surface rounded-[12px] space-y-4">
+              {/* Generation method — only Natif shown, others kept for backward compat */}
+              <div className="flex items-center gap-4">
+                <span className="text-sm font-semibold text-text-secondary w-24">Méthode</span>
+                <span className="text-sm font-semibold text-brand-green">Natif</span>
+              </div>
+
               {/* Resolution */}
               <div className="flex items-center gap-4">
                 <span className="text-sm font-semibold text-text-secondary w-24">Résolution</span>
@@ -117,9 +128,9 @@ export default function AdvancedOptions({
               </div>
 
               {/* Mode */}
-              <div className="flex items-center gap-4">
-                <span className="text-sm font-semibold text-text-secondary w-24">Mode</span>
-                <div className="flex flex-col gap-1">
+              <div className="flex items-start gap-4">
+                <span className="text-sm font-semibold text-text-secondary w-24 pt-1">Mode</span>
+                <div className="flex flex-col items-start gap-1">
                   <PillToggle
                     options={[
                       { label: 'Standard', value: 'standard' as GenerationMode },
@@ -136,7 +147,7 @@ export default function AdvancedOptions({
                         exit={{ opacity: 0, height: 0 }}
                         className="text-xs text-text-disabled"
                       >
-                        Le mode batch peut prendre jusqu&apos;à 24h mais coûte 50% moins cher
+                        Soumet toutes les images en une seule requête — 50% moins cher, jusqu&apos;à 24h
                       </motion.p>
                     )}
                   </AnimatePresence>
@@ -147,7 +158,7 @@ export default function AdvancedOptions({
               {resolvedLangs.length > 0 && (
                 <div>
                   <span className="text-sm font-semibold text-text-secondary block mb-2">
-                    Prompts personnalisés
+                    Corrections par langue
                   </span>
                   <div className="space-y-1">
                     {resolvedLangs.map((lang, i) => (
@@ -183,7 +194,7 @@ export default function AdvancedOptions({
                               <textarea
                                 value={customPrompts[lang.code] || ''}
                                 onChange={(e) => updatePrompt(lang.code, e.target.value)}
-                                placeholder={`Prompt spécifique pour ${lang.name}...`}
+                                placeholder={`Ex : "Le prix est 49,99 EUR" — correction spécifique pour ${lang.name}...`}
                                 rows={2}
                                 className="
                                   w-full mt-1 mb-2 ml-6 px-3 py-2

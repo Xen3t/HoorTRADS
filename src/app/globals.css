@@ -12,8 +12,8 @@
   --color-brand-teal-hover: #2e8a95;
 
   /* Semantic Colors */
-  --color-background: #ffffff;
-  --color-surface: #f8f9fa;
+  --color-background: #e8eaed;
+  --color-surface: #f1f3f5;
   --color-border: #e5e7eb;
   --color-text-primary: #1f2937;
   --color-text-secondary: #6b7280;
@@ -42,7 +42,7 @@
 }
 
 body {
-  background: var(--color-background);
+  background: var(--color-surface);
   color: var(--color-text-primary);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;

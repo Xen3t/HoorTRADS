@@ -4,10 +4,17 @@ import { getAppConfig, setAppConfig } from '@/lib/db/queries'
 
 const CONFIG_KEYS = [
   'gemini_api_key',
-  'verification_provider',
-  'verification_api_key',
+  'model_generate',
+  'model_extract',
+  'model_translate',
+  'model_verify',
+  'generate_temperature',
+  'generate_top_p',
+  'generate_top_k',
   'drive_client_id',
   'drive_client_secret',
+  'verification_mode',
+  'cost_per_image_eur',
 ]
 
 export async function GET() {

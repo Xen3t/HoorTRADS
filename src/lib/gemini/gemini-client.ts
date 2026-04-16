@@ -1,49 +1,63 @@
 import fs from 'fs'
 import path from 'path'
-import { GoogleGenerativeAI } from '@google/generative-ai'
-import type { ImageGenerator, GeneratedImage } from '@/types/generation'
 import { getDb } from '@/lib/db/database'
 import { getAppConfig } from '@/lib/db/queries'
+import type { ImageGenerator, GeneratedImage } from '@/types/generation'
 
 const OUTPUT_DIR = path.join(process.cwd(), 'data', 'generated')
+const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta'
 
 function ensureOutputDir() {
-  if (!fs.existsSync(OUTPUT_DIR)) {
-    fs.mkdirSync(OUTPUT_DIR, { recursive: true })
-  }
+  if (!fs.existsSync(OUTPUT_DIR)) fs.mkdirSync(OUTPUT_DIR, { recursive: true })
 }
 
 function getMimeType(filePath: string): string {
   const ext = path.extname(filePath).toLowerCase()
-  const mimeTypes: Record<string, string> = {
-    '.jpg': 'image/jpeg',
-    '.jpeg': 'image/jpeg',
-    '.png': 'image/png',
-    '.webp': 'image/webp',
+  return ({ '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp' })[ext] || 'image/jpeg'
+}
+
+export function getApiKey(): string {
+  let key: string | null = null
+  try { key = getAppConfig(getDb(), 'gemini_api_key') } catch {}
+  if (!key) key = process.env.GEMINI_API_KEY ?? null
+  if (!key) throw new Error('Gemini API key not configured (panneau admin ou GEMINI_API_KEY)')
+  return key
+}
+
+export function getGenerationParams(): { temperature: number; topP: number; topK: number } {
+  const db = getDb()
+  const temperature = parseFloat(getAppConfig(db, 'generate_temperature') || '0.2')
+  const topP = parseFloat(getAppConfig(db, 'generate_top_p') || '0.9')
+  const topK = parseInt(getAppConfig(db, 'generate_top_k') || '40', 10)
+  return {
+    temperature: isNaN(temperature) ? 0.2 : Math.max(0, Math.min(2, temperature)),
+    topP: isNaN(topP) ? 0.9 : Math.max(0, Math.min(1, topP)),
+    topK: isNaN(topK) ? 40 : Math.max(1, Math.min(100, topK)),
   }
-  return mimeTypes[ext] || 'image/jpeg'
+}
+
+export function getModel(key: 'model_generate' | 'model_extract' | 'model_translate' | 'model_verify'): string {
+  const DEFAULTS: Record<string, string> = {
+    model_generate: 'gemini-3.1-flash-image-preview',
+    model_extract: 'gemini-3.1-flash-lite-preview',
+    model_translate: 'gemini-3.1-pro-preview',
+    model_verify: 'gemini-3.1-pro-preview',
+  }
+  try { return getAppConfig(getDb(), key) || DEFAULTS[key] } catch { return DEFAULTS[key] }
 }
 
 export class GeminiClient implements ImageGenerator {
-  private client: GoogleGenerativeAI
+  private apiKey: string
 
   constructor() {
-    // DB key takes priority over env variable
-    let apiKey: string | null = null
-    try {
-      apiKey = getAppConfig(getDb(), 'gemini_api_key')
-    } catch {
-      // DB not yet ready — fall through to env
-    }
-    if (!apiKey) apiKey = process.env.GEMINI_API_KEY ?? null
-    if (!apiKey) throw new Error('Gemini API key not configured (admin panel or GEMINI_API_KEY env)')
-    this.client = new GoogleGenerativeAI(apiKey)
+    this.apiKey = getApiKey()
   }
 
   async generateImage(
     sourceImagePath: string,
     targetLanguage: string,
-    prompt: string
+    prompt: string,
+    resolution: string = '1K'
   ): Promise<GeneratedImage> {
     try {
       ensureOutputDir()
@@ -52,28 +66,43 @@ export class GeminiClient implements ImageGenerator {
       const base64Image = imageBuffer.toString('base64')
       const mimeType = getMimeType(sourceImagePath)
 
-      const model = this.client.getGenerativeModel({
-        model: 'gemini-3.1-flash-image-preview',
-      })
+      const { temperature, topP, topK } = getGenerationParams()
 
-      const response = await model.generateContent({
-        contents: [
-          {
-            role: 'user',
-            parts: [
-              { text: prompt },
-              { inlineData: { mimeType, data: base64Image } },
-            ],
-          },
-        ],
-      })
+      const body = {
+        contents: [{
+          role: 'user',
+          parts: [
+            { text: prompt },
+            { inlineData: { mimeType, data: base64Image } },
+          ],
+        }],
+        generationConfig: {
+          responseModalities: ['TEXT', 'IMAGE'],
+          imageConfig: { imageSize: resolution },
+          temperature,
+          topP,
+          topK,
+        },
+      }
 
-      const imagePart = response.response.candidates?.[0]?.content?.parts?.find(
-        (p) => p.inlineData
+      const modelId = getModel('model_generate')
+      const res = await fetch(
+        `${GEMINI_BASE}/models/${modelId}:generateContent?key=${this.apiKey}`,
+        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
+      )
+
+      if (!res.ok) {
+        const err = await res.text()
+        return { success: false, outputPath: '', error: `Gemini API ${res.status}: ${err.slice(0, 200)}` }
+      }
+
+      const data = await res.json()
+      const imagePart = data.candidates?.[0]?.content?.parts?.find(
+        (p: { inlineData?: { data: string; mimeType: string } }) => p.inlineData
       )
 
       if (!imagePart?.inlineData?.data) {
-        return { success: false, outputPath: '', error: 'No image in Gemini response' }
+        return { success: false, outputPath: '', error: 'Aucune image dans la réponse Gemini' }
       }
 
       const sourceName = path.basename(sourceImagePath, path.extname(sourceImagePath))
@@ -84,8 +113,7 @@ export class GeminiClient implements ImageGenerator {
 
       return { success: true, outputPath }
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Gemini generation failed'
-      return { success: false, outputPath: '', error: message }
+      return { success: false, outputPath: '', error: error instanceof Error ? error.message : 'Gemini generation failed' }
     }
   }
 }
