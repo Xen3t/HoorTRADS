@@ -1,0 +1,50 @@
+@import "tailwindcss";
+
+@theme inline {
+  /* Brand Colors */
+  --color-brand-green: #5d9228;
+  --color-brand-green-light: #e8f2dc;
+  --color-brand-green-hover: #4e7d22;
+  --color-brand-red: #d84150;
+  --color-brand-red-light: #fde8ea;
+  --color-brand-teal: #38a0ad;
+  --color-brand-teal-light: #e0f4f6;
+  --color-brand-teal-hover: #2e8a95;
+
+  /* Semantic Colors */
+  --color-background: #ffffff;
+  --color-surface: #f8f9fa;
+  --color-border: #e5e7eb;
+  --color-text-primary: #1f2937;
+  --color-text-secondary: #6b7280;
+  --color-text-disabled: #9ca3af;
+
+  /* Border Radius */
+  --radius-sm: 8px;
+  --radius-default: 12px;
+  --radius-lg: 16px;
+
+  /* Shadows (Apple-like) */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow-default: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.1);
+
+  /* Spacing (8px octogonal system) */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 48px;
+
+  /* Typography */
+  --font-sans: var(--font-titillium), -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
