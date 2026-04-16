@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 
-const adminSections = [
+const adminSections: { name: string; href: string; icon: string; description: string; disabled?: boolean }[] = [
   // ── Setup ──────────────────────────────────────────────────────────────────
   { name: 'Configuration API', href: '/admin/api-config', icon: '🔑', description: 'Clé Gemini, modèles par étape, pipeline de vérification, Google Drive' },
   { name: 'Pays & Langues', href: '/admin/countries', icon: '🌍', description: 'Gérer les associations pays-langues' },

@@ -252,8 +252,8 @@ export default function AdminDocPage() {
                         <div className="text-xl mb-1">{step.icon}</div>
                         <div className="text-xs font-bold text-text-primary leading-tight mb-0.5">{step.label}</div>
                         <div className="text-[10px] text-text-secondary leading-tight">{step.desc}</div>
-                        {'cost' in step && step.cost && (
-                          <div className="text-[10px] font-bold text-orange-600 mt-1">{step.cost}</div>
+                        {(step as { cost?: string }).cost && (
+                          <div className="text-[10px] font-bold text-orange-600 mt-1">{(step as { cost?: string }).cost}</div>
                         )}
                       </div>
                       {i < PIPELINE_GOOGLE.length - 1 && (

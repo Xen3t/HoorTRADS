@@ -76,7 +76,10 @@ interface ApiConfig {
 
 const DEFAULTS: ApiConfig = {
   gemini_api_key: '',
-  ...MODEL_DEFAULTS,
+  model_generate: MODEL_DEFAULTS['model_generate'],
+  model_extract: MODEL_DEFAULTS['model_extract'],
+  model_translate: MODEL_DEFAULTS['model_translate'],
+  model_verify: MODEL_DEFAULTS['model_verify'],
   generate_temperature: '0.2',
   generate_top_p: '0.9',
   generate_top_k: '40',
