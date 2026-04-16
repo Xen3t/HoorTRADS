@@ -115,6 +115,7 @@ if (cfg.resolution) setResolution(cfg.resolution as Resolution)
     return {
       ...existingConfig,
       countries: selectedCountries.map((c) => c.code),
+      generationMethod: 'google',
       resolution,
       mode,
       customPrompts,
