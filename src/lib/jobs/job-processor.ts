@@ -239,6 +239,16 @@ export async function renderJobTasks(
     if (jobMeta) {
       db.prepare("UPDATE sessions SET status = 'done', current_step = 'review', updated_at = datetime('now') WHERE id = ?").run(jobMeta.session_id)
     }
+  } catch (err: unknown) {
+    const errMsg = err instanceof Error ? err.message : String(err)
+    console.error('[renderJobTasks] CRASH:', errMsg)
+    try {
+      const jr = db.prepare('SELECT config FROM generation_jobs WHERE id = ?').get(jobId) as { config: string } | undefined
+      const jc = jr?.config ? JSON.parse(jr.config) : {}
+      jc.renderError = errMsg
+      db.prepare("UPDATE generation_jobs SET status = 'failed', config = ?, updated_at = datetime('now') WHERE id = ?").run(JSON.stringify(jc), jobId)
+      db.prepare("UPDATE generation_tasks SET status = 'failed', error_message = ? WHERE job_id = ? AND status = 'pending'").run(`[render] ${errMsg}`, jobId)
+    } catch {}
   } finally {
     runningJobs.delete(jobId)
   }
@@ -307,7 +317,7 @@ export async function processJob(
       let preResult: PreTranslationResult = { translations: {}, extractedZones: {} }
       try {
         const timeout = new Promise<PreTranslationResult>((resolve) =>
-          setTimeout(() => resolve({ translations: {}, extractedZones: {} }), 60_000)
+          setTimeout(() => resolve({ translations: {}, extractedZones: {}, error: 'timeout 3min' }), 180_000)
         )
         preResult = await Promise.race([
           preValidateTranslations(representative.source_image_path, targetLanguages, {}, {}),
@@ -328,10 +338,9 @@ export async function processJob(
       }
       db.prepare('UPDATE generation_jobs SET config = ? WHERE id = ?').run(JSON.stringify(jobCfg2), jobId)
 
-      // Pre-render mode: pause here and wait for text review approval
+      // Pre-render mode: always pause for text review — user decides what to do
       if (getVerificationMode(db) === 'pre_render') {
         db.prepare("UPDATE generation_jobs SET status = 'pending_text_review', completed_tasks = total_tasks, updated_at = datetime('now') WHERE id = ?").run(jobId)
-        // Also persist current_step on the session so the layout can restore the text-review tab
         const jmPre = db.prepare('SELECT session_id FROM generation_jobs WHERE id = ?').get(jobId) as { session_id: string } | undefined
         if (jmPre) db.prepare("UPDATE sessions SET current_step = 'text-review', updated_at = datetime('now') WHERE id = ?").run(jmPre.session_id)
         runningJobs.delete(jobId)
@@ -493,6 +502,7 @@ export async function processJob(
   } catch (err: unknown) {
     // Unhandled error in job processor — write to job config so it's visible in admin logs
     const errMsg = err instanceof Error ? err.message : String(err)
+    console.error('[processJob] CRASH:', errMsg)
     try {
       const jr = db.prepare('SELECT config FROM generation_jobs WHERE id = ?').get(jobId) as { config: string } | undefined
       const jc = jr?.config ? JSON.parse(jr.config) : {}

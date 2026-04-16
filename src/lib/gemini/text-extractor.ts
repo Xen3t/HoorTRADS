@@ -104,13 +104,17 @@ export async function preValidateTranslations(
   rulesByLang: Record<string, string[]>,
   filteredHints?: GlossaryHints
 ): Promise<PreTranslationResult> {
-  if (!fs.existsSync(imagePath)) return { translations: {}, extractedZones: {} }
+  console.log('[preValidate] start', { imagePath, langs: targetLanguages })
+  if (!fs.existsSync(imagePath)) { console.log('[preValidate] image not found'); return { translations: {}, extractedZones: {}, error: 'image not found' } }
 
   const imageBuffer = fs.readFileSync(imagePath)
   const base64Image = imageBuffer.toString('base64')
   const mimeType = getMimeType(imagePath)
+  console.log('[preValidate] image loaded, size:', imageBuffer.length, 'mime:', mimeType)
 
-  const client = new GoogleGenerativeAI(getApiKey())
+  const apiKey = getApiKey()
+  console.log('[preValidate] key:', apiKey.slice(0, 6) + '...')
+  const client = new GoogleGenerativeAI(apiKey)
 
   // ── Step 1: Extract every visible text zone ─────────────────────────────
   const extractInstruction = getPromptFromDb('prompt_google_extract', DEFAULT_GOOGLE_EXTRACT)
@@ -134,17 +138,21 @@ Respond ONLY with valid JSON, no markdown:
 
   let frenchZones: Record<string, ExtractedZone> = {}
   try {
+    console.log('[preValidate] calling extraction model:', getModel('model_extract'))
     const extractRes = await extractModel.generateContent({
       contents: [{ role: 'user', parts: [{ text: extractPrompt }, { inlineData: { mimeType, data: base64Image } }] }],
     })
     const raw = extractRes.response.text().trim().replace(/^```json?\n?/, '').replace(/\n?```$/, '').trim()
+    console.log('[preValidate] extraction response:', raw.slice(0, 200))
     frenchZones = JSON.parse(raw)
+    console.log('[preValidate] zones parsed:', Object.keys(frenchZones).length)
   } catch (e: unknown) {
     const errMsg = e instanceof Error ? e.message : String(e)
+    console.error('[preValidate] EXTRACTION ERROR:', errMsg)
     return { translations: {}, extractedZones: {}, error: `extraction: ${errMsg}` }
   }
 
-  if (Object.keys(frenchZones).length === 0) return { translations: {}, extractedZones: frenchZones, error: 'extraction: empty zones (no text found or JSON parse failed)' }
+  if (Object.keys(frenchZones).length === 0) { console.log('[preValidate] no zones found'); return { translations: {}, extractedZones: frenchZones, error: 'extraction: empty zones (no text found or JSON parse failed)' } }
 
   // ── Step 2: Translate all zones to all target languages ─────────────────
   const translateInstruction = getPromptFromDb('prompt_google_translate', DEFAULT_GOOGLE_TRANSLATE)
@@ -191,13 +199,18 @@ Respond ONLY with valid JSON, no markdown:
   })
 
   try {
+    console.log('[preValidate] calling translation model:', getModel('model_translate'), '| langs:', targetLanguages)
     const translateRes = await translateModel.generateContent({
       contents: [{ role: 'user', parts: [{ text: translatePrompt }] }],
     })
     const raw = translateRes.response.text().trim().replace(/^```json?\n?/, '').replace(/\n?```$/, '').trim()
-    return { translations: JSON.parse(raw) || {}, extractedZones: frenchZones }
+    console.log('[preValidate] translation response:', raw.slice(0, 300))
+    const parsed = JSON.parse(raw) || {}
+    console.log('[preValidate] translation OK, langs:', Object.keys(parsed))
+    return { translations: parsed, extractedZones: frenchZones }
   } catch (e: unknown) {
     const errMsg = e instanceof Error ? e.message : String(e)
+    console.error('[preValidate] TRANSLATION ERROR:', errMsg)
     return { translations: {}, extractedZones: frenchZones, error: `translation: ${errMsg}` }
   }
 }

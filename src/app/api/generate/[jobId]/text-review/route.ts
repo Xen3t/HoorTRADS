@@ -22,6 +22,7 @@ export async function GET(
       translations: approvedTranslations || log?.translations || {},
       representativeImage: log?.representativeImage || null,
       hasApproved: !!approvedTranslations,
+      preTranslationError: log?.error || null,
     })
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to load text review'

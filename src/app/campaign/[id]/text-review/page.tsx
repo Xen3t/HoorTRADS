@@ -40,6 +40,7 @@ export default function TextReviewPage() {
   // translations[lang][zone] = translated text
   const [translations, setTranslations] = useState<Record<string, Record<string, string>>>({})
   const [loading, setLoading] = useState(true)
+  const [preTranslationError, setPreTranslationError] = useState<string | null>(null)
   const [activeLang, setActiveLang] = useState<string | null>(null)
 
   const [isVerifying, setIsVerifying] = useState(false)
@@ -126,6 +127,7 @@ export default function TextReviewPage() {
 
         setExtractedZones(data.extractedZones || {})
         setTranslations(data.translations || {})
+        if (data.preTranslationError) setPreTranslationError(data.preTranslationError)
 
         // Store original AI translations
         originalTranslationsRef.current = data.translations || {}
@@ -267,10 +269,57 @@ export default function TextReviewPage() {
 
   if (zones.length === 0) {
     return (
-      <main className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-text-secondary text-sm mb-2">Aucune zone extraite trouvée.</p>
-          <p className="text-xs text-text-disabled">Assurez-vous d&apos;utiliser le mode Natif.</p>
+      <main className="min-h-screen flex items-start justify-center pt-16">
+        <div className="text-center w-full" style={{ maxWidth: '640px' }}>
+          {preTranslationError ? (
+            <>
+              <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
+                <span className="text-xl">&#9888;</span>
+              </div>
+              <p className="text-base font-bold text-text-primary mb-2">Extraction indisponible</p>
+              <p className="text-sm text-text-secondary mb-1">
+                Le modèle IA est temporairement surchargé ou a rencontré une erreur.
+              </p>
+              <p className="text-xs text-text-disabled mb-6 font-mono bg-surface rounded-[8px] px-3 py-2 text-left break-words whitespace-pre-wrap">
+                {preTranslationError}
+              </p>
+              <div className="flex flex-col gap-3 items-center">
+                <button
+                  onClick={() => window.location.reload()}
+                  className="px-6 py-2.5 rounded-[10px] bg-brand-green text-white font-semibold text-sm hover:bg-brand-green-hover transition-colors"
+                >
+                  Relancer l&apos;extraction
+                </button>
+                <button
+                  onClick={async () => {
+                    if (!jobId) return
+                    setIsSending(true)
+                    try {
+                      await fetch(`/api/generate/${jobId}/approve-texts`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ translations: {} }),
+                      })
+                      window.location.href = `/campaign/${sessionId}/generate?jobId=${jobId}&rendering=1`
+                    } catch {
+                      setToast({ message: 'Erreur lors du lancement', variant: 'error' })
+                    } finally {
+                      setIsSending(false)
+                    }
+                  }}
+                  disabled={isSending}
+                  className="text-sm text-text-secondary hover:text-text-primary underline transition-colors"
+                >
+                  Continuer sans pré-traduction (mode standard)
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="text-text-secondary text-sm mb-2">Aucune zone extraite trouvée.</p>
+              <p className="text-xs text-text-disabled">Assurez-vous d&apos;utiliser le mode Natif.</p>
+            </>
+          )}
         </div>
       </main>
     )
