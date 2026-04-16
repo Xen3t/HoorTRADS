@@ -86,10 +86,26 @@ export class GeminiClient implements ImageGenerator {
       }
 
       const modelId = getModel('model_generate')
-      const res = await fetch(
-        `${GEMINI_BASE}/models/${modelId}:generateContent?key=${this.apiKey}`,
-        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
-      )
+
+      // Retry up to 2 times on network errors (fetch failed / connection reset)
+      let res: Response | null = null
+      let lastFetchError: string = ''
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          const controller = new AbortController()
+          const timer = setTimeout(() => controller.abort(), 3 * 60 * 1000) // 3 min timeout
+          res = await fetch(
+            `${GEMINI_BASE}/models/${modelId}:generateContent?key=${this.apiKey}`,
+            { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: controller.signal }
+          )
+          clearTimeout(timer)
+          break
+        } catch (fetchErr: unknown) {
+          lastFetchError = fetchErr instanceof Error ? fetchErr.message : String(fetchErr)
+          if (attempt < 2) await new Promise((r) => setTimeout(r, 3000 * (attempt + 1)))
+        }
+      }
+      if (!res) return { success: false, outputPath: '', error: `fetch failed (3 attempts): ${lastFetchError}` }
 
       if (!res.ok) {
         const err = await res.text()
