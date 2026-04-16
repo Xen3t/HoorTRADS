@@ -483,6 +483,16 @@ export async function processJob(
     if (jobMeta) {
       db.prepare("UPDATE sessions SET status = 'done', current_step = 'review', updated_at = datetime('now') WHERE id = ?").run(jobMeta.session_id)
     }
+  } catch (err: unknown) {
+    // Unhandled error in job processor — write to job config so it's visible in admin logs
+    const errMsg = err instanceof Error ? err.message : String(err)
+    try {
+      const jr = db.prepare('SELECT config FROM generation_jobs WHERE id = ?').get(jobId) as { config: string } | undefined
+      const jc = jr?.config ? JSON.parse(jr.config) : {}
+      jc.processorError = errMsg
+      db.prepare("UPDATE generation_jobs SET status = 'failed', config = ?, updated_at = datetime('now') WHERE id = ?").run(JSON.stringify(jc), jobId)
+      db.prepare("UPDATE generation_tasks SET status = 'failed', error_message = ? WHERE job_id = ? AND status = 'pending'").run(`[processor] ${errMsg}`, jobId)
+    } catch {}
   } finally {
     runningJobs.delete(jobId)
   }
