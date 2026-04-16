@@ -94,6 +94,7 @@ export interface ExtractedZone {
 export interface PreTranslationResult {
   translations: ExpertTranslations
   extractedZones: Record<string, ExtractedZone>
+  error?: string
 }
 
 export async function preValidateTranslations(
@@ -138,11 +139,12 @@ Respond ONLY with valid JSON, no markdown:
     })
     const raw = extractRes.response.text().trim().replace(/^```json?\n?/, '').replace(/\n?```$/, '').trim()
     frenchZones = JSON.parse(raw)
-  } catch {
-    return { translations: {}, extractedZones: {} }
+  } catch (e: unknown) {
+    const errMsg = e instanceof Error ? e.message : String(e)
+    return { translations: {}, extractedZones: {}, error: `extraction: ${errMsg}` }
   }
 
-  if (Object.keys(frenchZones).length === 0) return { translations: {}, extractedZones: frenchZones }
+  if (Object.keys(frenchZones).length === 0) return { translations: {}, extractedZones: frenchZones, error: 'extraction: empty zones (no text found or JSON parse failed)' }
 
   // ── Step 2: Translate all zones to all target languages ─────────────────
   const translateInstruction = getPromptFromDb('prompt_google_translate', DEFAULT_GOOGLE_TRANSLATE)
@@ -194,8 +196,9 @@ Respond ONLY with valid JSON, no markdown:
     })
     const raw = translateRes.response.text().trim().replace(/^```json?\n?/, '').replace(/\n?```$/, '').trim()
     return { translations: JSON.parse(raw) || {}, extractedZones: frenchZones }
-  } catch {
-    return { translations: {}, extractedZones: frenchZones }
+  } catch (e: unknown) {
+    const errMsg = e instanceof Error ? e.message : String(e)
+    return { translations: {}, extractedZones: frenchZones, error: `translation: ${errMsg}` }
   }
 }
 

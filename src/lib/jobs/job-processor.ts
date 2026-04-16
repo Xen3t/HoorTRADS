@@ -324,6 +324,7 @@ export async function processJob(
         representativeImage: representative.source_image_name,
         extractedZones: preResult.extractedZones,
         translations: preResult.translations,
+        ...(preResult.error ? { error: preResult.error } : {}),
       }
       db.prepare('UPDATE generation_jobs SET config = ? WHERE id = ?').run(JSON.stringify(jobCfg2), jobId)
 
