@@ -3,10 +3,13 @@ import { getDb } from '@/lib/db/database'
 import { getRecentSessions, createSession } from '@/lib/db/queries'
 import { getSession } from '@/lib/auth'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const token = request.cookies.get('hoortrad_session')?.value
+    const authUser = token ? getSession(token) : null
+    if (!authUser) return NextResponse.json({ sessions: [] })
     const db = getDb()
-    const sessions = getRecentSessions(db)
+    const sessions = getRecentSessions(db, 10, authUser.id)
     return NextResponse.json({ sessions })
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to fetch sessions'

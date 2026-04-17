@@ -2,7 +2,11 @@ import { randomUUID } from 'crypto'
 import type Database from 'better-sqlite3'
 import type { Session, CreateSessionInput } from '@/types/session'
 
-export function getRecentSessions(db: Database.Database, limit = 10): Session[] {
+export function getRecentSessions(db: Database.Database, limit = 10, userId?: string | null): Session[] {
+  if (userId) {
+    const stmt = db.prepare('SELECT * FROM sessions WHERE user_id = ? ORDER BY rowid DESC LIMIT ?')
+    return stmt.all(userId, limit) as Session[]
+  }
   const stmt = db.prepare('SELECT * FROM sessions ORDER BY rowid DESC LIMIT ?')
   return stmt.all(limit) as Session[]
 }
