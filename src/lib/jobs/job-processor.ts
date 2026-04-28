@@ -410,12 +410,13 @@ export async function processJob(
       for (const r of results) {
         const task = tasks.find((t) => t.id === r.taskId)
         if (!task) continue
+        const taskId = task.id
 
         if (r.success && r.outputPath) {
-          db.prepare("UPDATE generation_tasks SET status = 'done', output_path = ? WHERE id = ?").run(r.outputPath, task.id)
+          db.prepare("UPDATE generation_tasks SET status = 'done', output_path = ? WHERE id = ?").run(r.outputPath, taskId)
           db.prepare("UPDATE generation_jobs SET completed_tasks = completed_tasks + 1, updated_at = datetime('now') WHERE id = ?").run(jobId)
         } else {
-          db.prepare("UPDATE generation_tasks SET status = 'failed', error_message = ? WHERE id = ?").run(r.error || 'Batch failed', task.id)
+          db.prepare("UPDATE generation_tasks SET status = 'failed', error_message = ? WHERE id = ?").run(r.error || 'Batch failed', taskId)
           db.prepare("UPDATE generation_jobs SET failed_tasks = failed_tasks + 1, updated_at = datetime('now') WHERE id = ?").run(jobId)
         }
       }
