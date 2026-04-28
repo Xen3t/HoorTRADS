@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Éditeur · C · Sidebar gauche unifiée</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Titillium+Web:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --brand-teal: #0ea5a4; --text-primary: #1a1f2c; --text-secondary: #6b7280; --text-disabled: #9ca3af; --border: #e5e7eb; --bg: #f7f8fa; }
+  body { font-family: 'Titillium Web', system-ui, sans-serif; background: var(--bg); color: var(--text-primary); }
+  .canvas-bg {
+    background-color: #fafbfc;
+    background-image: radial-gradient(circle, #d1d5db 1px, transparent 1px);
+    background-size: 16px 16px;
+  }
+  .node { position: absolute; background: white; border-radius: 12px; padding: 10px 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); border: 1.5px solid #e5e7eb; min-width: 145px; cursor: pointer; }
+  .node.selected { border-color: var(--brand-teal); box-shadow: 0 0 0 3px #0ea5a420, 0 4px 14px rgba(0,0,0,0.1); }
+  .node-handle { position: absolute; width: 10px; height: 10px; background: white; border: 2px solid #94a3b8; border-radius: 50%; top: 50%; transform: translateY(-50%); }
+  .node-handle.in { left: -6px; }
+  .node-handle.out { right: -6px; }
+  .tab-btn { padding: 12px 8px; writing-mode: horizontal-tb; font-size: 11px; font-weight: 600; color: var(--text-disabled); border-right: 2px solid transparent; }
+  .tab-btn.active { color: var(--brand-teal); border-right-color: var(--brand-teal); background: #f0fdfa; }
+  .tree-item { display: flex; align-items: center; gap: 8px; padding: 6px 10px 6px 16px; font-size: 13px; cursor: pointer; border-radius: 8px; }
+  .tree-item:hover { background: #f1f5f9; }
+  .tree-item.selected { background: #ecfeff; color: #0e7490; font-weight: 600; }
+</style>
+</head>
+<body class="h-screen overflow-hidden flex flex-col">
+
+<div class="text-[10px] text-center py-1 text-white" style="background: var(--brand-teal)">
+  MOCKUP · Éditeur · Direction C — Sidebar gauche unifiée à onglets · <a href="index.html" class="underline">retour à l'index</a>
+</div>
+
+<header class="bg-white border-b flex items-center justify-between px-6 py-3" style="border-color: var(--border)">
+  <div class="flex items-center gap-3">
+    <a href="list-A.html" class="text-sm" style="color: var(--brand-teal)">← Workflows</a>
+    <span style="color: var(--text-disabled)">/</span>
+    <input type="text" value="Schéma technique v1" class="font-bold text-base bg-transparent border-0 focus:outline-none focus:bg-gray-100 px-2 py-1 rounded">
+    <span class="text-xs px-2 py-0.5 rounded-full font-semibold" style="background:#faf5ff;color:#7e22ce">Schéma</span>
+    <span class="text-xs px-2 py-0.5 rounded-full font-semibold" style="background:#fef3c7;color:#b45309">Brouillon</span>
+  </div>
+  <div class="flex items-center gap-2">
+    <button class="text-sm px-3 py-1.5 rounded-[10px] border" style="border-color: var(--border)">Tester sur image…</button>
+    <button class="text-sm px-3 py-1.5 rounded-[10px] border" style="border-color: var(--border)">Publier</button>
+    <button class="text-sm px-4 py-1.5 rounded-[10px] text-white font-semibold" style="background: var(--brand-teal)">Sauvegarder</button>
+  </div>
+</header>
+
+<div class="flex-1 grid grid-cols-[420px_1fr] overflow-hidden">
+
+  <!-- LEFT : unified sidebar with vertical tabs -->
+  <aside class="bg-white border-r flex" style="border-color: var(--border)">
+    <!-- Vertical tab bar -->
+    <div class="flex flex-col border-r" style="border-color: var(--border); width: 56px">
+      <button class="tab-btn active flex flex-col items-center gap-1" title="Palette">
+        <span class="text-lg">⊞</span>
+        <span>Palette</span>
+      </button>
+      <button class="tab-btn flex flex-col items-center gap-1" title="Arborescence">
+        <span class="text-lg">≡</span>
+        <span>Arbre</span>
+      </button>
+      <button class="tab-btn flex flex-col items-center gap-1" title="Propriétés">
+        <span class="text-lg">⚙</span>
+        <span>Props</span>
+      </button>
+      <button class="tab-btn flex flex-col items-center gap-1" title="Variables">
+        <span class="text-lg">{ }</span>
+        <span>Vars</span>
+      </button>
+      <button class="tab-btn flex flex-col items-center gap-1" title="Validation">
+        <span class="text-lg">✓</span>
+        <span>Lint</span>
+      </button>
+      <div class="flex-1"></div>
+      <button class="tab-btn flex flex-col items-center gap-1" title="Aide">
+        <span class="text-lg">?</span>
+      </button>
+    </div>
+
+    <!-- Active tab content : split in 2 — top = Palette, bottom = compact tree -->
+    <div class="flex-1 flex flex-col overflow-hidden">
+
+      <!-- Palette section -->
+      <div class="flex-1 overflow-hidden flex flex-col border-b" style="border-color: var(--border)">
+        <div class="px-4 pt-3 pb-2 flex items-center justify-between">
+          <h3 class="text-xs font-bold uppercase tracking-wider" style="color: var(--text-disabled)">Palette de nœuds</h3>
+          <button class="text-xs" style="color: var(--brand-teal)">Importer ↗</button>
+        </div>
+        <div class="px-4 pb-2">
+          <input type="text" placeholder="Rechercher…" class="w-full px-3 py-1.5 rounded-[10px] border text-sm" style="border-color: var(--border)">
+        </div>
+        <div class="overflow-y-auto flex-1 px-3 pb-3 grid grid-cols-2 gap-2">
+
+          <button class="text-left rounded-[10px] p-2.5 border hover:border-teal-400 transition" style="border-color: var(--border)">
+            <div class="flex items-center gap-1.5 mb-0.5"><span style="color:#0e7490">▶</span><span class="font-semibold text-xs">Start</span></div>
+            <div class="text-[10px]" style="color:var(--text-disabled)">Entrée du workflow</div>
+          </button>
+          <button class="text-left rounded-[10px] p-2.5 border hover:border-teal-400 transition" style="border-color: var(--border)">
+            <div class="flex items-center gap-1.5 mb-0.5"><span style="color:#b45309">📝</span><span class="font-semibold text-xs">Extraire texte</span></div>
+            <div class="text-[10px]" style="color:var(--text-disabled)">Détection zones</div>
+          </button>
+          <button class="text-left rounded-[10px] p-2.5 border hover:border-teal-400 transition" style="border-color: var(--border)">
+            <div class="flex items-center gap-1.5 mb-0.5"><span style="color:#b45309">🌐</span><span class="font-semibold text-xs">Traduire texte</span></div>
+            <div class="text-[10px]" style="color:var(--text-disabled)">Multi-langues</div>
+          </button>
+          <button class="text-left rounded-[10px] p-2.5 border hover:border-teal-400 transition" style="border-color: var(--border)">
+            <div class="flex items-center gap-1.5 mb-0.5"><span style="color:#1d4ed8">🖼️</span><span class="font-semibold text-xs">Générer image</span></div>
+            <div class="text-[10px]" style="color:var(--text-disabled)">Direct ou render</div>
+          </button>
+          <button class="text-left rounded-[10px] p-2.5 border hover:border-teal-400 transition" style="border-color: var(--border)">
+            <div class="flex items-center gap-1.5 mb-0.5"><span style="color:#15803d">✓</span><span class="font-semibold text-xs">Vérifier image</span></div>
+            <div class="text-[10px]" style="color:var(--text-disabled)">Score 0-5</div>
+          </button>
+          <button class="text-left rounded-[10px] p-2.5 border hover:border-teal-400 transition" style="border-color: var(--border)">
+            <div class="flex items-center gap-1.5 mb-0.5"><span style="color:#15803d">↻</span><span class="font-semibold text-xs">Auto-corriger</span></div>
+            <div class="text-[10px]" style="color:var(--text-disabled)">Boucle correction</div>
+          </button>
+          <button class="text-left rounded-[10px] p-2.5 border hover:border-teal-400 transition" style="border-color: var(--border)">
+            <div class="flex items-center gap-1.5 mb-0.5"><span style="color:#9d174d">👤</span><span class="font-semibold text-xs">Review humain</span></div>
+            <div class="text-[10px]" style="color:var(--text-disabled)">Pause</div>
+          </button>
+          <button class="text-left rounded-[10px] p-2.5 border hover:border-teal-400 transition" style="border-color: var(--border)">
+            <div class="flex items-center gap-1.5 mb-0.5"><span style="color:#9d174d">⋔</span><span class="font-semibold text-xs">Condition</span></div>
+            <div class="text-[10px]" style="color:var(--text-disabled)">if / else</div>
+          </button>
+          <button class="text-left rounded-[10px] p-2.5 border hover:border-teal-400 transition" style="border-color: var(--border)">
+            <div class="flex items-center gap-1.5 mb-0.5"><span style="color:#15803d">⏏</span><span class="font-semibold text-xs">Export</span></div>
+            <div class="text-[10px]" style="color:var(--text-disabled)">zip + Drive</div>
+          </button>
+
+        </div>
+      </div>
+
+      <!-- Compact arborescence (always visible at bottom) -->
+      <div class="flex flex-col" style="height: 240px">
+        <div class="px-4 pt-3 pb-2 flex items-center justify-between">
+          <h3 class="text-xs font-bold uppercase tracking-wider" style="color: var(--text-disabled)">Arborescence du workflow</h3>
+          <span class="text-[11px]" style="color: var(--text-disabled)">7 nœuds</span>
+        </div>
+        <div class="overflow-y-auto flex-1 px-3 pb-3 space-y-0.5">
+          <div class="tree-item" style="padding-left:10px"><span style="color:#0e7490">▶</span><span>Start</span></div>
+          <div class="tree-item" style="padding-left:24px"><span style="color:#b45309">📝</span><span>Extraire labels uniquement</span></div>
+          <div class="tree-item" style="padding-left:24px"><span style="color:#b45309">🌐</span><span>Traduire labels</span></div>
+          <div class="tree-item selected" style="padding-left:24px"><span style="color:#1d4ed8">🖼️</span><span>Re-stamper sur source</span></div>
+          <div class="tree-item" style="padding-left:24px"><span style="color:#15803d">✓</span><span>Vérifier conservation layout</span></div>
+          <div class="tree-item" style="padding-left:24px"><span style="color:#9d174d">⋔</span><span>Condition (qualité OK ?)</span></div>
+          <div class="tree-item" style="padding-left:38px"><span style="color:#15803d">↻</span><span>Auto-corriger (si non)</span></div>
+          <div class="tree-item" style="padding-left:38px"><span style="color:#15803d">⏏</span><span>Export (si oui)</span></div>
+        </div>
+      </div>
+
+    </div>
+  </aside>
+
+  <!-- CENTER : Canvas -->
+  <main class="canvas-bg relative overflow-hidden">
+
+    <div class="absolute top-3 left-3 z-10 bg-white rounded-[10px] shadow-sm flex p-1 text-xs" style="border:1px solid var(--border)">
+      <button class="px-2 py-1 rounded">Zoom −</button>
+      <span class="px-2 py-1 font-mono" style="color: var(--text-secondary)">75%</span>
+      <button class="px-2 py-1 rounded">Zoom +</button>
+      <span class="border-l mx-1" style="border-color: var(--border)"></span>
+      <button class="px-2 py-1 rounded">Recentrer</button>
+      <span class="border-l mx-1" style="border-color: var(--border)"></span>
+      <button class="px-2 py-1 rounded">⤧ Auto-layout</button>
+    </div>
+
+    <div class="absolute top-3 right-3 z-10 bg-white rounded-[10px] shadow-sm px-3 py-2 text-xs flex items-center gap-2" style="border:1px solid var(--border)">
+      <span class="w-2 h-2 rounded-full" style="background:#f59e0b"></span>
+      <span style="color: var(--text-secondary)">Le nœud "Re-stamper" n'a pas de prompt configuré</span>
+      <button style="color: var(--brand-teal)" class="font-semibold">Corriger</button>
+    </div>
+
+    <!-- Edges -->
+    <svg class="absolute inset-0 w-full h-full" style="pointer-events:none">
+      <defs>
+        <marker id="arrEdC" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+          <polygon points="0 0, 8 4, 0 8" fill="#94a3b8"/>
+        </marker>
+      </defs>
+      <path d="M 138 220 C 175 220, 195 220, 225 220" stroke="#94a3b8" stroke-width="2" fill="none" marker-end="url(#arrEdC)"/>
+      <path d="M 380 220 C 415 220, 435 220, 465 220" stroke="#94a3b8" stroke-width="2" fill="none" marker-end="url(#arrEdC)"/>
+      <path d="M 620 220 C 655 220, 675 220, 705 220" stroke="#94a3b8" stroke-width="2" fill="none" marker-end="url(#arrEdC)"/>
+      <path d="M 860 220 C 895 220, 915 220, 945 220" stroke="#94a3b8" stroke-width="2" fill="none" marker-end="url(#arrEdC)"/>
+      <path d="M 245 350 C 245 350, 245 350, 245 220" stroke="#94a3b8" stroke-width="2" fill="none" stroke-dasharray="4,4"/>
+    </svg>
+
+    <!-- Nodes -->
+    <div class="node" style="left:60px;top:200px">
+      <div class="flex items-center gap-2">
+        <span style="color:#0e7490">▶</span>
+        <div><div class="font-bold text-sm">Start</div><div class="text-[11px]" style="color:var(--text-disabled)">Image source + langues</div></div>
+      </div>
+      <div class="node-handle out"></div>
+    </div>
+    <div class="node" style="left:225px;top:200px">
+      <div class="flex items-center gap-2">
+        <span style="color:#b45309">📝</span>
+        <div><div class="font-bold text-sm">Extraire labels</div><div class="text-[11px]" style="color:var(--text-disabled)">mode strict</div></div>
+      </div>
+      <div class="node-handle in"></div>
+      <div class="node-handle out"></div>
+    </div>
+    <div class="node" style="left:465px;top:200px">
+      <div class="flex items-center gap-2">
+        <span style="color:#b45309">🌐</span>
+        <div><div class="font-bold text-sm">Traduire labels</div><div class="text-[11px]" style="color:var(--text-disabled)">+ glossaire technique</div></div>
+      </div>
+      <div class="node-handle in"></div>
+      <div class="node-handle out"></div>
+    </div>
+    <div class="node selected" style="left:705px;top:200px;border-color:#f59e0b;background:#fffbeb">
+      <div class="flex items-center gap-2">
+        <span style="color:#1d4ed8">🖼️</span>
+        <div>
+          <div class="font-bold text-sm flex items-center gap-1">Re-stamper <span title="warning">⚠️</span></div>
+          <div class="text-[11px]" style="color:#b45309">prompt non configuré</div>
+        </div>
+      </div>
+      <div class="node-handle in"></div>
+      <div class="node-handle out"></div>
+    </div>
+    <div class="node" style="left:945px;top:200px">
+      <div class="flex items-center gap-2">
+        <span style="color:#15803d">✓</span>
+        <div><div class="font-bold text-sm">Vérifier layout</div><div class="text-[11px]" style="color:var(--text-disabled)">conservation strict</div></div>
+      </div>
+      <div class="node-handle in"></div>
+      <div class="node-handle out"></div>
+    </div>
+
+  </main>
+
+</div>
+</body>
+</html>

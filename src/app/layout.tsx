@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import 'flag-icons/css/flag-icons.min.css'
 import './globals.css'
 import UserBar from '@/components/UserBar'
+import FeedbackButton from '@/components/shared/FeedbackButton'
 import { getDb } from '@/lib/db/database'
 import { getAppConfig } from '@/lib/db/queries'
 import { getSession } from '@/lib/auth'
@@ -30,7 +31,9 @@ export default async function RootLayout({
   const pathname = headersList.get('x-pathname') || '/'
 
   const isMaintenancePage = pathname.startsWith('/maintenance')
+  const isLoginPage = pathname.startsWith('/login')
   const isApiRoute = pathname.startsWith('/api/')
+  const showFeedback = !isMaintenancePage && !isLoginPage && !isApiRoute
 
   if (!isMaintenancePage && !isApiRoute) {
     try {
@@ -58,6 +61,7 @@ export default async function RootLayout({
           <span>© 2026 - HOORTRADE</span>
           <UserBar />
         </footer>
+        {showFeedback && <FeedbackButton />}
       </body>
     </html>
   )

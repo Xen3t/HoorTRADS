@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Synthèse — Casanov Pergolas RUIVO</title>
+<style>
+:root {
+  --green: #2EB872;
+  --green-light: #E8F7F0;
+  --teal: #19A7CE;
+  --teal-light: #E1F4FA;
+  --red: #E15554;
+  --red-light: #FCEBEB;
+  --amber: #F59E0B;
+  --amber-light: #FEF3C7;
+  --bg: #F8F9FA;
+  --surface: #F2F4F6;
+  --border: #E4E7EA;
+  --text-primary: #1F2937;
+  --text-secondary: #6B7280;
+  --text-disabled: #9CA3AF;
+  --blue: #3B82F6;
+  --blue-light: #DBEAFE;
+  --purple: #8B5CF6;
+  --purple-light: #EDE9FE;
+  --emerald: #10B981;
+  --emerald-light: #D1FAE5;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Titillium Web', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.container { max-width: 1100px; margin: 0 auto; padding: 36px 24px 60px; }
+
+/* HEADER */
+.report-header {
+  background: white; border: 1px solid var(--border); border-radius: 14px;
+  padding: 24px 28px; margin-bottom: 24px;
+  display: flex; justify-content: space-between; align-items: center; gap: 24px;
+}
+.report-header h1 { font-size: 24px; font-weight: 700; line-height: 1.2; }
+.report-header .subtitle {
+  display: flex; flex-wrap: wrap; gap: 14px;
+  margin-top: 8px; font-size: 13px; color: var(--text-secondary);
+}
+.report-header .subtitle .item { display: inline-flex; align-items: center; gap: 5px; }
+.report-header .stamp {
+  text-align: right; flex-shrink: 0;
+}
+.report-header .stamp .label {
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--text-disabled); margin-bottom: 4px;
+}
+.report-header .stamp .date {
+  font-size: 13px; font-weight: 600; color: var(--text-primary);
+  font-family: 'JetBrains Mono', monospace;
+}
+.status-badge {
+  display: inline-block; font-size: 11px; font-weight: 700;
+  padding: 4px 10px; border-radius: 999px; margin-left: 8px;
+  vertical-align: middle;
+}
+.status-done { background: var(--green-light); color: var(--green); }
+
+/* KPI GRID */
+.kpi-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 24px; }
+.kpi {
+  background: white; border-radius: 12px; padding: 18px;
+  border: 1px solid var(--border);
+}
+.kpi-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-disabled); margin-bottom: 8px; }
+.kpi-value { font-size: 30px; font-weight: 700; line-height: 1; }
+.kpi-sub { font-size: 11px; color: var(--text-secondary); margin-top: 6px; }
+.kpi-icon { float: right; font-size: 20px; opacity: 0.4; }
+.kpi.alert .kpi-value { color: var(--red); }
+.kpi.success .kpi-value { color: var(--green); }
+.kpi.warning .kpi-value { color: var(--amber); }
+
+/* SECTION */
+.section { background: white; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 20px; }
+.section-header {
+  padding: 14px 18px; border-bottom: 1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.section-header h2 { font-size: 14px; font-weight: 700; }
+.section-header .meta { font-size: 11px; color: var(--text-disabled); }
+.section-body { padding: 18px; }
+
+/* TIME BREAKDOWN */
+.timing-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+.timing-step {
+  text-align: center; padding: 14px 10px;
+  background: var(--surface); border-radius: 10px;
+}
+.timing-step .step-icon { font-size: 18px; margin-bottom: 4px; }
+.timing-step .step-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-disabled); margin-bottom: 6px; }
+.timing-step .step-time { font-size: 18px; font-weight: 700; color: var(--text-primary); }
+.timing-step .step-unit { font-size: 11px; color: var(--text-secondary); margin-left: 2px; font-weight: 400; }
+.timing-step .step-detail { font-size: 10px; color: var(--text-disabled); margin-top: 4px; font-family: 'JetBrains Mono', monospace; }
+.timing-bar {
+  display: flex; height: 10px; border-radius: 999px; overflow: hidden;
+  margin-top: 16px; background: var(--surface);
+}
+.timing-bar div[title] { cursor: help; }
+.timing-bar .extract { background: var(--blue); }
+.timing-bar .doc { background: var(--purple); }
+.timing-bar .translate { background: var(--teal); }
+.timing-bar .image { background: var(--green); }
+.timing-bar .verify { background: var(--amber); }
+.timing-legend {
+  display: flex; flex-wrap: wrap; gap: 14px; margin-top: 10px;
+  font-size: 11px; color: var(--text-secondary);
+}
+.timing-legend .dot { display: inline-block; width: 8px; height: 8px; border-radius: 999px; margin-right: 4px; vertical-align: middle; }
+
+/* MODELS USED */
+.models-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.model-card {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px; background: var(--surface); border-radius: 10px;
+}
+.model-icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; flex-shrink: 0;
+}
+.model-icon.extract { background: var(--blue-light); }
+.model-icon.translate { background: var(--teal-light); }
+.model-icon.image { background: var(--green-light); }
+.model-icon.verify { background: var(--amber-light); }
+.model-info { flex: 1; min-width: 0; }
+.model-step { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-disabled); }
+.model-name { font-size: 13px; font-weight: 600; font-family: 'JetBrains Mono', monospace; color: var(--text-primary); margin-top: 2px; word-break: break-all; }
+.model-provider { display: inline-block; font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 999px; margin-left: 6px; vertical-align: middle; }
+.provider-gemini { background: var(--blue-light); color: #1E40AF; }
+.provider-openai { background: var(--emerald-light); color: #065F46; }
+.provider-mixed { background: var(--amber-light); color: #92400E; }
+.model-stats { font-size: 10px; color: var(--text-secondary); margin-top: 4px; }
+
+/* QUALITY OVERVIEW */
+.quality-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+.quality-card { padding: 14px; border-radius: 10px; border: 1px solid var(--border); }
+.quality-card .label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-disabled); margin-bottom: 4px; }
+.quality-card .value { font-size: 22px; font-weight: 700; }
+.quality-card .desc { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
+.quality-card .progress { height: 4px; background: var(--surface); border-radius: 999px; margin-top: 10px; overflow: hidden; }
+.quality-card .progress-fill { height: 100%; background: var(--green); border-radius: 999px; }
+
+.success-rate-bar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; background: var(--surface); border-radius: 10px;
+  margin-bottom: 14px;
+}
+.success-rate-bar .label { font-size: 12px; font-weight: 600; flex-shrink: 0; min-width: 110px; }
+.success-rate-bar .bar { flex: 1; height: 10px; background: white; border-radius: 999px; overflow: hidden; display: flex; }
+.success-rate-bar .bar .ok { background: var(--green); }
+.success-rate-bar .bar .ko { background: var(--red); }
+.success-rate-bar .pct { font-size: 12px; font-weight: 700; min-width: 50px; text-align: right; }
+
+/* IMAGE FAILURES TABLE */
+.failures-table { width: 100%; }
+.failures-table thead th {
+  text-align: left; padding: 10px 12px; font-size: 10px;
+  font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+  color: var(--text-disabled); border-bottom: 1px solid var(--border);
+}
+.failures-table tbody td {
+  padding: 10px 12px; font-size: 12px; border-bottom: 1px solid var(--border);
+}
+.failures-table tbody tr:last-child td { border-bottom: none; }
+.failures-table .file-name { font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+.failures-table .lang-tag { display: inline-block; font-weight: 700; font-size: 11px; padding: 2px 6px; border-radius: 4px; background: var(--surface); }
+.failures-table .err-msg {
+  color: var(--red); font-family: 'JetBrains Mono', monospace; font-size: 11px;
+  word-break: break-word;
+}
+
+/* REGEN TABLE */
+.regen-table { width: 100%; }
+.regen-table thead th {
+  text-align: left; padding: 10px 12px; font-size: 10px;
+  font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+  color: var(--text-disabled); border-bottom: 1px solid var(--border);
+}
+.regen-table tbody td {
+  padding: 10px 12px; font-size: 12px; border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.regen-table tbody tr:last-child td { border-bottom: none; }
+.regen-tag {
+  display: inline-block; font-size: 10px; font-weight: 700;
+  padding: 2px 7px; border-radius: 999px;
+}
+.regen-source { background: var(--blue-light); color: #1E40AF; }
+.regen-corr { background: var(--amber-light); color: #92400E; }
+.regen-prompt { font-size: 11px; color: var(--text-secondary); font-style: italic; margin-top: 2px; }
+
+.section-info { font-size: 11px; color: var(--text-disabled); margin-top: 8px; padding: 8px 10px; background: var(--surface); border-radius: 8px; }
+.section-info strong { color: var(--text-primary); }
+
+/* FOOTER */
+.footer {
+  text-align: center; margin-top: 32px;
+  font-size: 11px; color: var(--text-disabled);
+}
+.footer code { font-family: 'JetBrains Mono', monospace; padding: 1px 5px; background: var(--surface); border-radius: 4px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- REPORT HEADER -->
+  <div class="report-header">
+    <div>
+      <h1>
+        Casanov — Pergolas RUIVO
+        <span class="status-badge status-done">Exporté</span>
+      </h1>
+      <div class="subtitle">
+        <span class="item">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          Mathias Vinet
+        </span>
+        <span class="item">📅 27 avril 2026 · 14:30 → 14:42</span>
+        <span class="item">🌍 4 langues</span>
+        <span class="item">📦 Mode standard · 1K</span>
+      </div>
+    </div>
+    <div class="stamp">
+      <div class="label">Synthèse générée</div>
+      <div class="date">27/04/2026 14:42</div>
+    </div>
+  </div>
+
+  <!-- AGGREGATE KPIs -->
+  <div class="kpi-grid">
+    <div class="kpi">
+      <span class="kpi-icon">🖼️</span>
+      <div class="kpi-label">Images générées</div>
+      <div class="kpi-value">44</div>
+      <div class="kpi-sub">11 visuels × 4 langues</div>
+    </div>
+    <div class="kpi alert">
+      <span class="kpi-icon">⚠</span>
+      <div class="kpi-label">Échecs</div>
+      <div class="kpi-value">3</div>
+      <div class="kpi-sub">6.8% du total</div>
+    </div>
+    <div class="kpi warning">
+      <span class="kpi-icon">⟳</span>
+      <div class="kpi-label">Regen depuis source</div>
+      <div class="kpi-value">5</div>
+      <div class="kpi-sub">retry sans modif</div>
+    </div>
+    <div class="kpi warning">
+      <span class="kpi-icon">✏️</span>
+      <div class="kpi-label">Regen correctives</div>
+      <div class="kpi-value">7</div>
+      <div class="kpi-sub">avec prompt utilisateur</div>
+    </div>
+    <div class="kpi success">
+      <span class="kpi-icon">⏱</span>
+      <div class="kpi-label">Durée totale</div>
+      <div class="kpi-value">12'08"</div>
+      <div class="kpi-sub">extraction → export</div>
+    </div>
+  </div>
+
+  <!-- MODELS USED -->
+  <div class="section">
+    <div class="section-header">
+      <h2>🧠 Modèles utilisés</h2>
+      <span class="meta">Configuration au moment de la session</span>
+    </div>
+    <div class="section-body">
+      <div class="models-grid">
+        <div class="model-card">
+          <div class="model-icon extract">🔎</div>
+          <div class="model-info">
+            <div class="model-step">Extraction</div>
+            <div class="model-name">gemini-3.1-flash-lite-preview <span class="model-provider provider-gemini">Gemini</span></div>
+            <div class="model-stats">9 zones extraites · 12s</div>
+          </div>
+        </div>
+        <div class="model-card">
+          <div class="model-icon translate">🌐</div>
+          <div class="model-info">
+            <div class="model-step">Traduction</div>
+            <div class="model-name">gpt-5 <span class="model-provider provider-openai">OpenAI</span></div>
+            <div class="model-stats">4 langues · 28s · 0 fallback</div>
+          </div>
+        </div>
+        <div class="model-card">
+          <div class="model-icon image">🎨</div>
+          <div class="model-info">
+            <div class="model-step">Génération d'image</div>
+            <div class="model-name">gpt-image-2-2026-04-21 <span class="model-provider provider-openai">OpenAI</span></div>
+            <div class="model-stats">44 images · orchestrateur gpt-5-mini · 9'42"</div>
+          </div>
+        </div>
+        <div class="model-card">
+          <div class="model-icon verify">🔍</div>
+          <div class="model-info">
+            <div class="model-step">Vérification</div>
+            <div class="model-name">gemini-3.1-pro-preview <span class="model-provider provider-gemini">Gemini</span></div>
+            <div class="model-stats">41 vérifs · score moyen 4.5/5 · 39s</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TIME BREAKDOWN -->
+  <div class="section">
+    <div class="section-header">
+      <h2>⏱ Temps par étape</h2>
+      <span class="meta">12'08" total</span>
+    </div>
+    <div class="section-body">
+      <div class="timing-grid">
+        <div class="timing-step">
+          <div class="step-icon">🔎</div>
+          <div class="step-label">Extraction</div>
+          <div class="step-time">12<span class="step-unit">s</span></div>
+          <div class="step-detail">1.6%</div>
+        </div>
+        <div class="timing-step">
+          <div class="step-icon">📄</div>
+          <div class="step-label">Doc filter</div>
+          <div class="step-time">8<span class="step-unit">s</span></div>
+          <div class="step-detail">1.1%</div>
+        </div>
+        <div class="timing-step">
+          <div class="step-icon">🌐</div>
+          <div class="step-label">Traduction</div>
+          <div class="step-time">28<span class="step-unit">s</span></div>
+          <div class="step-detail">3.8%</div>
+        </div>
+        <div class="timing-step">
+          <div class="step-icon">🎨</div>
+          <div class="step-label">Génération</div>
+          <div class="step-time">9'42<span class="step-unit"></span></div>
+          <div class="step-detail">79.9%</div>
+        </div>
+        <div class="timing-step">
+          <div class="step-icon">🔍</div>
+          <div class="step-label">Vérification</div>
+          <div class="step-time">98<span class="step-unit">s</span></div>
+          <div class="step-detail">13.4%</div>
+        </div>
+      </div>
+      <div class="timing-bar">
+        <div class="extract" style="width: 1.6%" title="Extraction · 12s"></div>
+        <div class="doc" style="width: 1.1%" title="Doc filter · 8s"></div>
+        <div class="translate" style="width: 3.8%" title="Traduction · 28s"></div>
+        <div class="image" style="width: 79.9%" title="Génération · 9'42"></div>
+        <div class="verify" style="width: 13.6%" title="Vérification · 98s"></div>
+      </div>
+      <div class="timing-legend">
+        <span><span class="dot" style="background: var(--blue)"></span>Extraction · 12s</span>
+        <span><span class="dot" style="background: var(--purple)"></span>Doc filter · 8s</span>
+        <span><span class="dot" style="background: var(--teal)"></span>Traduction · 28s</span>
+        <span><span class="dot" style="background: var(--green)"></span>Génération · 9'42"</span>
+        <span><span class="dot" style="background: var(--amber)"></span>Vérification · 98s</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- QUALITY OVERVIEW -->
+  <div class="section">
+    <div class="section-header">
+      <h2>📊 Qualité de la génération</h2>
+      <span class="meta">44 images analysées</span>
+    </div>
+    <div class="section-body">
+      <div class="success-rate-bar">
+        <span class="label">Taux de succès</span>
+        <div class="bar"><div class="ok" style="width: 93.2%"></div><div class="ko" style="width: 6.8%"></div></div>
+        <span class="pct">93.2%</span>
+      </div>
+      <div class="quality-grid">
+        <div class="quality-card">
+          <div class="label">Score moyen</div>
+          <div class="value">4.5<span style="font-size: 14px; color: var(--text-secondary); font-weight: 400;">/5</span></div>
+          <div class="desc">vérification visuelle automatique</div>
+          <div class="progress"><div class="progress-fill" style="width: 90%"></div></div>
+        </div>
+        <div class="quality-card">
+          <div class="label">Validés du 1er coup</div>
+          <div class="value">29<span style="font-size: 14px; color: var(--text-secondary); font-weight: 400;">/41</span></div>
+          <div class="desc">70.7% sans régénération</div>
+          <div class="progress"><div class="progress-fill" style="width: 70.7%"></div></div>
+        </div>
+        <div class="quality-card">
+          <div class="label">Itérations moyennes</div>
+          <div class="value">1.29</div>
+          <div class="desc">incl. regen src + correctives</div>
+          <div class="progress"><div class="progress-fill" style="width: 29%; background: var(--amber)"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FAILURES -->
+  <div class="section">
+    <div class="section-header">
+      <h2>⚠ Images en échec (3)</h2>
+      <span class="meta">après 3 tentatives</span>
+    </div>
+    <table class="failures-table">
+      <thead>
+        <tr>
+          <th>Image</th>
+          <th>Langue</th>
+          <th>Erreur</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="file-name">1080x1080px 7.jpg</td>
+          <td><span class="lang-tag">DE</span></td>
+          <td class="err-msg">fetch failed (3 attempts): operation aborted</td>
+        </tr>
+        <tr>
+          <td class="file-name">1080x1350px 4.jpg</td>
+          <td><span class="lang-tag">IT</span></td>
+          <td class="err-msg">503 Service Unavailable: model overloaded</td>
+        </tr>
+        <tr>
+          <td class="file-name">1920x1080px 9.jpg</td>
+          <td><span class="lang-tag">NL</span></td>
+          <td class="err-msg">empty response from image generation</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- REGEN HISTORY -->
+  <div class="section">
+    <div class="section-header">
+      <h2>⟳ Historique des régénérations (12)</h2>
+      <span class="meta">5 depuis source · 7 correctives</span>
+    </div>
+    <table class="regen-table">
+      <thead>
+        <tr>
+          <th>Image</th>
+          <th>Langue</th>
+          <th>Type</th>
+          <th>Détails</th>
+          <th>Heure</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="file-name">1080x1080px 1.jpg</td>
+          <td><span class="lang-tag">DE</span></td>
+          <td><span class="regen-tag regen-source">Depuis source</span></td>
+          <td>—</td>
+          <td><span class="duration" style="color: var(--text-secondary); font-family: 'JetBrains Mono', monospace; font-size: 11px;">14:33</span></td>
+        </tr>
+        <tr>
+          <td class="file-name">1080x1080px 1.jpg</td>
+          <td><span class="lang-tag">DE</span></td>
+          <td><span class="regen-tag regen-corr">Corrective</span></td>
+          <td>
+            <div class="regen-prompt">"Le headline doit être centré, pas à gauche"</div>
+          </td>
+          <td><span style="color: var(--text-secondary); font-family: 'JetBrains Mono', monospace; font-size: 11px;">14:34</span></td>
+        </tr>
+        <tr>
+          <td class="file-name">1080x1350px 3.jpg</td>
+          <td><span class="lang-tag">IT</span></td>
+          <td><span class="regen-tag regen-corr">Corrective</span></td>
+          <td>
+            <div class="regen-prompt">"Restaurer le logo CASANOV en haut à droite"</div>
+          </td>
+          <td><span style="color: var(--text-secondary); font-family: 'JetBrains Mono', monospace; font-size: 11px;">14:36</span></td>
+        </tr>
+        <tr>
+          <td class="file-name">1920x1080px 2.jpg</td>
+          <td><span class="lang-tag">SK</span></td>
+          <td><span class="regen-tag regen-source">Depuis source</span></td>
+          <td>—</td>
+          <td><span style="color: var(--text-secondary); font-family: 'JetBrains Mono', monospace; font-size: 11px;">14:38</span></td>
+        </tr>
+        <tr>
+          <td class="file-name">1080x1920px 5.jpg</td>
+          <td><span class="lang-tag">DE</span></td>
+          <td><span class="regen-tag regen-corr">Corrective</span></td>
+          <td>
+            <div class="regen-prompt">"Couleur du fond plus claire (gris clair au lieu de gris foncé)"</div>
+          </td>
+          <td><span style="color: var(--text-secondary); font-family: 'JetBrains Mono', monospace; font-size: 11px;">14:39</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    Synthèse autonome générée par <code>HoorTRADS</code> · job <code>02619125-9d24-4748-b599-2d0207a187a8</code>
+    <br>
+    Fichier indépendant — peut être ouvert sans serveur, archivé, partagé.
+  </div>
+
+</div>
+</body>
+</html>

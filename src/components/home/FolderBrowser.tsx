@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 
 interface FolderEntry {
@@ -21,15 +21,20 @@ export default function FolderBrowser({ onSelect, onCancel }: FolderBrowserProps
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [manualPath, setManualPath] = useState('')
+  const abortRef = useRef<AbortController | null>(null)
 
   const browse = async (folderPath?: string) => {
+    abortRef.current?.abort()
+    const controller = new AbortController()
+    abortRef.current = controller
+
     setIsLoading(true)
     setError(null)
     try {
       const url = folderPath
         ? `/api/browse-folder?path=${encodeURIComponent(folderPath)}`
         : '/api/browse-folder'
-      const res = await fetch(url)
+      const res = await fetch(url, { signal: controller.signal })
       const data = await res.json()
 
       if (!res.ok) {
@@ -41,15 +46,18 @@ export default function FolderBrowser({ onSelect, onCancel }: FolderBrowserProps
       setCurrentPath(data.currentPath || '')
       setParentPath(data.parentPath || null)
       setManualPath(data.currentPath || '')
-    } catch {
+    } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') return
       setError('Erreur de connexion')
     } finally {
-      setIsLoading(false)
+      if (!controller.signal.aborted) setIsLoading(false)
     }
   }
 
   useEffect(() => {
     browse()
+    return () => { abortRef.current?.abort() }
+   
   }, [])
 
   const handleNavigate = (path: string) => {

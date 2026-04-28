@@ -3,8 +3,6 @@ import { getDb } from '@/lib/db/database'
 import { getAppConfig, setAppConfig } from '@/lib/db/queries'
 
 const PROMPT_KEYS = [
-  'base_prompt',
-  'prompt_precision_filter',
   'prompt_google_extract',
   'prompt_google_translate',
   'prompt_google_render',

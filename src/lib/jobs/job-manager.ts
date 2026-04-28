@@ -2,6 +2,21 @@ import { randomUUID } from 'crypto'
 import type Database from 'better-sqlite3'
 import { resolveLanguages } from '@/lib/countries/country-resolver'
 import type { GenerationJob } from '@/types/generation'
+import { getAppConfig } from '@/lib/db/queries'
+
+function snapshotPipelineModels(db: Database.Database): Record<string, string> {
+  const read = (key: string) => { try { return getAppConfig(db, key) || '' } catch { return '' } }
+  return {
+    primary_extract: read('primary_model_extract') || read('model_extract'),
+    primary_doc_filter: read('primary_model_doc_filter') || read('primary_model_extract') || read('model_extract'),
+    primary_translate: read('primary_model_translate') || read('model_translate'),
+    primary_generate: read('primary_model_generate') || read('model_generate'),
+    backup_extract: read('backup_model_extract'),
+    backup_doc_filter: read('backup_model_doc_filter') || read('backup_model_extract'),
+    backup_translate: read('backup_model_translate'),
+    backup_generate: read('backup_model_generate'),
+  }
+}
 
 interface CreateJobInput {
   sessionId: string
@@ -51,7 +66,7 @@ export function createGenerationJob(db: Database.Database, input: CreateJobInput
   }
 
   // Insert job
-  const jobConfig = { ...config, langToCountries }
+  const jobConfig = { ...config, langToCountries, pipelineSnapshot: snapshotPipelineModels(db) }
   db.prepare(`
     INSERT INTO generation_jobs (id, session_id, status, total_tasks, completed_tasks, failed_tasks, config, created_at, updated_at)
     VALUES (?, ?, 'pending', ?, 0, 0, ?, ?, ?)

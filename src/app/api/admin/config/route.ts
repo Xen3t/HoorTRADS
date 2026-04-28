@@ -13,8 +13,31 @@ const CONFIG_KEYS = [
   'generate_top_k',
   'drive_client_id',
   'drive_client_secret',
-  'verification_mode',
   'cost_per_image_eur',
+  'openai_api_key',
+  'openai_model_extract',
+  'openai_model_translate',
+  'pretrans_gemini_enabled',
+  'pretrans_openai_enabled',
+  'image_provider',
+  'openai_model_generate',
+  // New unified primary/backup configuration
+  'primary_model_extract',
+  'primary_model_translate',
+  'primary_model_generate',
+  'primary_model_verify',
+  'primary_model_doc_filter',
+  'backup_enabled',
+  'backup_model_extract',
+  'backup_model_translate',
+  'backup_model_generate',
+  'backup_model_verify',
+  'backup_model_doc_filter',
+  // Orchestrator chat model used when gpt-image-* is picked for image generation
+  // (calls the image_generation tool via Responses API)
+  'openai_image_orchestrator',
+  // Auto-generate a per-session HTML synthesis next to the exported images
+  'synthesis_html_enabled',
 ]
 
 export async function GET() {

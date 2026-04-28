@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Generate · B · Modal plein écran</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Titillium+Web:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --brand-teal: #0ea5a4; --text-primary: #1a1f2c; --text-secondary: #6b7280; --text-disabled: #9ca3af; --border: #e5e7eb; --bg: #f7f8fa; }
+  body { font-family: 'Titillium Web', system-ui, sans-serif; background: var(--bg); color: var(--text-primary); }
+  .canvas-bg { background-color: #fafbfc; background-image: radial-gradient(circle, #d1d5db 1px, transparent 1px); background-size: 20px 20px; }
+  @keyframes pulse-running { 0%,100% { box-shadow: 0 0 0 0 #0ea5a4cc; } 50% { box-shadow: 0 0 0 12px transparent; } }
+  .node-running { animation: pulse-running 1.5s infinite; }
+  .img-tile { background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%); border-radius: 8px; aspect-ratio: 1; }
+</style>
+</head>
+<body class="min-h-screen">
+
+<div class="text-[10px] text-center py-1 text-white" style="background: var(--brand-teal)">
+  MOCKUP · Generate live · Direction B — Modal plein écran · <a href="index.html" class="underline">retour à l'index</a>
+</div>
+
+<!-- Background page (dimmed) -->
+<div class="opacity-30 pointer-events-none">
+  <header class="bg-white border-b" style="border-color: var(--border)">
+    <div class="px-8 py-4">
+      <h1 class="font-bold text-base">SOLDES_PRINTEMPS_2026 · ADS Standard</h1>
+    </div>
+  </header>
+  <main class="px-8 py-6">
+    <div class="grid grid-cols-6 gap-3">
+      <div class="bg-white rounded-[8px] p-2 shadow-sm"><div class="img-tile"></div></div>
+      <div class="bg-white rounded-[8px] p-2 shadow-sm"><div class="img-tile"></div></div>
+      <div class="bg-white rounded-[8px] p-2 shadow-sm"><div class="img-tile"></div></div>
+      <div class="bg-white rounded-[8px] p-2 shadow-sm"><div class="img-tile"></div></div>
+      <div class="bg-white rounded-[8px] p-2 shadow-sm"><div class="img-tile"></div></div>
+      <div class="bg-white rounded-[8px] p-2 shadow-sm"><div class="img-tile"></div></div>
+      <div class="bg-white rounded-[8px] p-2 shadow-sm"><div class="img-tile"></div></div>
+      <div class="bg-white rounded-[8px] p-2 shadow-sm"><div class="img-tile"></div></div>
+    </div>
+  </main>
+</div>
+
+<!-- Modal overlay -->
+<div class="fixed inset-0 z-50 flex items-center justify-center p-6" style="background:rgba(15, 23, 42, 0.7); backdrop-filter: blur(4px)">
+
+  <div class="bg-white rounded-[20px] shadow-2xl flex flex-col overflow-hidden" style="width: 100%; max-width: 1300px; height: calc(100vh - 80px)">
+
+    <!-- Modal header -->
+    <header class="border-b px-6 py-4 flex items-center justify-between" style="border-color: var(--border)">
+      <div>
+        <div class="text-xs uppercase tracking-wider" style="color: var(--text-disabled)">Workflow en cours d'exécution</div>
+        <div class="flex items-center gap-3 mt-1">
+          <h2 class="text-xl font-bold">ADS Standard</h2>
+          <span class="text-xs px-2 py-1 rounded-full font-semibold" style="background:#ecfeff;color:#0e7490">v3</span>
+          <span class="text-xs flex items-center gap-1.5"><span class="w-2 h-2 rounded-full" style="background: var(--brand-teal)"></span>En cours · étape 3/5</span>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <span class="text-sm" style="color: var(--text-secondary)">12 / 24 images · 4min restantes</span>
+        <button class="text-sm px-3 py-2 rounded-[10px] border" style="border-color: var(--border)">Mettre en pause</button>
+        <button class="w-9 h-9 rounded-full flex items-center justify-center hover:bg-gray-100 text-xl">✕</button>
+      </div>
+    </header>
+
+    <!-- Canvas big -->
+    <div class="flex-1 canvas-bg relative overflow-hidden">
+
+      <!-- Edges -->
+      <svg class="absolute inset-0 w-full h-full" style="pointer-events:none">
+        <defs>
+          <marker id="arrGB" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+            <polygon points="0 0, 8 4, 0 8" fill="#94a3b8"/>
+          </marker>
+        </defs>
+        <path d="M 200 220 C 240 220, 270 220, 310 220" stroke="#16a34a" stroke-width="2.5" fill="none" marker-end="url(#arrGB)"/>
+        <path d="M 470 220 C 510 220, 540 220, 580 220" stroke="#16a34a" stroke-width="2.5" fill="none" marker-end="url(#arrGB)"/>
+        <path d="M 740 220 C 780 220, 810 220, 850 220" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4,4" fill="none" marker-end="url(#arrGB)"/>
+        <path d="M 1010 200 C 1060 175, 1090 130, 1140 130" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4,4" fill="none" marker-end="url(#arrGB)"/>
+        <path d="M 1010 240 C 1060 265, 1090 310, 1140 310" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4,4" fill="none" marker-end="url(#arrGB)"/>
+      </svg>
+
+      <!-- Node Start (done) -->
+      <div class="absolute" style="left:80px;top:200px">
+        <div class="rounded-[14px] p-4 border-2 bg-white min-w-[120px]" style="border-color:#16a34a">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="w-7 h-7 rounded-full flex items-center justify-center text-white font-bold text-sm" style="background:#16a34a">✓</span>
+            <div class="font-bold text-sm">Start</div>
+          </div>
+          <div class="text-[11px]" style="color: var(--text-secondary)">24 images · 0.2s</div>
+        </div>
+      </div>
+
+      <!-- Node Generate (done) -->
+      <div class="absolute" style="left:310px;top:200px">
+        <div class="rounded-[14px] p-4 border-2 bg-white min-w-[160px]" style="border-color:#16a34a">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="w-7 h-7 rounded-full flex items-center justify-center text-white font-bold text-sm" style="background:#16a34a">✓</span>
+            <div class="font-bold text-sm">Générer image</div>
+          </div>
+          <div class="text-[11px]" style="color: var(--text-secondary)">gemini-3.1-flash · 3m12s</div>
+          <div class="mt-2 h-1 rounded-full overflow-hidden" style="background:#dcfce7">
+            <div class="h-full rounded-full" style="background:#16a34a; width:100%"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Node Verify (running, focused) -->
+      <div class="absolute" style="left:580px;top:200px">
+        <div class="rounded-[14px] p-4 border-2 bg-white min-w-[160px] node-running" style="border-color: var(--brand-teal); box-shadow: 0 0 0 4px #0ea5a420, 0 8px 24px rgba(0,0,0,0.08)">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="w-7 h-7 rounded-full flex items-center justify-center text-white font-bold text-sm animate-spin" style="background: var(--brand-teal)">⟳</span>
+            <div class="font-bold text-sm">Vérifier image</div>
+            <span class="text-[10px] px-1.5 py-0.5 rounded-full font-semibold ml-auto" style="background: var(--brand-teal);color:white">EN COURS</span>
+          </div>
+          <div class="text-[11px]" style="color: var(--brand-teal)">2 / 10 en cours · score moyen 4.3</div>
+          <div class="mt-2 h-1 rounded-full overflow-hidden" style="background:#e0f2fe">
+            <div class="h-full rounded-full" style="background: var(--brand-teal); width:20%"></div>
+          </div>
+          <div class="mt-2 text-[10px] font-mono p-2 rounded-[6px]" style="background:#0f172a;color:#94a3b8">
+            <div>task-12 IT → 4.5 ✓</div>
+            <div>task-13 ES → 4.8 ✓</div>
+            <div style="color:#fbbf24">task-14 DE → 3.7 ⚠</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Node Condition (idle) -->
+      <div class="absolute" style="left:850px;top:195px;opacity:0.65">
+        <div class="rounded-[14px] p-4 border-2 bg-white min-w-[160px]" style="border-color: var(--border)">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="w-7 h-7 rounded-full flex items-center justify-center font-bold text-sm" style="background:#fce7f3;color:#9d174d">⋔</span>
+            <div class="font-bold text-sm">Condition</div>
+          </div>
+          <div class="text-[11px]" style="color: var(--text-disabled)">score &lt; 4 ?</div>
+        </div>
+      </div>
+
+      <!-- Node Auto-correct (idle) -->
+      <div class="absolute" style="left:1140px;top:105px;opacity:0.5">
+        <div class="rounded-[14px] p-4 border-2 bg-white" style="border-color: var(--border)">
+          <div class="flex items-center gap-2"><span style="color:#15803d">↻</span><span class="font-bold text-sm">Auto-corriger</span></div>
+        </div>
+      </div>
+
+      <!-- Node Export (idle) -->
+      <div class="absolute" style="left:1140px;top:285px;opacity:0.5">
+        <div class="rounded-[14px] p-4 border-2 bg-white" style="border-color: var(--border)">
+          <div class="flex items-center gap-2"><span style="color:#15803d">⏏</span><span class="font-bold text-sm">Export</span></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Modal footer with summary -->
+    <footer class="border-t px-6 py-3 flex items-center justify-between" style="border-color: var(--border); background: #f8fafc">
+      <div class="flex items-center gap-6 text-xs">
+        <div><span class="font-bold" style="color:#16a34a">10</span> <span style="color: var(--text-secondary)">terminées</span></div>
+        <div><span class="font-bold" style="color: var(--brand-teal)">2</span> <span style="color: var(--text-secondary)">en cours</span></div>
+        <div><span class="font-bold" style="color: var(--text-secondary)">12</span> <span style="color: var(--text-secondary)">en attente</span></div>
+        <div><span class="font-bold" style="color:#dc2626">0</span> <span style="color: var(--text-secondary)">erreurs</span></div>
+        <div style="color: var(--text-disabled)">·</div>
+        <div style="color: var(--text-secondary)">Lancée à 14:18 · 5min écoulées</div>
+      </div>
+      <button class="text-xs" style="color: var(--text-secondary)">Cliquer un nœud pour voir détails ↗</button>
+    </footer>
+
+  </div>
+</div>
+
+</body>
+</html>

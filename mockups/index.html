@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>HoorTRADS — Mockups Configurateur de workflows</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Titillium+Web:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --brand-teal: #0ea5a4;
+    --text-primary: #1a1f2c;
+    --text-secondary: #6b7280;
+    --text-disabled: #9ca3af;
+    --border: #e5e7eb;
+    --bg: #f7f8fa;
+  }
+  body { font-family: 'Titillium Web', system-ui, sans-serif; background: var(--bg); color: var(--text-primary); }
+</style>
+</head>
+<body class="min-h-screen">
+
+<header class="bg-white border-b" style="border-color: var(--border)">
+  <div class="max-w-[1100px] mx-auto px-8 py-6 flex items-center justify-between">
+    <div>
+      <p class="text-xs uppercase tracking-wider" style="color: var(--text-disabled)">HoorTRADS · Mockups</p>
+      <h1 class="text-2xl font-bold mt-1">Configurateur de workflows — propositions visuelles</h1>
+      <p class="text-sm mt-1" style="color: var(--text-secondary)">4 écrans × 3 directions · HTML + Tailwind statique · pour validation visuelle uniquement</p>
+    </div>
+    <div class="text-right text-xs" style="color: var(--text-disabled)">
+      <div>Charte HoorTRADS reprise</div>
+      <div>(border-radius 16/12/8, Titillium Web)</div>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-[1100px] mx-auto px-8 py-10 space-y-12">
+
+  <!-- ====== Section 1 ====== -->
+  <section>
+    <div class="flex items-baseline gap-3 mb-5">
+      <span class="text-xs px-2 py-0.5 rounded-full font-semibold" style="background: #ecfeff; color: #0e7490">Écran 1</span>
+      <h2 class="text-xl font-bold">Liste des workflows · côté admin</h2>
+    </div>
+    <p class="text-sm mb-5" style="color: var(--text-secondary)">Page d'index où l'admin retrouve les configs existantes, les active, les duplique ou en crée de nouvelles.</p>
+    <div class="grid grid-cols-3 gap-5">
+      <a href="list-A.html" target="_blank" class="block bg-white rounded-[16px] p-5 shadow-sm hover:shadow-md transition">
+        <div class="text-[11px] uppercase tracking-wider mb-2" style="color: var(--brand-teal)">Direction A</div>
+        <h3 class="font-bold text-base mb-2">Tableau dense</h3>
+        <p class="text-sm" style="color: var(--text-secondary)">Liste tabulaire classique, façon admin pro. Toutes les infos en un coup d'œil, scan rapide.</p>
+      </a>
+      <a href="list-B.html" target="_blank" class="block bg-white rounded-[16px] p-5 shadow-sm hover:shadow-md transition">
+        <div class="text-[11px] uppercase tracking-wider mb-2" style="color: var(--brand-teal)">Direction B</div>
+        <h3 class="font-bold text-base mb-2">Cartes avec mini-aperçu</h3>
+        <p class="text-sm" style="color: var(--text-secondary)">Grille de cards, chacune avec une vignette schématique du workflow. Plus visuel, plus chaleureux.</p>
+      </a>
+      <a href="list-C.html" target="_blank" class="block bg-white rounded-[16px] p-5 shadow-sm hover:shadow-md transition">
+        <div class="text-[11px] uppercase tracking-wider mb-2" style="color: var(--brand-teal)">Direction C</div>
+        <h3 class="font-bold text-base mb-2">Liste + preview</h3>
+        <p class="text-sm" style="color: var(--text-secondary)">Sidebar liste à gauche, preview du workflow sélectionné à droite. Façon Mail / Notion.</p>
+      </a>
+    </div>
+  </section>
+
+  <!-- ====== Section 2 ====== -->
+  <section>
+    <div class="flex items-baseline gap-3 mb-5">
+      <span class="text-xs px-2 py-0.5 rounded-full font-semibold" style="background: #faf5ff; color: #7e22ce">Écran 2</span>
+      <h2 class="text-xl font-bold">Éditeur visuel · canvas drag-and-drop</h2>
+    </div>
+    <p class="text-sm mb-5" style="color: var(--text-secondary)">Le cœur du configurateur. C'est là que l'admin compose un workflow en posant et reliant des nœuds.</p>
+    <div class="grid grid-cols-3 gap-5">
+      <a href="editor-A.html" target="_blank" class="block bg-white rounded-[16px] p-5 shadow-sm hover:shadow-md transition">
+        <div class="text-[11px] uppercase tracking-wider mb-2" style="color: var(--brand-teal)">Direction A</div>
+        <h3 class="font-bold text-base mb-2">3 colonnes Figma-like</h3>
+        <p class="text-sm" style="color: var(--text-secondary)">Palette gauche fixe · canvas centre · panneau de propriétés droite. Layout d'éditeur professionnel classique.</p>
+      </a>
+      <a href="editor-B.html" target="_blank" class="block bg-white rounded-[16px] p-5 shadow-sm hover:shadow-md transition">
+        <div class="text-[11px] uppercase tracking-wider mb-2" style="color: var(--brand-teal)">Direction B</div>
+        <h3 class="font-bold text-base mb-2">Canvas dominant + drawer</h3>
+        <p class="text-sm" style="color: var(--text-secondary)">Canvas plein écran. Palette compacte en barre flottante. Propriétés en drawer bottom. Focus sur le diagramme.</p>
+      </a>
+      <a href="editor-C.html" target="_blank" class="block bg-white rounded-[16px] p-5 shadow-sm hover:shadow-md transition">
+        <div class="text-[11px] uppercase tracking-wider mb-2" style="color: var(--brand-teal)">Direction C</div>
+        <h3 class="font-bold text-base mb-2">Sidebar gauche unifiée</h3>
+        <p class="text-sm" style="color: var(--text-secondary)">Un seul panneau gauche large avec onglets Palette / Arborescence / Propriétés. Canvas occupe tout le reste.</p>
+      </a>
+    </div>
+  </section>
+
+  <!-- ====== Section 3 ====== -->
+  <section>
+    <div class="flex items-baseline gap-3 mb-5">
+      <span class="text-xs px-2 py-0.5 rounded-full font-semibold" style="background: #fef3c7; color: #b45309">Écran 3</span>
+      <h2 class="text-xl font-bold">Configure · côté graphiste · choix du workflow</h2>
+    </div>
+    <p class="text-sm mb-5" style="color: var(--text-secondary)">Comment le graphiste choisit quel workflow utiliser au moment de configurer une campagne.</p>
+    <div class="grid grid-cols-3 gap-5">
+      <a href="configure-A.html" target="_blank" class="block bg-white rounded-[16px] p-5 shadow-sm hover:shadow-md transition">
+        <div class="text-[11px] uppercase tracking-wider mb-2" style="color: var(--brand-teal)">Direction A</div>
+        <h3 class="font-bold text-base mb-2">Select discret en haut</h3>
+        <p class="text-sm" style="color: var(--text-secondary)">Page Configure actuelle conservée à 95%. Un dropdown stylé "Type d'image" en haut. Changement minimal, transition douce.</p>
+      </a>
+      <a href="configure-B.html" target="_blank" class="block bg-white rounded-[16px] p-5 shadow-sm hover:shadow-md transition">
+        <div class="text-[11px] uppercase tracking-wider mb-2" style="color: var(--brand-teal)">Direction B</div>
+        <h3 class="font-bold text-base mb-2">Cards en grille</h3>
+        <p class="text-sm" style="color: var(--text-secondary)">Étape 1 : grille de cards visuelles à choisir, chacune avec mini-aperçu. Étape 2 : config classique.</p>
+      </a>
+      <a href="configure-C.html" target="_blank" class="block bg-white rounded-[16px] p-5 shadow-sm hover:shadow-md transition">
+        <div class="text-[11px] uppercase tracking-wider mb-2" style="color: var(--brand-teal)">Direction C</div>
+        <h3 class="font-bold text-base mb-2">Wizard multi-étapes</h3>
+        <p class="text-sm" style="color: var(--text-secondary)">Breadcrumb 1.Type → 2.Pays → 3.Options → 4.Lancement. Progressive disclosure, plus pédagogique.</p>
+      </a>
+    </div>
+  </section>
+
+  <!-- ====== Section 4 ====== -->
+  <section>
+    <div class="flex items-baseline gap-3 mb-5">
+      <span class="text-xs px-2 py-0.5 rounded-full font-semibold" style="background: #dcfce7; color: #15803d">Écran 4</span>
+      <h2 class="text-xl font-bold">Generate · diagramme live read-only</h2>
+    </div>
+    <p class="text-sm mb-5" style="color: var(--text-secondary)">Pendant qu'une campagne tourne, où et comment voir le workflow s'exécuter étape par étape.</p>
+    <div class="grid grid-cols-3 gap-5">
+      <a href="generate-A.html" target="_blank" class="block bg-white rounded-[16px] p-5 shadow-sm hover:shadow-md transition">
+        <div class="text-[11px] uppercase tracking-wider mb-2" style="color: var(--brand-teal)">Direction A</div>
+        <h3 class="font-bold text-base mb-2">Drawer latéral droit</h3>
+        <p class="text-sm" style="color: var(--text-secondary)">Bouton "Voir le workflow" → drawer 50% à droite glisse, contenu se compresse. Diagramme bien lisible.</p>
+      </a>
+      <a href="generate-B.html" target="_blank" class="block bg-white rounded-[16px] p-5 shadow-sm hover:shadow-md transition">
+        <div class="text-[11px] uppercase tracking-wider mb-2" style="color: var(--brand-teal)">Direction B</div>
+        <h3 class="font-bold text-base mb-2">Modal plein écran</h3>
+        <p class="text-sm" style="color: var(--text-secondary)">Overlay sombre, diagramme grand format. Très immersif, mais bloque la vue de la génération.</p>
+      </a>
+      <a href="generate-C.html" target="_blank" class="block bg-white rounded-[16px] p-5 shadow-sm hover:shadow-md transition">
+        <div class="text-[11px] uppercase tracking-wider mb-2" style="color: var(--brand-teal)">Direction C</div>
+        <h3 class="font-bold text-base mb-2">Timeline persistante en bas</h3>
+        <p class="text-sm" style="color: var(--text-secondary)">Bandeau permanent en bas : ligne horizontale de mini-nœuds. Toujours visible. Clic → expand pour détail.</p>
+      </a>
+    </div>
+  </section>
+
+</main>
+
+<footer class="max-w-[1100px] mx-auto px-8 py-6 text-xs text-center" style="color: var(--text-disabled)">
+  Mockups statiques · à valider visuellement avant production code
+</footer>
+
+</body>
+</html>

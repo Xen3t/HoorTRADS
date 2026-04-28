@@ -80,7 +80,7 @@ export default function SessionCard({ session, onDelete }: SessionCardProps) {
             </span>
           </div>
           <p className="text-xs text-text-secondary">
-            {session.image_count} images · {session.market_count} marchés · {formatRelativeDate(session.updated_at)}
+            {session.image_count} images · {session.market_count} marchés · {formatRelativeDate(session.created_at)}
           </p>
         </div>
       </a>

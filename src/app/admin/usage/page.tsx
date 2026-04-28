@@ -486,7 +486,7 @@ export default function AdminUsagePage() {
                     </tr>
                   </tbody>
                 </table>
-                <p className="text-[10px] text-text-disabled mt-2">Tarifs indicatifs Gemini NB2 — ai.google.dev</p>
+                <p className="text-[10px] text-text-disabled mt-2">Tarif indicatif par image — modifiable selon le modèle utilisé</p>
               </div>
 
               <div className="px-5 py-4 bg-amber-50 border border-amber-200 rounded-[16px] text-xs text-amber-700 self-start">

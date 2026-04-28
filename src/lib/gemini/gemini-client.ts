@@ -43,7 +43,15 @@ export function getModel(key: 'model_generate' | 'model_extract' | 'model_transl
     model_translate: 'gemini-3.1-pro-preview',
     model_verify: 'gemini-3.1-pro-preview',
   }
-  try { return getAppConfig(getDb(), key) || DEFAULTS[key] } catch { return DEFAULTS[key] }
+  try {
+    const db = getDb()
+    // Prefer new primary_* key if set (unified config)
+    const step = key.replace('model_', '')
+    const primaryVal = getAppConfig(db, `primary_model_${step}`)
+    if (primaryVal) return primaryVal
+    // Fallback to legacy key
+    return getAppConfig(db, key) || DEFAULTS[key]
+  } catch { return DEFAULTS[key] }
 }
 
 export class GeminiClient implements ImageGenerator {

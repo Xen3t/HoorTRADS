@@ -119,6 +119,17 @@ function runMigrations(database: Database.Database): void {
       value TEXT NOT NULL,
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
+
+    CREATE TABLE IF NOT EXISTS feedback (
+      id TEXT PRIMARY KEY,
+      user_id TEXT,
+      user_email TEXT,
+      category TEXT NOT NULL DEFAULT 'general',
+      message TEXT NOT NULL,
+      page_url TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      status TEXT NOT NULL DEFAULT 'new'
+    );
   `)
 
   // Add columns if they don't exist yet — check via PRAGMA before altering

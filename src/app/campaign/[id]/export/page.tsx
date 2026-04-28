@@ -19,6 +19,7 @@ export default function ExportPage() {
   const [campaignName, setCampaignName] = useState('')
   const [isExportingServer, setIsExportingServer] = useState(false)
   const [isExportingDrive, setIsExportingDrive] = useState(false)
+  const [jobId, setJobId] = useState<string | null>(null)
   const [exportProgress, setExportProgress] = useState(0)
   const [serverResult, setServerResult] = useState<string | null>(null)
   const [driveError, setDriveError] = useState<string | null>(null)
@@ -44,6 +45,7 @@ export default function ExportPage() {
         const jobData = await jobRes.json()
         if (cancelled) return
         if (jobData.jobId) {
+          if (!cancelled) setJobId(jobData.jobId)
           const imgRes = await fetch(`/api/generate/${jobData.jobId}/images`)
           const imgData = await imgRes.json()
           if (!cancelled) setImageCount(imgData.total || 0)
@@ -269,56 +271,109 @@ export default function ExportPage() {
           <span>{imageCount} images + translations.json prêts à exporter</span>
         </motion.div>
 
-        {/* Export buttons */}
+        {/* Export options — 3 cards side-by-side */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.25 }}
-          className="space-y-3 flex flex-col items-center"
+          className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4"
         >
-          <button
-            onClick={handleExportServer}
-            disabled={isExportingServer || (exportMode === 'custom' && !customPath.trim())}
-            className="
-              inline-flex items-center justify-center gap-2
-              px-8 py-3 rounded-[12px]
-              bg-brand-green text-white font-bold text-sm
-              hover:bg-brand-green-hover hover:shadow-lg
-              transition-all duration-200
-              disabled:opacity-50
-            "
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="2" y="3" width="20" height="14" rx="2"/><polyline points="8 21 12 17 16 21"/><line x1="12" y1="17" x2="12" y2="21"/>
-            </svg>
-            {isExportingServer ? 'Export en cours...' : 'Exporter'}
-          </button>
-          {isExportingServer && (
-            <div className="w-full h-1.5 bg-border rounded-full overflow-hidden">
-              <div
-                className="h-full bg-brand-green rounded-full transition-all duration-300"
-                style={{ width: `${exportProgress}%` }}
-              />
+          {/* Exporter sur disque / serveur */}
+          <div className="bg-white rounded-[12px] shadow-sm p-4 flex flex-col">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-8 h-8 rounded-[8px] bg-brand-green-light flex items-center justify-center text-brand-green">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M22 12H2"/>
+                  <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11Z"/>
+                  <line x1="6" y1="16" x2="6.01" y2="16"/>
+                  <line x1="10" y1="16" x2="10.01" y2="16"/>
+                </svg>
+              </div>
+              <h3 className="font-bold text-sm text-text-primary">Exporter</h3>
             </div>
-          )}
+            <p className="text-xs text-text-disabled mb-3 flex-1">
+              Vers un dossier local ou réseau (format dossier par pays).
+            </p>
+            <button
+              onClick={handleExportServer}
+              disabled={isExportingServer || (exportMode === 'custom' && !customPath.trim())}
+              className="
+                w-full px-3 py-2 rounded-[8px]
+                bg-brand-green text-white font-semibold text-xs
+                hover:bg-brand-green-hover transition-colors
+                disabled:opacity-50
+              "
+            >
+              {isExportingServer ? 'Export en cours...' : 'Exporter'}
+            </button>
+            {isExportingServer && (
+              <div className="w-full h-1 bg-border rounded-full overflow-hidden mt-2">
+                <div
+                  className="h-full bg-brand-green rounded-full transition-all duration-300"
+                  style={{ width: `${exportProgress}%` }}
+                />
+              </div>
+            )}
+          </div>
 
-          <button
-            onClick={handleExportDrive}
-            disabled={isExportingDrive}
-            className="
-              inline-flex items-center justify-center gap-2
-              px-8 py-3 rounded-[12px]
-              bg-brand-teal text-white font-bold text-sm
-              hover:bg-brand-teal-hover hover:shadow-lg
-              transition-all duration-200
-              disabled:opacity-50
-            "
-          >
-            <span className="bg-white rounded-[4px] p-0.5 flex items-center justify-center">
-              <Image src="/google-drive.svg" alt="" width={14} height={14} />
-            </span>
-            {isExportingDrive ? 'Envoi en cours...' : 'Envoyer sur le drive IMGxHAxMKG'}
-          </button>
+          {/* Google Drive */}
+          <div className="bg-white rounded-[12px] shadow-sm p-4 flex flex-col">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-8 h-8 rounded-[8px] bg-brand-teal-light flex items-center justify-center">
+                <Image src="/google-drive.svg" alt="" width={16} height={16} />
+              </div>
+              <h3 className="font-bold text-sm text-text-primary">Google Drive</h3>
+            </div>
+            <p className="text-xs text-text-disabled mb-3 flex-1">
+              Envoi direct sur le drive partagé IMGxHAxMKG.
+            </p>
+            <button
+              onClick={handleExportDrive}
+              disabled={isExportingDrive}
+              className="
+                w-full px-3 py-2 rounded-[8px]
+                bg-brand-teal text-white font-semibold text-xs
+                hover:bg-brand-teal-hover transition-colors
+                disabled:opacity-50
+              "
+            >
+              {isExportingDrive ? 'Envoi en cours...' : 'Envoyer'}
+            </button>
+          </div>
+
+          {/* ZIP Download */}
+          <div className="bg-white rounded-[12px] shadow-sm p-4 flex flex-col">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-8 h-8 rounded-[8px] bg-surface flex items-center justify-center text-text-primary">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="7 10 12 15 17 10"/>
+                  <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+              </div>
+              <h3 className="font-bold text-sm text-text-primary">Télécharger (ZIP)</h3>
+            </div>
+            <p className="text-xs text-text-disabled mb-3 flex-1">
+              Archive zippée de toutes les images, triées par pays.
+            </p>
+            {jobId ? (
+              <a
+                href={`/api/generate/${jobId}/download-all`}
+                className="
+                  w-full px-3 py-2 rounded-[8px] text-center
+                  bg-white text-text-primary border border-border font-semibold text-xs
+                  hover:border-brand-green hover:text-brand-green
+                  transition-colors
+                "
+              >
+                Télécharger
+              </a>
+            ) : (
+              <button disabled className="w-full px-3 py-2 rounded-[8px] bg-surface text-text-disabled font-semibold text-xs cursor-not-allowed">
+                Indisponible
+              </button>
+            )}
+          </div>
         </motion.div>
 
         {/* Results */}

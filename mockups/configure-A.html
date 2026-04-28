@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Configure · A · Select discret en haut</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Titillium+Web:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --brand-teal: #0ea5a4; --text-primary: #1a1f2c; --text-secondary: #6b7280; --text-disabled: #9ca3af; --border: #e5e7eb; --bg: #f7f8fa; }
+  body { font-family: 'Titillium Web', system-ui, sans-serif; background: var(--bg); color: var(--text-primary); }
+</style>
+</head>
+<body class="min-h-screen">
+
+<div class="text-[10px] text-center py-1 text-white" style="background: var(--brand-teal)">
+  MOCKUP · Configure (graphiste) · Direction A — Select discret en haut · <a href="index.html" class="underline">retour à l'index</a>
+</div>
+
+<header class="bg-white border-b" style="border-color: var(--border)">
+  <div class="max-w-[1100px] mx-auto px-8 py-5 flex items-center justify-between">
+    <div>
+      <p class="text-xs uppercase tracking-wider" style="color: var(--text-disabled)">Campagne</p>
+      <h1 class="font-bold text-lg">SOLDES_PRINTEMPS_2026</h1>
+    </div>
+    <div class="flex items-center gap-4 text-sm" style="color: var(--text-secondary)">
+      <span>Étape 2/4 · Configuration</span>
+      <a href="#" style="color: var(--brand-teal)">← Retour</a>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-[900px] mx-auto px-8 py-10 space-y-6">
+
+  <!-- HERO : Type d'image select -->
+  <section class="bg-white rounded-[16px] p-6 shadow-sm" style="border:2px solid var(--brand-teal); background: linear-gradient(180deg, #f0fdfa 0%, white 70%)">
+    <div class="flex items-center gap-2 mb-1">
+      <span class="text-[11px] uppercase tracking-wider font-semibold" style="color: var(--brand-teal)">Nouveau</span>
+    </div>
+    <label class="block">
+      <div class="font-bold text-base mb-1">Type d'image à traiter</div>
+      <div class="text-sm mb-3" style="color: var(--text-secondary)">Détermine le pipeline appliqué : extraction, traduction, génération, vérification… Choisis le workflow le plus adapté à tes visuels.</div>
+
+      <div class="grid grid-cols-[1fr_auto] gap-3">
+        <select class="w-full px-4 py-3 rounded-[12px] border bg-white font-semibold" style="border-color: var(--border)">
+          <option>ADS Standard — NB2 direct image→image (recommandé)</option>
+          <option>ADS Natif — extraction + review humaine + render</option>
+          <option>Schéma technique v1 — préservation layout</option>
+          <option>Packaging EU — multi-langues côte à côte</option>
+        </select>
+        <a href="#" class="px-3 py-3 rounded-[12px] text-sm font-semibold flex items-center gap-1.5" style="color: var(--brand-teal); background: white; border:1px solid var(--border)">
+          <span>👁</span> Voir le pipeline
+        </a>
+      </div>
+
+      <div class="mt-3 flex items-start gap-2 text-xs" style="color: var(--text-secondary)">
+        <span style="color: var(--brand-teal)">ⓘ</span>
+        <span>Ce workflow est marqué comme <strong>par défaut</strong> pour les campagnes ADS. Tu peux changer si tes visuels nécessitent un autre traitement.</span>
+      </div>
+    </label>
+  </section>
+
+  <!-- Reste de la config — minimum visuel -->
+  <section class="bg-white rounded-[16px] p-6 shadow-sm">
+    <h2 class="font-bold text-base mb-1">Pays cibles</h2>
+    <p class="text-sm mb-4" style="color: var(--text-secondary)">Chaque pays sera traduit avec sa langue principale + règles locales.</p>
+    <div class="grid grid-cols-6 gap-2">
+      <button class="rounded-[10px] py-3 px-2 border-2 text-sm font-semibold flex flex-col items-center gap-1.5" style="border-color: var(--brand-teal); background:#f0fdfa">
+        <span style="font-size:20px">🇩🇪</span><span>DE</span>
+      </button>
+      <button class="rounded-[10px] py-3 px-2 border-2 text-sm font-semibold flex flex-col items-center gap-1.5" style="border-color: var(--brand-teal); background:#f0fdfa">
+        <span style="font-size:20px">🇪🇸</span><span>ES</span>
+      </button>
+      <button class="rounded-[10px] py-3 px-2 border-2 text-sm font-semibold flex flex-col items-center gap-1.5" style="border-color: var(--brand-teal); background:#f0fdfa">
+        <span style="font-size:20px">🇮🇹</span><span>IT</span>
+      </button>
+      <button class="rounded-[10px] py-3 px-2 border text-sm flex flex-col items-center gap-1.5" style="border-color: var(--border); color: var(--text-secondary)">
+        <span style="font-size:20px">🇬🇧</span><span>GB</span>
+      </button>
+      <button class="rounded-[10px] py-3 px-2 border text-sm flex flex-col items-center gap-1.5" style="border-color: var(--border); color: var(--text-secondary)">
+        <span style="font-size:20px">🇳🇱</span><span>NL</span>
+      </button>
+      <button class="rounded-[10px] py-3 px-2 border text-sm flex flex-col items-center gap-1.5" style="border-color: var(--border); color: var(--text-secondary)">
+        <span style="font-size:20px">🇵🇹</span><span>PT</span>
+      </button>
+    </div>
+    <button class="text-xs mt-3" style="color: var(--brand-teal)">+ Voir les 22 pays disponibles</button>
+  </section>
+
+  <section class="bg-white rounded-[16px] p-6 shadow-sm">
+    <h2 class="font-bold text-base mb-3">Options du workflow</h2>
+    <div class="space-y-3 text-sm">
+      <label class="flex items-center justify-between py-2 px-3 rounded-[10px]" style="background:#f8fafc">
+        <div>
+          <div class="font-semibold">Résolution</div>
+          <div class="text-xs" style="color: var(--text-secondary)">Sortie 1024 ou 2048px</div>
+        </div>
+        <select class="px-3 py-2 rounded-[10px] border bg-white" style="border-color: var(--border)">
+          <option>1K</option><option>2K</option>
+        </select>
+      </label>
+      <label class="flex items-center justify-between py-2 px-3 rounded-[10px]" style="background:#f8fafc">
+        <div>
+          <div class="font-semibold">Auto-correction</div>
+          <div class="text-xs" style="color: var(--text-secondary)">Re-générer les images dont le score est inférieur à 4</div>
+        </div>
+        <label class="relative inline-block w-10 h-5">
+          <span class="absolute inset-0 rounded-full" style="background: var(--brand-teal)"></span>
+          <span class="absolute top-0.5 right-0.5 w-4 h-4 bg-white rounded-full shadow"></span>
+        </label>
+      </label>
+      <label class="flex items-center justify-between py-2 px-3 rounded-[10px]" style="background:#f8fafc">
+        <div>
+          <div class="font-semibold">Doc de configuration (optionnel)</div>
+          <div class="text-xs" style="color: var(--text-secondary)">Codes promo, prix, dates par pays</div>
+        </div>
+        <button class="px-3 py-1.5 rounded-[10px] border text-xs" style="border-color: var(--border)">Ajouter…</button>
+      </label>
+    </div>
+  </section>
+
+  <div class="flex items-center justify-between pt-4">
+    <button class="text-sm" style="color: var(--text-secondary)">Sauvegarder en brouillon</button>
+    <button class="px-6 py-3 rounded-[12px] text-white font-semibold" style="background: var(--brand-teal)">
+      Lancer la génération →
+    </button>
+  </div>
+
+</main>
+</body>
+</html>

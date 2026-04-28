@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Éditeur · A · 3 colonnes Figma-like</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Titillium+Web:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --brand-teal: #0ea5a4; --text-primary: #1a1f2c; --text-secondary: #6b7280; --text-disabled: #9ca3af; --border: #e5e7eb; --bg: #f7f8fa; }
+  body { font-family: 'Titillium Web', system-ui, sans-serif; background: var(--bg); color: var(--text-primary); }
+  .canvas-bg {
+    background-color: #fafbfc;
+    background-image:
+      radial-gradient(circle, #d1d5db 1px, transparent 1px);
+    background-size: 16px 16px;
+  }
+  .node { position: absolute; background: white; border-radius: 12px; padding: 10px 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); border: 1.5px solid #e5e7eb; min-width: 140px; cursor: pointer; }
+  .node.selected { border-color: var(--brand-teal); box-shadow: 0 0 0 3px #0ea5a420, 0 4px 12px rgba(0,0,0,0.08); }
+  .node-handle { position: absolute; width: 10px; height: 10px; background: white; border: 2px solid #94a3b8; border-radius: 50%; top: 50%; transform: translateY(-50%); }
+  .node-handle.in { left: -6px; }
+  .node-handle.out { right: -6px; }
+  .node-icon { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 6px; font-size: 12px; }
+  .palette-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px; cursor: grab; font-size: 13px; }
+  .palette-item:hover { background: #f1f5f9; }
+</style>
+</head>
+<body class="h-screen overflow-hidden flex flex-col">
+
+<div class="text-[10px] text-center py-1 text-white" style="background: var(--brand-teal)">
+  MOCKUP · Éditeur · Direction A — 3 colonnes Figma-like · <a href="index.html" class="underline">retour à l'index</a>
+</div>
+
+<!-- Topbar -->
+<header class="bg-white border-b flex items-center justify-between px-6 py-3" style="border-color: var(--border)">
+  <div class="flex items-center gap-3">
+    <a href="list-A.html" class="text-sm" style="color: var(--brand-teal)">← Workflows</a>
+    <span style="color: var(--text-disabled)">/</span>
+    <input type="text" value="ADS Standard" class="font-bold text-base bg-transparent border-0 focus:outline-none focus:bg-gray-100 px-2 py-1 rounded">
+    <span class="text-xs px-2 py-0.5 rounded-full font-semibold" style="background:#ecfeff;color:#0e7490">ADS</span>
+    <span class="text-xs font-mono" style="color: var(--text-disabled)">v3 · brouillon non sauvegardé</span>
+  </div>
+  <div class="flex items-center gap-2">
+    <button class="text-sm px-3 py-1.5 rounded-[10px] border" style="border-color: var(--border)">Annuler</button>
+    <button class="text-sm px-3 py-1.5 rounded-[10px] border" style="border-color: var(--border)">Tester sur image…</button>
+    <button class="text-sm px-4 py-1.5 rounded-[10px] text-white font-semibold" style="background: var(--brand-teal)">Sauvegarder</button>
+  </div>
+</header>
+
+<div class="flex-1 grid grid-cols-[260px_1fr_340px] overflow-hidden">
+
+  <!-- LEFT : Palette -->
+  <aside class="bg-white border-r flex flex-col overflow-hidden" style="border-color: var(--border)">
+    <div class="px-4 pt-4 pb-2">
+      <h3 class="text-xs font-bold uppercase tracking-wider" style="color: var(--text-disabled)">Palette de nœuds</h3>
+      <input type="text" placeholder="Rechercher…" class="w-full mt-3 px-3 py-2 rounded-[10px] border text-sm" style="border-color: var(--border)">
+    </div>
+    <div class="overflow-y-auto flex-1 px-2 pb-4">
+
+      <div class="px-2 pt-3 pb-1 text-[11px] uppercase font-semibold" style="color: var(--text-disabled)">Entrée</div>
+      <div class="palette-item">
+        <span class="node-icon" style="background:#ecfeff;color:#0e7490">▶</span>
+        <div><div class="font-semibold">Start</div><div class="text-[11px]" style="color:var(--text-disabled)">Entrée du workflow</div></div>
+      </div>
+
+      <div class="px-2 pt-3 pb-1 text-[11px] uppercase font-semibold" style="color: var(--text-disabled)">Texte</div>
+      <div class="palette-item">
+        <span class="node-icon" style="background:#fef3c7;color:#b45309">📝</span>
+        <div><div class="font-semibold">Extraire texte</div><div class="text-[11px]" style="color:var(--text-disabled)">Détection des zones</div></div>
+      </div>
+      <div class="palette-item">
+        <span class="node-icon" style="background:#fef3c7;color:#b45309">🌐</span>
+        <div><div class="font-semibold">Traduire texte</div><div class="text-[11px]" style="color:var(--text-disabled)">Multi-langues</div></div>
+      </div>
+      <div class="palette-item">
+        <span class="node-icon" style="background:#fef3c7;color:#b45309">🔍</span>
+        <div><div class="font-semibold">Filtrer doc config</div><div class="text-[11px]" style="color:var(--text-disabled)">Hints par langue</div></div>
+      </div>
+
+      <div class="px-2 pt-3 pb-1 text-[11px] uppercase font-semibold" style="color: var(--text-disabled)">Image</div>
+      <div class="palette-item">
+        <span class="node-icon" style="background:#dbeafe;color:#1d4ed8">🖼️</span>
+        <div><div class="font-semibold">Générer image</div><div class="text-[11px]" style="color:var(--text-disabled)">Direct ou render</div></div>
+      </div>
+
+      <div class="px-2 pt-3 pb-1 text-[11px] uppercase font-semibold" style="color: var(--text-disabled)">Validation</div>
+      <div class="palette-item">
+        <span class="node-icon" style="background:#dcfce7;color:#15803d">✓</span>
+        <div><div class="font-semibold">Vérifier image</div><div class="text-[11px]" style="color:var(--text-disabled)">Score 0-5 + issues</div></div>
+      </div>
+      <div class="palette-item">
+        <span class="node-icon" style="background:#dcfce7;color:#15803d">↻</span>
+        <div><div class="font-semibold">Auto-corriger</div><div class="text-[11px]" style="color:var(--text-disabled)">Boucle correction</div></div>
+      </div>
+
+      <div class="px-2 pt-3 pb-1 text-[11px] uppercase font-semibold" style="color: var(--text-disabled)">Humain</div>
+      <div class="palette-item">
+        <span class="node-icon" style="background:#fce7f3;color:#9d174d">👤</span>
+        <div><div class="font-semibold">Review textes</div><div class="text-[11px]" style="color:var(--text-disabled)">Pause validation</div></div>
+      </div>
+      <div class="palette-item">
+        <span class="node-icon" style="background:#fce7f3;color:#9d174d">👤</span>
+        <div><div class="font-semibold">Review images</div><div class="text-[11px]" style="color:var(--text-disabled)">Pause validation</div></div>
+      </div>
+
+      <div class="px-2 pt-3 pb-1 text-[11px] uppercase font-semibold" style="color: var(--text-disabled)">Logique</div>
+      <div class="palette-item">
+        <span class="node-icon" style="background:#fce7f3;color:#9d174d">⋔</span>
+        <div><div class="font-semibold">Condition</div><div class="text-[11px]" style="color:var(--text-disabled)">if / else</div></div>
+      </div>
+
+      <div class="px-2 pt-3 pb-1 text-[11px] uppercase font-semibold" style="color: var(--text-disabled)">Sortie</div>
+      <div class="palette-item">
+        <span class="node-icon" style="background:#dcfce7;color:#15803d">⏏</span>
+        <div><div class="font-semibold">Export</div><div class="text-[11px]" style="color:var(--text-disabled)">Zip + Drive</div></div>
+      </div>
+
+    </div>
+  </aside>
+
+  <!-- CENTER : Canvas -->
+  <main class="canvas-bg relative overflow-hidden">
+
+    <!-- Toolbar canvas -->
+    <div class="absolute top-3 left-3 z-10 bg-white rounded-[10px] shadow-sm flex p-1 text-xs" style="border:1px solid var(--border)">
+      <button class="px-2 py-1 rounded">Zoom −</button>
+      <span class="px-2 py-1 font-mono" style="color: var(--text-secondary)">100%</span>
+      <button class="px-2 py-1 rounded">Zoom +</button>
+      <span class="border-l mx-1" style="border-color: var(--border)"></span>
+      <button class="px-2 py-1 rounded">Recentrer</button>
+    </div>
+    <div class="absolute bottom-3 right-3 z-10 bg-white rounded-[10px] shadow-sm px-3 py-2 text-xs" style="border:1px solid var(--border); color: var(--text-secondary)">
+      5 nœuds · 4 connexions · auto-save dans 12s
+    </div>
+
+    <!-- Edges (SVG) -->
+    <svg class="absolute inset-0 w-full h-full" style="pointer-events:none">
+      <defs>
+        <marker id="arrEd" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+          <polygon points="0 0, 8 4, 0 8" fill="#94a3b8"/>
+        </marker>
+      </defs>
+      <path d="M 158 200 C 200 200, 230 200, 270 200" stroke="#94a3b8" stroke-width="2" fill="none" marker-end="url(#arrEd)"/>
+      <path d="M 410 200 C 460 200, 490 200, 530 200" stroke="#94a3b8" stroke-width="2" fill="none" marker-end="url(#arrEd)"/>
+      <path d="M 670 200 C 720 200, 750 200, 790 200" stroke="#94a3b8" stroke-width="2" fill="none" marker-end="url(#arrEd)"/>
+      <!-- branches from condition -->
+      <path d="M 940 185 C 990 160, 1020 110, 1070 110" stroke="#dc2626" stroke-width="2" fill="none" marker-end="url(#arrEd)"/>
+      <path d="M 940 220 C 990 250, 1020 290, 1070 290" stroke="#16a34a" stroke-width="2" fill="none" marker-end="url(#arrEd)"/>
+    </svg>
+
+    <!-- Nodes -->
+    <div class="node" style="left:80px;top:180px">
+      <div class="flex items-center gap-2">
+        <span class="node-icon" style="background:#ecfeff;color:#0e7490">▶</span>
+        <div>
+          <div class="font-bold text-sm">Start</div>
+          <div class="text-[11px]" style="color:var(--text-disabled)">Entrée du workflow</div>
+        </div>
+      </div>
+      <div class="node-handle out"></div>
+    </div>
+
+    <div class="node" style="left:270px;top:180px">
+      <div class="flex items-center gap-2">
+        <span class="node-icon" style="background:#dbeafe;color:#1d4ed8">🖼️</span>
+        <div>
+          <div class="font-bold text-sm">Générer image</div>
+          <div class="text-[11px]" style="color:var(--text-disabled)">NB2 direct · gemini-3.1-flash</div>
+        </div>
+      </div>
+      <div class="node-handle in"></div>
+      <div class="node-handle out"></div>
+    </div>
+
+    <div class="node selected" style="left:530px;top:180px">
+      <div class="flex items-center gap-2">
+        <span class="node-icon" style="background:#dcfce7;color:#15803d">✓</span>
+        <div>
+          <div class="font-bold text-sm">Vérifier image</div>
+          <div class="text-[11px]" style="color:var(--text-disabled)">gemini-3.1-pro · score 0-5</div>
+        </div>
+      </div>
+      <div class="node-handle in"></div>
+      <div class="node-handle out"></div>
+    </div>
+
+    <div class="node" style="left:790px;top:170px;border-color:#db2777;background:#fff5f9">
+      <div class="flex items-center gap-2">
+        <span class="node-icon" style="background:#fce7f3;color:#9d174d">⋔</span>
+        <div>
+          <div class="font-bold text-sm">Condition</div>
+          <div class="text-[11px]" style="color:#9d174d">score &lt; 4 ?</div>
+        </div>
+      </div>
+      <div class="node-handle in"></div>
+      <div class="node-handle" style="right:-6px;top:30%"></div>
+      <div class="node-handle" style="right:-6px;top:70%"></div>
+    </div>
+
+    <div class="node" style="left:1070px;top:90px">
+      <div class="flex items-center gap-2">
+        <span class="node-icon" style="background:#dcfce7;color:#15803d">↻</span>
+        <div>
+          <div class="font-bold text-sm">Auto-corriger</div>
+          <div class="text-[11px]" style="color:var(--text-disabled)">max 2 itérations</div>
+        </div>
+      </div>
+      <div class="node-handle in"></div>
+      <div class="node-handle out"></div>
+    </div>
+
+    <div class="node" style="left:1070px;top:270px;background:#f0fdf4;border-color:#16a34a">
+      <div class="flex items-center gap-2">
+        <span class="node-icon" style="background:#dcfce7;color:#15803d">⏏</span>
+        <div>
+          <div class="font-bold text-sm">Export</div>
+          <div class="text-[11px]" style="color:#15803d">zip + Drive</div>
+        </div>
+      </div>
+      <div class="node-handle in"></div>
+    </div>
+
+  </main>
+
+  <!-- RIGHT : Properties -->
+  <aside class="bg-white border-l flex flex-col overflow-hidden" style="border-color: var(--border)">
+    <div class="px-5 pt-5 pb-3 border-b" style="border-color: var(--border)">
+      <div class="text-xs uppercase tracking-wider" style="color: var(--text-disabled)">Propriétés</div>
+      <div class="flex items-center gap-2 mt-2">
+        <span class="node-icon" style="background:#dcfce7;color:#15803d">✓</span>
+        <div class="font-bold">Vérifier image</div>
+      </div>
+      <div class="text-[11px] mt-1" style="color: var(--text-secondary)">Évalue la qualité d'une image générée et produit un score 0-5 + une liste d'issues.</div>
+    </div>
+
+    <div class="overflow-y-auto flex-1 px-5 py-4 space-y-5 text-sm">
+
+      <div>
+        <label class="block text-xs font-semibold mb-1.5" style="color: var(--text-secondary)">Nom de l'étape</label>
+        <input type="text" value="Vérification qualité" class="w-full px-3 py-2 rounded-[10px] border" style="border-color: var(--border)">
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold mb-1.5" style="color: var(--text-secondary)">Modèle</label>
+        <select class="w-full px-3 py-2 rounded-[10px] border bg-white" style="border-color: var(--border)">
+          <option>gemini-3.1-pro (par défaut)</option>
+          <option>gemini-3.1-flash-lite</option>
+          <option>gpt-5</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold mb-1.5" style="color: var(--text-secondary)">Prompt système</label>
+        <textarea rows="6" class="w-full px-3 py-2 rounded-[10px] border font-mono text-[12px]" style="border-color: var(--border)">Tu es un validateur de texte publicitaire. Note l'image sur 4 critères : Clarté, Cohérence, Correction linguistique, Fidélité au sens. Donne une note 0-5 par critère et un score moyen.</textarea>
+        <p class="text-[11px] mt-1" style="color: var(--text-disabled)">Variables : {{source_text}}, {{target_lang}}, {{glossary}}</p>
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold mb-1.5" style="color: var(--text-secondary)">Critères de scoring</label>
+        <div class="space-y-1.5">
+          <div class="flex items-center gap-2"><input type="checkbox" checked class="rounded"><span>Clarté visuelle</span></div>
+          <div class="flex items-center gap-2"><input type="checkbox" checked class="rounded"><span>Cohérence du sens</span></div>
+          <div class="flex items-center gap-2"><input type="checkbox" checked class="rounded"><span>Correction linguistique</span></div>
+          <div class="flex items-center gap-2"><input type="checkbox" checked class="rounded"><span>Fidélité au sens</span></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="flex items-center justify-between mb-1.5">
+          <label class="text-xs font-semibold" style="color: var(--text-secondary)">Sortie : score</label>
+          <span class="text-xs font-mono" style="color: var(--text-disabled)">→ utilisé par "Condition"</span>
+        </div>
+        <div class="rounded-[10px] p-3 text-xs font-mono" style="background:#f1f5f9;color:#475569">
+          { score: 0–5, issues: string[], summary: string }
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold mb-1.5" style="color: var(--text-secondary)">Timeout (ms)</label>
+        <input type="number" value="60000" class="w-full px-3 py-2 rounded-[10px] border font-mono text-sm" style="border-color: var(--border)">
+      </div>
+
+    </div>
+
+    <div class="border-t px-5 py-3 flex items-center justify-between" style="border-color: var(--border); background: #f8fafc">
+      <button class="text-xs" style="color: #dc2626">Supprimer ce nœud</button>
+      <button class="text-xs px-3 py-1.5 rounded-[8px] border" style="border-color: var(--border)">Documentation ↗</button>
+    </div>
+
+  </aside>
+
+</div>
+</body>
+</html>

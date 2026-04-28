@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Generate · A · Drawer latéral droit</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Titillium+Web:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --brand-teal: #0ea5a4; --text-primary: #1a1f2c; --text-secondary: #6b7280; --text-disabled: #9ca3af; --border: #e5e7eb; --bg: #f7f8fa; }
+  body { font-family: 'Titillium Web', system-ui, sans-serif; background: var(--bg); color: var(--text-primary); }
+  .img-tile { background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%); border-radius: 8px; aspect-ratio: 1; }
+  @keyframes pulse-running { 0%,100% { box-shadow: 0 0 0 0 #0ea5a4aa; } 50% { box-shadow: 0 0 0 8px transparent; } }
+  .node-running { animation: pulse-running 1.5s infinite; }
+</style>
+</head>
+<body class="min-h-screen">
+
+<div class="text-[10px] text-center py-1 text-white" style="background: var(--brand-teal)">
+  MOCKUP · Generate live · Direction A — Drawer latéral droit · <a href="index.html" class="underline">retour à l'index</a>
+</div>
+
+<header class="bg-white border-b" style="border-color: var(--border)">
+  <div class="px-8 py-4 flex items-center justify-between">
+    <div>
+      <p class="text-xs uppercase tracking-wider" style="color: var(--text-disabled)">Génération en cours</p>
+      <h1 class="font-bold text-base">SOLDES_PRINTEMPS_2026 · ADS Standard</h1>
+    </div>
+    <div class="flex items-center gap-3">
+      <span class="text-sm" style="color: var(--text-secondary)">12 / 24 images · 4min restantes</span>
+      <button class="text-sm px-4 py-2 rounded-[10px] text-white font-semibold flex items-center gap-2" style="background: var(--brand-teal)">
+        <span>⊟</span> Voir le workflow
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- Main split : content (compressed) + drawer -->
+<div class="flex">
+
+  <!-- LEFT : compressed content -->
+  <main class="flex-1 px-8 py-6 transition-all" style="max-width: calc(100% - 480px)">
+
+    <!-- Progress -->
+    <div class="bg-white rounded-[16px] p-5 shadow-sm mb-6">
+      <div class="flex items-center justify-between mb-3">
+        <span class="font-semibold text-sm">Progression globale</span>
+        <span class="text-xs font-mono" style="color: var(--text-secondary)">50%</span>
+      </div>
+      <div class="h-2 rounded-full overflow-hidden" style="background:#e5e7eb">
+        <div class="h-full rounded-full" style="background: var(--brand-teal); width: 50%"></div>
+      </div>
+      <div class="grid grid-cols-4 gap-3 mt-4 text-xs">
+        <div><div class="font-bold text-base" style="color:#16a34a">10</div><div style="color: var(--text-secondary)">Terminées</div></div>
+        <div><div class="font-bold text-base" style="color: var(--brand-teal)">2</div><div style="color: var(--text-secondary)">En cours</div></div>
+        <div><div class="font-bold text-base" style="color: var(--text-disabled)">12</div><div style="color: var(--text-secondary)">En attente</div></div>
+        <div><div class="font-bold text-base" style="color:#dc2626">0</div><div style="color: var(--text-secondary)">Erreurs</div></div>
+      </div>
+    </div>
+
+    <!-- Image grid -->
+    <div class="grid grid-cols-4 gap-3">
+      <div class="bg-white rounded-[8px] p-2 shadow-sm">
+        <div class="img-tile mb-2 relative">
+          <span class="absolute top-1.5 right-1.5 text-[10px] px-1.5 py-0.5 rounded-full font-semibold text-white" style="background:#16a34a">DE ✓</span>
+        </div>
+        <div class="text-xs font-mono truncate">soldes_01.jpg</div>
+      </div>
+      <div class="bg-white rounded-[8px] p-2 shadow-sm">
+        <div class="img-tile mb-2 relative">
+          <span class="absolute top-1.5 right-1.5 text-[10px] px-1.5 py-0.5 rounded-full font-semibold text-white" style="background:#16a34a">ES ✓</span>
+        </div>
+        <div class="text-xs font-mono truncate">soldes_01.jpg</div>
+      </div>
+      <div class="bg-white rounded-[8px] p-2 shadow-sm">
+        <div class="img-tile mb-2 relative animate-pulse">
+          <span class="absolute top-1.5 right-1.5 text-[10px] px-1.5 py-0.5 rounded-full font-semibold text-white" style="background: var(--brand-teal)">IT ⟳</span>
+        </div>
+        <div class="text-xs font-mono truncate">soldes_02.jpg</div>
+      </div>
+      <div class="bg-white rounded-[8px] p-2 shadow-sm opacity-60">
+        <div class="img-tile mb-2 relative">
+          <span class="absolute top-1.5 right-1.5 text-[10px] px-1.5 py-0.5 rounded-full font-semibold" style="background:#e5e7eb;color: var(--text-secondary)">DE</span>
+        </div>
+        <div class="text-xs font-mono truncate">soldes_03.jpg</div>
+      </div>
+      <div class="bg-white rounded-[8px] p-2 shadow-sm opacity-60">
+        <div class="img-tile mb-2 relative">
+          <span class="absolute top-1.5 right-1.5 text-[10px] px-1.5 py-0.5 rounded-full font-semibold" style="background:#e5e7eb;color: var(--text-secondary)">ES</span>
+        </div>
+        <div class="text-xs font-mono truncate">soldes_03.jpg</div>
+      </div>
+      <div class="bg-white rounded-[8px] p-2 shadow-sm opacity-60">
+        <div class="img-tile mb-2 relative"></div>
+        <div class="text-xs font-mono truncate">soldes_04.jpg</div>
+      </div>
+      <div class="bg-white rounded-[8px] p-2 shadow-sm opacity-60">
+        <div class="img-tile mb-2"></div>
+        <div class="text-xs font-mono truncate">soldes_04.jpg</div>
+      </div>
+      <div class="bg-white rounded-[8px] p-2 shadow-sm opacity-60">
+        <div class="img-tile mb-2"></div>
+        <div class="text-xs font-mono truncate">soldes_05.jpg</div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- RIGHT : drawer with workflow live diagram -->
+  <aside class="bg-white border-l" style="border-color: var(--border); width: 480px; min-height: calc(100vh - 100px)">
+
+    <div class="border-b px-5 py-4 flex items-center justify-between" style="border-color: var(--border)">
+      <div>
+        <div class="text-xs uppercase tracking-wider" style="color: var(--text-disabled)">Workflow en cours</div>
+        <div class="font-bold text-base flex items-center gap-2 mt-1">
+          ADS Standard
+          <span class="text-xs px-2 py-0.5 rounded-full font-semibold" style="background:#ecfeff;color:#0e7490">v3</span>
+        </div>
+      </div>
+      <button class="text-xs" style="color: var(--text-secondary)">→ Réduire</button>
+    </div>
+
+    <!-- Live diagram (vertical, fits drawer) -->
+    <div class="p-5 space-y-2">
+
+      <!-- Node 1 done -->
+      <div class="rounded-[12px] p-3 border-2 flex items-center gap-3" style="border-color:#bbf7d0;background:#f0fdf4">
+        <span class="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold" style="background:#16a34a">✓</span>
+        <div class="flex-1">
+          <div class="font-bold text-sm">Start</div>
+          <div class="text-xs" style="color: var(--text-secondary)">Entrée du workflow · 24 images chargées</div>
+        </div>
+        <div class="text-xs font-mono" style="color: var(--text-disabled)">0.2s</div>
+      </div>
+
+      <div class="ml-4 h-4 w-0.5" style="background:#bbf7d0"></div>
+
+      <!-- Node 2 done -->
+      <div class="rounded-[12px] p-3 border-2 flex items-center gap-3" style="border-color:#bbf7d0;background:#f0fdf4">
+        <span class="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold" style="background:#16a34a">✓</span>
+        <div class="flex-1">
+          <div class="font-bold text-sm">Générer image</div>
+          <div class="text-xs" style="color: var(--text-secondary)">10 / 24 images traitées · gemini-3.1-flash</div>
+        </div>
+        <div class="text-xs font-mono" style="color: var(--text-disabled)">3m12s</div>
+      </div>
+
+      <div class="ml-4 h-4 w-0.5" style="background:#bbf7d0"></div>
+
+      <!-- Node 3 running -->
+      <div class="rounded-[12px] p-3 border-2 flex items-center gap-3 node-running" style="border-color: var(--brand-teal);background:#f0fdfa">
+        <span class="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold animate-spin" style="background: var(--brand-teal)">⟳</span>
+        <div class="flex-1">
+          <div class="font-bold text-sm">Vérifier image</div>
+          <div class="text-xs" style="color: var(--brand-teal)">2 / 10 vérifications en cours · score moyen 4.3</div>
+        </div>
+        <div class="text-xs font-mono" style="color: var(--brand-teal)">···</div>
+      </div>
+
+      <div class="ml-4 h-4 w-0.5" style="background:#e5e7eb"></div>
+
+      <!-- Node 4 idle (condition) -->
+      <div class="rounded-[12px] p-3 border-2 flex items-center gap-3" style="border-color: var(--border);background:white">
+        <span class="w-8 h-8 rounded-full flex items-center justify-center font-bold" style="background:#e5e7eb;color: var(--text-secondary)">⋔</span>
+        <div class="flex-1">
+          <div class="font-bold text-sm" style="color: var(--text-secondary)">Condition</div>
+          <div class="text-xs" style="color: var(--text-disabled)">score &lt; 4 ?</div>
+        </div>
+      </div>
+
+      <!-- Branches -->
+      <div class="ml-4 grid grid-cols-2 gap-2 mt-1">
+        <div class="border-l-2 pl-3 pt-2" style="border-color: var(--border)">
+          <div class="text-[10px] uppercase font-semibold mb-2" style="color:#dc2626">si oui →</div>
+          <div class="rounded-[12px] p-3 border-2 flex items-center gap-2" style="border-color: var(--border);background:white">
+            <span class="w-7 h-7 rounded-full flex items-center justify-center text-sm" style="background:#e5e7eb;color: var(--text-secondary)">↻</span>
+            <div class="flex-1">
+              <div class="font-bold text-xs" style="color: var(--text-secondary)">Auto-corriger</div>
+            </div>
+          </div>
+        </div>
+        <div class="border-l-2 pl-3 pt-2" style="border-color: var(--border)">
+          <div class="text-[10px] uppercase font-semibold mb-2" style="color:#16a34a">si non →</div>
+          <div class="rounded-[12px] p-3 border-2 flex items-center gap-2" style="border-color: var(--border);background:white">
+            <span class="w-7 h-7 rounded-full flex items-center justify-center text-sm" style="background:#e5e7eb;color: var(--text-secondary)">⏏</span>
+            <div class="flex-1">
+              <div class="font-bold text-xs" style="color: var(--text-secondary)">Export</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Logs panel -->
+    <div class="mx-5 mt-2 rounded-[12px] p-3 text-[11px] font-mono" style="background:#0f172a;color:#94a3b8">
+      <div class="flex items-center justify-between mb-2 text-[10px]">
+        <span class="font-bold" style="color:white">Logs (Vérifier image)</span>
+        <button style="color:#94a3b8">⊕ Plus</button>
+      </div>
+      <div>[14:23:01] task-12 IT scored 4.5 ✓</div>
+      <div>[14:23:03] task-13 ES scored 4.8 ✓</div>
+      <div style="color:#fbbf24">[14:23:05] task-14 DE scored 3.7 ⚠ → auto-correct</div>
+      <div>[14:23:07] task-15 IT scored 4.3 ✓</div>
+    </div>
+
+  </aside>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Liste workflows · A · Tableau dense</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Titillium+Web:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --brand-teal: #0ea5a4; --text-primary: #1a1f2c; --text-secondary: #6b7280; --text-disabled: #9ca3af; --border: #e5e7eb; --bg: #f7f8fa; }
+  body { font-family: 'Titillium Web', system-ui, sans-serif; background: var(--bg); color: var(--text-primary); }
+</style>
+</head>
+<body class="min-h-screen">
+
+<!-- Mockup ribbon -->
+<div class="text-[10px] text-center py-1 text-white" style="background: var(--brand-teal)">
+  MOCKUP · Liste workflows · Direction A — Tableau dense · <a href="index.html" class="underline">retour à l'index</a>
+</div>
+
+<header class="bg-white border-b" style="border-color: var(--border)">
+  <div class="max-w-[1200px] mx-auto px-8 py-5 flex items-center justify-between">
+    <div class="flex items-center gap-2 text-sm">
+      <a href="#" style="color: var(--brand-teal)">Admin</a>
+      <span style="color: var(--text-disabled)">/</span>
+      <span class="font-semibold">Workflows</span>
+    </div>
+    <a href="#" class="text-sm" style="color: var(--brand-teal)">← Accueil</a>
+  </div>
+</header>
+
+<main class="max-w-[1200px] mx-auto px-8 py-10">
+
+  <div class="flex items-end justify-between mb-6">
+    <div>
+      <h1 class="text-2xl font-bold">Workflows</h1>
+      <p class="text-sm mt-1" style="color: var(--text-secondary)">Configurations de pipeline par type d'image. 5 workflows enregistrés.</p>
+    </div>
+    <button class="px-4 py-2 rounded-[10px] text-white font-semibold text-sm" style="background: var(--brand-teal)">+ Nouveau workflow</button>
+  </div>
+
+  <!-- Filters -->
+  <div class="bg-white rounded-[12px] p-3 flex items-center gap-3 mb-4 shadow-sm">
+    <div class="flex-1 relative">
+      <input type="text" placeholder="Rechercher un workflow..." class="w-full px-3 py-2 rounded-[10px] border text-sm" style="border-color: var(--border)">
+    </div>
+    <select class="px-3 py-2 rounded-[10px] border text-sm bg-white" style="border-color: var(--border)">
+      <option>Tous les statuts</option>
+      <option>Actifs</option>
+      <option>Désactivés</option>
+      <option>Brouillons</option>
+    </select>
+    <select class="px-3 py-2 rounded-[10px] border text-sm bg-white" style="border-color: var(--border)">
+      <option>Tous les types</option>
+      <option>ADS</option>
+      <option>Schéma technique</option>
+      <option>Packaging</option>
+    </select>
+  </div>
+
+  <!-- Table -->
+  <div class="bg-white rounded-[16px] shadow-sm overflow-hidden">
+    <table class="w-full text-sm">
+      <thead class="text-[11px] uppercase tracking-wider" style="color: var(--text-disabled)">
+        <tr class="border-b" style="border-color: var(--border)">
+          <th class="text-left px-5 py-3 font-semibold">Nom</th>
+          <th class="text-left py-3 font-semibold">Type d'image</th>
+          <th class="text-left py-3 font-semibold">Étapes</th>
+          <th class="text-left py-3 font-semibold">Version</th>
+          <th class="text-left py-3 font-semibold">Statut</th>
+          <th class="text-left py-3 font-semibold">Modifié</th>
+          <th class="text-right px-5 py-3 font-semibold">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="border-b hover:bg-gray-50 transition" style="border-color: var(--border)">
+          <td class="px-5 py-4">
+            <div class="font-semibold">ADS Standard</div>
+            <div class="text-xs" style="color: var(--text-secondary)">NB2 direct image→image, sans extraction</div>
+          </td>
+          <td class="py-4"><span class="text-xs px-2 py-1 rounded-full font-semibold" style="background:#ecfeff;color:#0e7490">ADS</span></td>
+          <td class="py-4" style="color: var(--text-secondary)">5</td>
+          <td class="py-4 font-mono text-xs">v3</td>
+          <td class="py-4">
+            <span class="inline-flex items-center gap-1.5 text-xs">
+              <span class="w-2 h-2 rounded-full" style="background:#10b981"></span>
+              Actif · par défaut
+            </span>
+          </td>
+          <td class="py-4 text-xs" style="color: var(--text-secondary)">il y a 2 jours · admin</td>
+          <td class="px-5 py-4 text-right">
+            <button class="text-xs px-2 py-1 rounded-[8px] hover:bg-gray-100">Éditer</button>
+            <button class="text-xs px-2 py-1 rounded-[8px] hover:bg-gray-100">⋯</button>
+          </td>
+        </tr>
+        <tr class="border-b hover:bg-gray-50 transition" style="border-color: var(--border)">
+          <td class="px-5 py-4">
+            <div class="font-semibold">ADS Natif (extract → review → render)</div>
+            <div class="text-xs" style="color: var(--text-secondary)">Pipeline avec validation textuelle humaine</div>
+          </td>
+          <td class="py-4"><span class="text-xs px-2 py-1 rounded-full font-semibold" style="background:#ecfeff;color:#0e7490">ADS</span></td>
+          <td class="py-4" style="color: var(--text-secondary)">9</td>
+          <td class="py-4 font-mono text-xs">v5</td>
+          <td class="py-4">
+            <span class="inline-flex items-center gap-1.5 text-xs">
+              <span class="w-2 h-2 rounded-full" style="background:#10b981"></span>
+              Actif
+            </span>
+          </td>
+          <td class="py-4 text-xs" style="color: var(--text-secondary)">il y a 5 jours · m.vinet</td>
+          <td class="px-5 py-4 text-right">
+            <button class="text-xs px-2 py-1 rounded-[8px] hover:bg-gray-100">Éditer</button>
+            <button class="text-xs px-2 py-1 rounded-[8px] hover:bg-gray-100">⋯</button>
+          </td>
+        </tr>
+        <tr class="border-b hover:bg-gray-50 transition" style="border-color: var(--border)">
+          <td class="px-5 py-4">
+            <div class="font-semibold">Schéma technique v1</div>
+            <div class="text-xs" style="color: var(--text-secondary)">Préservation layout + swap labels uniquement</div>
+          </td>
+          <td class="py-4"><span class="text-xs px-2 py-1 rounded-full font-semibold" style="background:#faf5ff;color:#7e22ce">Schéma</span></td>
+          <td class="py-4" style="color: var(--text-secondary)">7</td>
+          <td class="py-4 font-mono text-xs">v1</td>
+          <td class="py-4">
+            <span class="inline-flex items-center gap-1.5 text-xs">
+              <span class="w-2 h-2 rounded-full" style="background:#f59e0b"></span>
+              Brouillon
+            </span>
+          </td>
+          <td class="py-4 text-xs" style="color: var(--text-secondary)">aujourd'hui · admin</td>
+          <td class="px-5 py-4 text-right">
+            <button class="text-xs px-2 py-1 rounded-[8px] hover:bg-gray-100">Éditer</button>
+            <button class="text-xs px-2 py-1 rounded-[8px] hover:bg-gray-100">⋯</button>
+          </td>
+        </tr>
+        <tr class="border-b hover:bg-gray-50 transition" style="border-color: var(--border)">
+          <td class="px-5 py-4">
+            <div class="font-semibold">Packaging EU</div>
+            <div class="text-xs" style="color: var(--text-secondary)">Ingrédients, mentions légales, multi-langues côte à côte</div>
+          </td>
+          <td class="py-4"><span class="text-xs px-2 py-1 rounded-full font-semibold" style="background:#fef3c7;color:#b45309">Packaging</span></td>
+          <td class="py-4" style="color: var(--text-secondary)">8</td>
+          <td class="py-4 font-mono text-xs">v2</td>
+          <td class="py-4">
+            <span class="inline-flex items-center gap-1.5 text-xs">
+              <span class="w-2 h-2 rounded-full" style="background:#10b981"></span>
+              Actif
+            </span>
+          </td>
+          <td class="py-4 text-xs" style="color: var(--text-secondary)">il y a 1 sem · m.vinet</td>
+          <td class="px-5 py-4 text-right">
+            <button class="text-xs px-2 py-1 rounded-[8px] hover:bg-gray-100">Éditer</button>
+            <button class="text-xs px-2 py-1 rounded-[8px] hover:bg-gray-100">⋯</button>
+          </td>
+        </tr>
+        <tr class="hover:bg-gray-50 transition opacity-60">
+          <td class="px-5 py-4">
+            <div class="font-semibold">Infographie produit (test)</div>
+            <div class="text-xs" style="color: var(--text-secondary)">Workflow expérimental, en pause</div>
+          </td>
+          <td class="py-4"><span class="text-xs px-2 py-1 rounded-full font-semibold" style="background:#dcfce7;color:#15803d">Infographie</span></td>
+          <td class="py-4" style="color: var(--text-secondary)">6</td>
+          <td class="py-4 font-mono text-xs">v1</td>
+          <td class="py-4">
+            <span class="inline-flex items-center gap-1.5 text-xs">
+              <span class="w-2 h-2 rounded-full" style="background:#9ca3af"></span>
+              Désactivé
+            </span>
+          </td>
+          <td class="py-4 text-xs" style="color: var(--text-secondary)">il y a 3 sem · admin</td>
+          <td class="px-5 py-4 text-right">
+            <button class="text-xs px-2 py-1 rounded-[8px] hover:bg-gray-100">Éditer</button>
+            <button class="text-xs px-2 py-1 rounded-[8px] hover:bg-gray-100">⋯</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="text-xs mt-4 text-center" style="color: var(--text-disabled)">5 workflows · 4 actifs · 1 désactivé</p>
+
+</main>
+</body>
+</html>

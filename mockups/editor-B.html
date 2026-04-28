@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Éditeur · B · Canvas dominant + drawer</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Titillium+Web:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --brand-teal: #0ea5a4; --text-primary: #1a1f2c; --text-secondary: #6b7280; --text-disabled: #9ca3af; --border: #e5e7eb; --bg: #f7f8fa; }
+  body { font-family: 'Titillium Web', system-ui, sans-serif; background: var(--bg); color: var(--text-primary); }
+  .canvas-bg {
+    background-color: #fafbfc;
+    background-image:
+      linear-gradient(#e5e7eb 1px, transparent 1px),
+      linear-gradient(90deg, #e5e7eb 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+  .node { position: absolute; background: white; border-radius: 12px; padding: 10px 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); border: 1.5px solid #e5e7eb; min-width: 150px; cursor: pointer; }
+  .node.selected { border-color: var(--brand-teal); box-shadow: 0 0 0 3px #0ea5a420, 0 4px 14px rgba(0,0,0,0.1); }
+  .node-handle { position: absolute; width: 10px; height: 10px; background: white; border: 2px solid #94a3b8; border-radius: 50%; top: 50%; transform: translateY(-50%); }
+  .node-handle.in { left: -6px; }
+  .node-handle.out { right: -6px; }
+  .palette-chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; cursor: grab; font-size: 12px; background: white; border: 1.5px solid #e5e7eb; font-weight: 600; }
+  .palette-chip:hover { border-color: var(--brand-teal); }
+</style>
+</head>
+<body class="h-screen overflow-hidden flex flex-col">
+
+<div class="text-[10px] text-center py-1 text-white" style="background: var(--brand-teal)">
+  MOCKUP · Éditeur · Direction B — Canvas dominant + drawer · <a href="index.html" class="underline">retour à l'index</a>
+</div>
+
+<header class="bg-white border-b flex items-center justify-between px-6 py-3" style="border-color: var(--border)">
+  <div class="flex items-center gap-3">
+    <a href="list-A.html" class="text-sm" style="color: var(--brand-teal)">← Workflows</a>
+    <span style="color: var(--text-disabled)">/</span>
+    <input type="text" value="ADS Standard" class="font-bold text-base bg-transparent border-0 focus:outline-none focus:bg-gray-100 px-2 py-1 rounded">
+    <span class="text-xs px-2 py-0.5 rounded-full font-semibold" style="background:#ecfeff;color:#0e7490">ADS</span>
+    <span class="text-xs font-mono" style="color: var(--text-disabled)">v3 · sauvegardé il y a 32s</span>
+  </div>
+  <div class="flex items-center gap-2">
+    <button class="text-sm px-3 py-1.5 rounded-[10px] border" style="border-color: var(--border)">Tester sur image…</button>
+    <button class="text-sm px-4 py-1.5 rounded-[10px] text-white font-semibold" style="background: var(--brand-teal)">Sauvegarder</button>
+  </div>
+</header>
+
+<!-- Canvas full-bleed -->
+<main class="canvas-bg relative flex-1 overflow-hidden">
+
+  <!-- Floating palette top -->
+  <div class="absolute top-4 left-1/2 -translate-x-1/2 z-20 bg-white rounded-[16px] shadow-md border px-3 py-2.5 flex flex-wrap items-center gap-1.5" style="border-color: var(--border); max-width: 90%">
+    <div class="text-[11px] px-2 font-semibold" style="color: var(--text-disabled)">PALETTE</div>
+    <span class="palette-chip"><span style="color:#0e7490">▶</span> Start</span>
+    <span class="palette-chip"><span style="color:#b45309">📝</span> Extraire</span>
+    <span class="palette-chip"><span style="color:#b45309">🌐</span> Traduire</span>
+    <span class="palette-chip"><span style="color:#1d4ed8">🖼️</span> Générer</span>
+    <span class="palette-chip"><span style="color:#15803d">✓</span> Vérifier</span>
+    <span class="palette-chip"><span style="color:#15803d">↻</span> Auto-corr.</span>
+    <span class="palette-chip"><span style="color:#9d174d">👤</span> Review</span>
+    <span class="palette-chip"><span style="color:#9d174d">⋔</span> Condition</span>
+    <span class="palette-chip"><span style="color:#15803d">⏏</span> Export</span>
+    <button class="palette-chip" style="background:#f1f5f9;border-color:#cbd5e1">+ Plus…</button>
+  </div>
+
+  <!-- Toolbar canvas -->
+  <div class="absolute top-4 right-4 z-20 bg-white rounded-[10px] shadow-sm flex p-1 text-xs" style="border:1px solid var(--border)">
+    <button class="px-2 py-1 rounded">−</button>
+    <span class="px-2 py-1 font-mono" style="color: var(--text-secondary)">100%</span>
+    <button class="px-2 py-1 rounded">+</button>
+    <span class="border-l mx-1" style="border-color: var(--border)"></span>
+    <button class="px-2 py-1 rounded">⌖ Recentrer</button>
+  </div>
+
+  <!-- Edges -->
+  <svg class="absolute inset-0 w-full h-full" style="pointer-events:none">
+    <defs>
+      <marker id="arrEdB" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+        <polygon points="0 0, 8 4, 0 8" fill="#94a3b8"/>
+      </marker>
+    </defs>
+    <path d="M 178 280 C 220 280, 250 280, 290 280" stroke="#94a3b8" stroke-width="2" fill="none" marker-end="url(#arrEdB)"/>
+    <path d="M 440 280 C 480 280, 510 280, 550 280" stroke="#94a3b8" stroke-width="2" fill="none" marker-end="url(#arrEdB)"/>
+    <path d="M 700 280 C 740 280, 770 280, 810 280" stroke="#94a3b8" stroke-width="2" fill="none" marker-end="url(#arrEdB)"/>
+    <path d="M 970 265 C 1020 240, 1050 190, 1100 190" stroke="#dc2626" stroke-width="2" fill="none" marker-end="url(#arrEdB)"/>
+    <path d="M 970 300 C 1020 330, 1050 380, 1100 380" stroke="#16a34a" stroke-width="2" fill="none" marker-end="url(#arrEdB)"/>
+  </svg>
+
+  <!-- Nodes -->
+  <div class="node" style="left:100px;top:260px">
+    <div class="flex items-center gap-2">
+      <span style="color:#0e7490">▶</span>
+      <div><div class="font-bold text-sm">Start</div><div class="text-[11px]" style="color:var(--text-disabled)">Entrée</div></div>
+    </div>
+    <div class="node-handle out"></div>
+  </div>
+  <div class="node" style="left:290px;top:260px">
+    <div class="flex items-center gap-2">
+      <span style="color:#1d4ed8">🖼️</span>
+      <div><div class="font-bold text-sm">Générer image</div><div class="text-[11px]" style="color:var(--text-disabled)">NB2 direct</div></div>
+    </div>
+    <div class="node-handle in"></div>
+    <div class="node-handle out"></div>
+  </div>
+  <div class="node" style="left:550px;top:260px">
+    <div class="flex items-center gap-2">
+      <span style="color:#15803d">✓</span>
+      <div><div class="font-bold text-sm">Vérifier image</div><div class="text-[11px]" style="color:var(--text-disabled)">gemini-3.1-pro</div></div>
+    </div>
+    <div class="node-handle in"></div>
+    <div class="node-handle out"></div>
+  </div>
+  <div class="node selected" style="left:810px;top:250px;background:#fff5f9">
+    <div class="flex items-center gap-2">
+      <span style="color:#9d174d">⋔</span>
+      <div><div class="font-bold text-sm">Condition</div><div class="text-[11px]" style="color:#9d174d">score &lt; 4 ?</div></div>
+    </div>
+    <div class="node-handle in"></div>
+    <div class="node-handle" style="right:-6px;top:30%"></div>
+    <div class="node-handle" style="right:-6px;top:70%"></div>
+  </div>
+  <div class="node" style="left:1100px;top:170px">
+    <div class="flex items-center gap-2">
+      <span style="color:#15803d">↻</span>
+      <div><div class="font-bold text-sm">Auto-corriger</div><div class="text-[11px]" style="color:var(--text-disabled)">max 2 it.</div></div>
+    </div>
+    <div class="node-handle in"></div>
+    <div class="node-handle out"></div>
+  </div>
+  <div class="node" style="left:1100px;top:360px;background:#f0fdf4;border-color:#16a34a">
+    <div class="flex items-center gap-2">
+      <span style="color:#15803d">⏏</span>
+      <div><div class="font-bold text-sm">Export</div><div class="text-[11px]" style="color:#15803d">zip + Drive</div></div>
+    </div>
+    <div class="node-handle in"></div>
+  </div>
+
+  <!-- Floating action bottom-right -->
+  <div class="absolute bottom-[260px] right-6 z-20 flex flex-col gap-2">
+    <button class="bg-white rounded-full shadow-md w-10 h-10 flex items-center justify-center" style="border:1px solid var(--border)" title="Mini-map">🗺</button>
+    <button class="bg-white rounded-full shadow-md w-10 h-10 flex items-center justify-center" style="border:1px solid var(--border)" title="Auto-layout">⤧</button>
+    <button class="rounded-full shadow-md w-10 h-10 flex items-center justify-center text-white" style="background: var(--brand-teal)" title="Nouveau nœud">+</button>
+  </div>
+
+</main>
+
+<!-- Bottom drawer for selected node properties -->
+<aside class="bg-white border-t shadow-[0_-2px_8px_rgba(0,0,0,0.04)]" style="border-color: var(--border); height: 240px">
+  <div class="flex items-center justify-between px-6 py-3 border-b" style="border-color: var(--border)">
+    <div class="flex items-center gap-3">
+      <span class="text-xs uppercase tracking-wider" style="color: var(--text-disabled)">Propriétés du nœud</span>
+      <span class="px-2 py-0.5 rounded-full text-xs font-semibold" style="background:#fce7f3;color:#9d174d">Condition</span>
+      <span class="font-bold text-sm">"score &lt; 4 ?"</span>
+    </div>
+    <div class="flex items-center gap-2">
+      <button class="text-xs px-2 py-1 rounded" style="color:#dc2626">Supprimer</button>
+      <button class="text-xs px-2 py-1 rounded">▼ Réduire</button>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-3 gap-6 px-6 py-4 text-sm">
+
+    <div>
+      <label class="block text-xs font-semibold mb-1.5" style="color: var(--text-secondary)">Variable d'entrée</label>
+      <select class="w-full px-3 py-2 rounded-[10px] border bg-white" style="border-color: var(--border)">
+        <option>verify.score (0-5)</option>
+        <option>verify.issues.length</option>
+        <option>generate.duration_ms</option>
+      </select>
+
+      <label class="block text-xs font-semibold mb-1.5 mt-4" style="color: var(--text-secondary)">Opérateur</label>
+      <div class="flex gap-1.5">
+        <button class="flex-1 py-2 rounded-[8px] text-xs font-mono" style="background:var(--brand-teal);color:white">&lt;</button>
+        <button class="flex-1 py-2 rounded-[8px] text-xs font-mono border" style="border-color:var(--border)">≤</button>
+        <button class="flex-1 py-2 rounded-[8px] text-xs font-mono border" style="border-color:var(--border)">=</button>
+        <button class="flex-1 py-2 rounded-[8px] text-xs font-mono border" style="border-color:var(--border)">≥</button>
+        <button class="flex-1 py-2 rounded-[8px] text-xs font-mono border" style="border-color:var(--border)">&gt;</button>
+      </div>
+    </div>
+
+    <div>
+      <label class="block text-xs font-semibold mb-1.5" style="color: var(--text-secondary)">Valeur seuil</label>
+      <input type="number" value="4" step="0.1" class="w-full px-3 py-2 rounded-[10px] border font-mono" style="border-color: var(--border)">
+
+      <label class="block text-xs font-semibold mb-1.5 mt-4" style="color: var(--text-secondary)">Description (optionnelle)</label>
+      <input type="text" value="Score qualité insuffisant" class="w-full px-3 py-2 rounded-[10px] border" style="border-color: var(--border)">
+    </div>
+
+    <div>
+      <label class="block text-xs font-semibold mb-1.5" style="color: var(--text-secondary)">Sorties</label>
+      <div class="space-y-2">
+        <div class="flex items-center justify-between rounded-[10px] px-3 py-2 border" style="border-color:#fecaca;background:#fef2f2">
+          <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full" style="background:#dc2626"></span><span class="text-xs font-semibold">Si vrai</span></div>
+          <span class="text-xs font-mono" style="color:var(--text-secondary)">→ Auto-corriger</span>
+        </div>
+        <div class="flex items-center justify-between rounded-[10px] px-3 py-2 border" style="border-color:#bbf7d0;background:#f0fdf4">
+          <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full" style="background:#16a34a"></span><span class="text-xs font-semibold">Sinon</span></div>
+          <span class="text-xs font-mono" style="color:var(--text-secondary)">→ Export</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</aside>
+
+</body>
+</html>

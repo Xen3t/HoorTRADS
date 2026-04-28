@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { GenerationProgress } from '@/types/generation'
+import LogPanel from '@/components/generate/LogPanel'
 
 export default function GeneratePage() {
   const params = useParams()
@@ -20,6 +21,8 @@ export default function GeneratePage() {
   const [failedImages, setFailedImages] = useState<{ id: string; language?: string; error_message?: string }[]>([])
   const [isAutoVerifying, setIsAutoVerifying] = useState(false)
   const [autoCorrectStats, setAutoCorrectStats] = useState<{ verified: number; corrected: number } | null>(null)
+  const [showLogs, setShowLogs] = useState(false)
+  const [currentPhase, setCurrentPhase] = useState<string | null>(null)
   const verificationEnabledRef = useRef(false)
   const pollingRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -59,6 +62,20 @@ export default function GeneratePage() {
           const failed = (imgData.tasks || []).filter((t: { status: string }) => t.status === 'failed' || t.status === 'error')
           setFailedImages(failed)
 
+          // Fetch current phase from logs endpoint
+          try {
+            const logsRes = await fetch(`/api/generate/${jobId}/logs`)
+            if (logsRes.ok) {
+              const logsData = await logsRes.json()
+              // Find the most recent in-progress or last success event
+              const events = (logsData.events || []) as Array<{ level: string; source: string; provider?: string; message: string }>
+              const inProgress = [...events].reverse().find((e) => e.level === 'info' && ['extract', 'translate', 'pipeline', 'nb2'].includes(e.source))
+              if (inProgress) {
+                setCurrentPhase(inProgress.source)
+              }
+            }
+          } catch {}
+
           if (data.status === 'pending_text_review') {
             setIsDone(true)
             setIsPendingTextReview(true)
@@ -69,6 +86,12 @@ export default function GeneratePage() {
           } else if (data.status === 'done' || data.status === 'failed') {
             setIsDone(true)
             if (pollingRef.current) clearInterval(pollingRef.current)
+
+            if (data.status === 'failed') {
+              // On error: show logs immediately, no auto-redirect
+              setShowLogs(true)
+              return
+            }
 
             if (data.status === 'done' && verificationEnabledRef.current && !isRenderingPhase) {
               setIsAutoVerifying(true)
@@ -119,15 +142,21 @@ export default function GeneratePage() {
         </motion.div>
 
         <p className="text-text-secondary text-sm mb-8">
-          {isAutoVerifying
-            ? '🔍 Vérification & correction en cours...'
-            : autoCorrectStats
-            ? `✓ ${autoCorrectStats.verified} vérifiés · ${autoCorrectStats.corrected} corrigés`
-            : isDone
-            ? (isRenderingPhase ? 'Génération des visuels terminée !' : 'Extraction & traduction terminées !')
-            : isRenderingPhase
-            ? 'Génération des visuels avec Gemini NB2...'
-            : 'Extraction et traduction avec Gemini AI...'}
+          {(() => {
+            if (isAutoVerifying) return '🔍 Vérification & correction en cours...'
+            if (autoCorrectStats) return `✓ ${autoCorrectStats.verified} vérifiés · ${autoCorrectStats.corrected} corrigés`
+            if (isDone) return isRenderingPhase ? 'Génération des visuels terminée !' : 'Extraction & traduction terminées !'
+
+            if (isRenderingPhase) return '🎨 Génération des visuels en cours...'
+            switch (currentPhase) {
+              case 'extract': return '🔎 Extraction du texte source...'
+              case 'pipeline': return '📄 Filtrage du doc config par langue...'
+              case 'translate': return '🌐 Traduction des zones vers les langues cibles...'
+              case 'image':
+              case 'nb2': return '🎨 Génération des visuels...'
+              default: return 'Démarrage du pipeline...'
+            }
+          })()}
         </p>
 
         {/* Progress bar */}
@@ -216,12 +245,12 @@ export default function GeneratePage() {
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.3, delay: i * 0.03 }}
-                className="aspect-square bg-surface rounded-[8px] overflow-hidden"
+                className="bg-surface flex items-center justify-center aspect-square"
               >
                 <img
                   src={`/api/serve-image?path=${encodeURIComponent(img.output_path)}`}
                   alt=""
-                  className="w-full h-full object-cover"
+                  className="max-w-full max-h-full w-auto h-auto object-contain"
                 />
               </motion.div>
             ))}
@@ -238,32 +267,38 @@ export default function GeneratePage() {
           <p className="text-text-secondary">Aucun job de génération trouvé. Retournez à la configuration.</p>
         )}
 
-        {/* Waiting message + cancel */}
-        <AnimatePresence>
-          {!isDone && progress && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="flex flex-col items-center gap-3"
+        {/* Waiting message + cancel + log toggle */}
+        {progress && (
+          <div className="flex flex-col items-center gap-2">
+            {!isDone && (
+              <>
+                <p className="text-xs text-text-disabled">
+                  Vous pouvez fermer cette page — vous serez notifié à la fin
+                </p>
+                <button
+                  onClick={async () => {
+                    if (!jobId) return
+                    if (!confirm('Arrêter la génération en cours ?')) return
+                    await fetch(`/api/generate/${jobId}/cancel`, { method: 'POST' })
+                    window.location.href = `/campaign/${sessionId}/review`
+                  }}
+                  className="text-xs text-brand-red hover:text-brand-red/80 underline transition-colors"
+                >
+                  Arrêter la génération
+                </button>
+              </>
+            )}
+            <button
+              onClick={() => setShowLogs(!showLogs)}
+              className="text-xs text-text-disabled hover:text-text-secondary underline transition-colors"
             >
-              <p className="text-xs text-text-disabled">
-                Vous pouvez fermer cette page — vous serez notifié à la fin
-              </p>
-              <button
-                onClick={async () => {
-                  if (!jobId) return
-                  if (!confirm('Arrêter la génération en cours ?')) return
-                  await fetch(`/api/generate/${jobId}/cancel`, { method: 'POST' })
-                  window.location.href = `/campaign/${sessionId}/review`
-                }}
-                className="text-xs text-brand-red hover:text-brand-red/80 underline transition-colors"
-              >
-                Arrêter la génération
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
+              {showLogs ? 'Masquer les logs' : 'Afficher les logs'}
+            </button>
+          </div>
+        )}
+
+        {/* Logs panel (appears below the action links) */}
+        <LogPanel jobId={jobId} isActive={!isDone} enabled={showLogs} onEnabledChange={setShowLogs} hideInternalToggle />
 
         {/* Auto-redirect en cours — message discret */}
         <AnimatePresence>

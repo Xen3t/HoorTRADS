@@ -41,6 +41,7 @@ export default function TextReviewPage() {
   const [translations, setTranslations] = useState<Record<string, Record<string, string>>>({})
   const [loading, setLoading] = useState(true)
   const [preTranslationError, setPreTranslationError] = useState<string | null>(null)
+  const [jobStatus, setJobStatus] = useState<string | null>(null)
   const [activeLang, setActiveLang] = useState<string | null>(null)
 
   const [isVerifying, setIsVerifying] = useState(false)
@@ -128,6 +129,7 @@ export default function TextReviewPage() {
         setExtractedZones(data.extractedZones || {})
         setTranslations(data.translations || {})
         if (data.preTranslationError) setPreTranslationError(data.preTranslationError)
+        if (data.status) setJobStatus(data.status)
 
         // Store original AI translations
         originalTranslationsRef.current = data.translations || {}
@@ -189,6 +191,21 @@ export default function TextReviewPage() {
       ...prev,
       [lang]: { ...(prev[lang] || {}), [zone]: value },
     }))
+  }
+
+  // Apply one cell's value to the same zone across ALL languages
+  const applyToAllLangs = (zone: string, value: string) => {
+    setTranslations((prev) => {
+      const next: Record<string, Record<string, string>> = { ...prev }
+      for (const lang of Object.keys(next)) {
+        next[lang] = { ...(next[lang] || {}), [zone]: value }
+      }
+      // Also include any languages that exist in originals but not yet in state
+      for (const lang of Object.keys(originalTranslationsRef.current)) {
+        if (!next[lang]) next[lang] = { [zone]: value }
+      }
+      return next
+    })
   }
 
   // Verify all languages (or the active one)
@@ -259,6 +276,22 @@ export default function TextReviewPage() {
     }
   }
 
+  const [isReextracting, setIsReextracting] = useState(false)
+  const handleReextract = async () => {
+    if (!jobId || isReextracting) return
+    if (!confirm('Relancer toute l\'extraction et la traduction depuis l\'image source ?\n\nLes images déjà générées seront archivées en historique. Tu reverras une nouvelle pré-traduction à valider.')) return
+    setIsReextracting(true)
+    try {
+      const res = await fetch(`/api/generate/${jobId}/reextract`, { method: 'POST' })
+      if (!res.ok) throw new Error('failed')
+      if (jobId) localStorage.removeItem(`text-review-${jobId}`)
+      window.location.href = `/campaign/${sessionId}/generate?jobId=${jobId}`
+    } catch {
+      setToast({ message: 'Erreur — impossible de relancer l\'extraction.', variant: 'error' })
+      setIsReextracting(false)
+    }
+  }
+
   if (loading) {
     return (
       <main className="min-h-screen flex items-center justify-center">
@@ -271,6 +304,40 @@ export default function TextReviewPage() {
   const isTranslationError = preTranslationError?.startsWith('translation:')
   const hasNoZones = zones.length === 0
   const hasNoTranslations = !hasNoZones && languages.length === 0
+  const sessionAlreadyDone = hasNoZones && !preTranslationError && jobStatus === 'done'
+
+  // If session is already done (images generated) but no log available, redirect user
+  if (sessionAlreadyDone) {
+    return (
+      <main className="min-h-screen flex items-start justify-center pt-16">
+        <div className="text-center w-full" style={{ maxWidth: '520px' }}>
+          <div className="w-12 h-12 rounded-full bg-brand-green-light flex items-center justify-center mx-auto mb-4">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-brand-green">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+          </div>
+          <p className="text-base font-bold text-text-primary mb-2">Cette session est déjà terminée</p>
+          <p className="text-sm text-text-secondary mb-6">
+            Les traductions ont déjà été validées et les visuels générés. Consulte la page de vérification des visuels.
+          </p>
+          <div className="flex flex-col gap-3 items-center">
+            <a
+              href={`/campaign/${sessionId}/review`}
+              className="px-6 py-2.5 rounded-[10px] bg-brand-green text-white font-semibold text-sm hover:bg-brand-green-hover transition-colors"
+            >
+              Voir les visuels
+            </a>
+            <a
+              href={`/campaign/${sessionId}/export`}
+              className="text-sm text-text-secondary hover:text-text-primary underline transition-colors"
+            >
+              Ou retourner à l&apos;export
+            </a>
+          </div>
+        </div>
+      </main>
+    )
+  }
 
   // Show error page for extraction failure OR translation failure
   if (hasNoZones || (hasNoTranslations && preTranslationError)) {
@@ -386,6 +453,17 @@ export default function TextReviewPage() {
                 className="text-xs font-semibold px-3 py-1.5 rounded-full bg-surface text-text-secondary hover:bg-border transition-colors disabled:opacity-50"
               >
                 {isVerifying && !activeLang ? '⏳ Vérification...' : '🔍 Vérifier toutes les langues'}
+              </button>
+            )}
+            {/* Re-extract button */}
+            {jobId && (
+              <button
+                onClick={handleReextract}
+                disabled={isReextracting || isSending}
+                className="text-xs font-semibold px-3 py-1.5 rounded-full bg-surface text-text-secondary hover:bg-amber-100 hover:text-amber-700 transition-colors disabled:opacity-50"
+                title="Relance l'extraction du texte source + traduction depuis zéro"
+              >
+                {isReextracting ? '⏳ Relance...' : '⟳ Relancer l’extraction'}
               </button>
             )}
           </div>
@@ -509,6 +587,7 @@ export default function TextReviewPage() {
                             value={langTranslations[zone] || ''}
                             onChange={(v) => updateCell(lang, zone, v)}
                             originalValue={originalTranslationsRef.current[lang]?.[zone] || ''}
+                            onApplyToAll={() => applyToAllLangs(zone, langTranslations[zone] || '')}
                           />
                         </div>
                       </div>
@@ -555,7 +634,7 @@ export default function TextReviewPage() {
                 Corriger via IA — {(LANGUAGE_NAMES[retranslateModal.lang] || retranslateModal.lang.toUpperCase())}
               </h3>
               <p className="text-xs text-text-secondary mb-4">
-                Indiquez ce qui ne va pas. Gemini re-traduira en tenant compte de vos remarques.
+                Indiquez ce qui ne va pas. Le modèle re-traduira en tenant compte de vos remarques.
               </p>
               <textarea
                 autoFocus
@@ -641,9 +720,10 @@ export default function TextReviewPage() {
   )
 }
 
-function EditableCell({ value, onChange, originalValue }: { value: string; onChange: (v: string) => void; originalValue: string }) {
+function EditableCell({ value, onChange, originalValue, onApplyToAll }: { value: string; onChange: (v: string) => void; originalValue: string; onApplyToAll?: () => void }) {
   const ref = useRef<HTMLTextAreaElement>(null)
   const hasChanged = originalValue !== '' && value !== originalValue
+  const [appliedFeedback, setAppliedFeedback] = useState(false)
 
   useEffect(() => {
     if (ref.current) {
@@ -652,8 +732,15 @@ function EditableCell({ value, onChange, originalValue }: { value: string; onCha
     }
   }, [value])
 
+  const handleApplyAll = () => {
+    if (!onApplyToAll || !value.trim()) return
+    onApplyToAll()
+    setAppliedFeedback(true)
+    setTimeout(() => setAppliedFeedback(false), 1500)
+  }
+
   return (
-    <div className="relative">
+    <div className="relative group">
       <textarea
         ref={ref}
         value={value}
@@ -673,14 +760,28 @@ function EditableCell({ value, onChange, originalValue }: { value: string; onCha
           min-h-[44px]
         "
       />
-      {hasChanged && (
-        <button
-          onClick={() => onChange(originalValue)}
-          className="absolute bottom-1.5 right-1.5 text-[10px] text-text-disabled hover:text-brand-red transition-colors"
-        >
-          Réinitialiser
-        </button>
-      )}
+      <div className="absolute bottom-1.5 right-1.5 flex items-center gap-2">
+        {onApplyToAll && value.trim() && (
+          <button
+            onClick={handleApplyAll}
+            disabled={appliedFeedback}
+            className={`text-[10px] font-semibold transition-colors ${
+              appliedFeedback ? 'text-brand-green' : 'text-text-disabled hover:text-brand-teal opacity-0 group-hover:opacity-100'
+            }`}
+            title="Copier cette valeur dans la même zone pour toutes les langues"
+          >
+            {appliedFeedback ? '✓ Appliqué' : 'Appliquer à toutes les langues'}
+          </button>
+        )}
+        {hasChanged && (
+          <button
+            onClick={() => onChange(originalValue)}
+            className="text-[10px] text-text-disabled hover:text-brand-red transition-colors"
+          >
+            Réinitialiser
+          </button>
+        )}
+      </div>
     </div>
   )
 }

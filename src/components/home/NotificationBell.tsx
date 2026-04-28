@@ -20,16 +20,40 @@ export default function NotificationBell() {
   const [clearing, setClearing] = useState<string | null>(null)
   const ref = useRef<HTMLDivElement>(null)
   const pollingRef = useRef<NodeJS.Timeout | null>(null)
+  const knownStatesRef = useRef<Map<string, string>>(new Map())
 
   const load = async () => {
     try {
       const res = await fetch('/api/queue')
       const data = await res.json()
-      setSessions(data.sessions || [])
+      const next: QueueSession[] = data.sessions || []
+      // Detect transitions from 'generating' → 'done' and trigger browser notification
+      if (typeof window !== 'undefined' && 'Notification' in window) {
+        for (const s of next) {
+          const prev = knownStatesRef.current.get(s.id)
+          if (prev === 'generating' && s.status === 'done' && Notification.permission === 'granted') {
+            try {
+              new Notification('HoorTRADS — génération terminée', {
+                body: `${s.name} : ${s.completed_tasks ?? 0} visuels prêts à réviser`,
+                icon: '/favicon.ico',
+                tag: `hoortrad-${s.id}`,
+              })
+            } catch { /* ignore */ }
+          }
+          knownStatesRef.current.set(s.id, s.status)
+        }
+      } else {
+        for (const s of next) knownStatesRef.current.set(s.id, s.status)
+      }
+      setSessions(next)
     } catch {}
   }
 
   useEffect(() => {
+    // Request notification permission on mount (silent if already granted/denied)
+    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission().catch(() => {})
+    }
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void load()
     pollingRef.current = setInterval(() => { void load() }, 4000)

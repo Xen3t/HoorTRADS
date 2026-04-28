@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback, DragEvent } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import NotificationToast from '@/components/shared/NotificationToast'
@@ -27,10 +27,7 @@ export default function ConfigurePage() {
   const [resolution, setResolution] = useState<Resolution>('1K')
   const [mode, setMode] = useState<GenerationMode>('standard')
   const [customPrompts, setCustomPrompts] = useState<Record<string, string>>({})
-  const [configFileName, setConfigFileName] = useState<string>('')
   const [configFileContent, setConfigFileContent] = useState<string>('')
-  const [configFileDragOver, setConfigFileDragOver] = useState(false)
-  const configFileInputRef = useRef<HTMLInputElement>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [showNewSessionConfirm, setShowNewSessionConfirm] = useState(false)
   const [toast, setToast] = useState<{ message: string; variant: 'error' | 'success' | 'info' } | null>(null)
@@ -57,7 +54,6 @@ export default function ConfigurePage() {
 if (cfg.resolution) setResolution(cfg.resolution as Resolution)
             if (cfg.mode) setMode(cfg.mode as GenerationMode)
             if (cfg.customPrompts) setCustomPrompts(cfg.customPrompts as Record<string, string>)
-            if (cfg.configFileName) setConfigFileName(cfg.configFileName as string)
             if (cfg.configFileContent) setConfigFileContent(cfg.configFileContent as string)
           }
         }
@@ -77,49 +73,15 @@ if (cfg.resolution) setResolution(cfg.resolution as Resolution)
     return () => window.removeEventListener('beforeunload', handler)
   }, [selectedCountries, isSaving])
 
-  const ACCEPTED_EXTENSIONS = ['.txt', '.json', '.csv', '.xlsx', '.xls']
-
-  const readConfigFile = useCallback((file: File) => {
-    const ext = '.' + file.name.split('.').pop()?.toLowerCase()
-    if (!ACCEPTED_EXTENSIONS.includes(ext)) return
-    if (ext === '.xlsx' || ext === '.xls') {
-      setConfigFileName(file.name)
-      setConfigFileContent(`[Fichier Excel : ${file.name} — convertissez en CSV ou JSON pour inclure le contenu dans les prompts]`)
-      return
-    }
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      const text = e.target?.result as string
-      setConfigFileName(file.name)
-      setConfigFileContent(text || '')
-    }
-    reader.readAsText(file, 'utf-8')
-  }, [])
-
-  const handleConfigFileDrop = useCallback((e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setConfigFileDragOver(false)
-    const file = e.dataTransfer.files[0]
-    if (file) readConfigFile(file)
-  }, [readConfigFile])
-
-  const handleConfigFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) readConfigFile(file)
-    e.target.value = ''
-  }
-
   const buildConfig = () => {
     const existingConfig = session?.config ? (parseSessionConfig(session.config) ?? {}) : {}
     return {
       ...existingConfig,
       countries: selectedCountries.map((c) => c.code),
-      generationMethod: 'google',
       resolution,
       mode,
       customPrompts,
-      ...(configFileName ? { configFileName, configFileContent } : {}),
+      ...(configFileContent.trim() ? { configFileContent } : {}),
     }
   }
 
@@ -233,60 +195,36 @@ if (cfg.resolution) setResolution(cfg.resolution as Resolution)
           />
         </motion.div>
 
-        {/* Config file attachment */}
+        {/* Config doc — paste zone */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.13 }}
           className="bg-white rounded-[16px] shadow-sm p-6 mb-4"
         >
-          <h2 className="text-sm font-semibold text-text-secondary mb-3">
-            Données additionnelles
-            <span className="ml-2 text-[10px] font-normal text-text-disabled">(optionnel)</span>
-          </h2>
-
-          {configFileName ? (
-            <div className="flex items-center gap-3 px-4 py-3 rounded-[8px] bg-brand-green-light border border-brand-green">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-brand-green shrink-0" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
-              </svg>
-              <span className="text-sm text-brand-green font-semibold flex-1 truncate">{configFileName}</span>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold text-text-secondary">
+              Données additionnelles
+              <span className="ml-2 text-[10px] font-normal text-text-disabled">(optionnel)</span>
+            </h2>
+            {configFileContent.trim() && (
               <button
-                onClick={() => { setConfigFileName(''); setConfigFileContent('') }}
-                className="text-text-disabled hover:text-brand-red transition-colors text-base"
-                title="Retirer le fichier"
+                onClick={() => setConfigFileContent('')}
+                className="text-xs text-text-disabled hover:text-brand-red transition-colors"
               >
-                ×
+                Effacer
               </button>
-            </div>
-          ) : (
-            <div
-              onDragOver={(e) => { e.preventDefault(); setConfigFileDragOver(true) }}
-              onDragLeave={() => setConfigFileDragOver(false)}
-              onDrop={handleConfigFileDrop}
-              onClick={() => configFileInputRef.current?.click()}
-              className={`
-                w-full rounded-[8px] border border-dashed py-5 px-4 text-center cursor-pointer
-                transition-colors duration-200
-                ${configFileDragOver ? 'border-brand-green bg-brand-green-light' : 'border-border hover:border-brand-green hover:bg-surface'}
-              `}
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mx-auto mb-2 text-text-disabled" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
-              </svg>
-              <p className="text-sm text-text-secondary">Glissez un fichier ou cliquez pour parcourir</p>
-              <p className="text-xs text-text-disabled mt-1">.txt · .json · .csv · .xlsx · .xls</p>
-            </div>
-          )}
-          <input
-            ref={configFileInputRef}
-            type="file"
-            accept=".txt,.json,.csv,.xlsx,.xls"
-            onChange={handleConfigFileSelect}
-            className="hidden"
+            )}
+          </div>
+          <textarea
+            value={configFileContent}
+            onChange={(e) => setConfigFileContent(e.target.value)}
+            placeholder={"Collez ici vos données par marché — prix, codes promo, mentions légales...\n\nExemple :\nDE: prix 139€, code SPRING10\nNL: prix 129€\nES: prix 119€, mentions légales obligatoires : ..."}
+            rows={6}
+            className="w-full px-3 py-2.5 rounded-[8px] text-sm border border-border bg-white focus:border-brand-green focus:outline-none resize-y font-mono placeholder:font-sans placeholder:text-text-disabled"
           />
           <p className="text-[11px] text-text-disabled mt-2">
-            Le contenu du fichier sera transmis à l&apos;IA en complément du prompt — ex. prix par langue, textes spécifiques par marché.
+            Ce texte sera transmis brut au modèle de traduction — il remplacera les valeurs extraites du visuel FR pour les marchés concernés.
           </p>
         </motion.div>
 

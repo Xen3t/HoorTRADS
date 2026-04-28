@@ -1,20 +1,12 @@
 import type Database from 'better-sqlite3'
 import type { ImageGenerator, GenerationTask } from '@/types/generation'
 import { buildTranslationPrompt, buildGoogleModePrompt } from '@/lib/gemini/prompt-builder'
-import { filterGlossaryForImage, preValidateTranslations } from '@/lib/gemini/text-extractor'
-import type { GlossaryHints, ExpertTranslations, PreTranslationResult, ExtractedZone } from '@/lib/gemini/text-extractor'
-import { getAppConfig } from '@/lib/db/queries'
+import { preValidateTranslations } from '@/lib/gemini/text-extractor'
+import type { ExpertTranslations, PreTranslationResult, ExtractedZone } from '@/lib/gemini/text-extractor'
 import { processBatch } from '@/lib/gemini/batch-client'
 import { getApiKey } from '@/lib/gemini/gemini-client'
 
 // Returns the active verification mode from app config
-function getVerificationMode(db: Database.Database): 'pre_render' | 'post_render' {
-  try {
-    const val = getAppConfig(db, 'verification_mode')
-    if (val === 'pre_render') return 'pre_render'
-  } catch {}
-  return 'post_render'
-}
 
 // NB2 (gemini-3.1-flash-image-preview) limits: 100 RPM, 200K TPM
 const CONCURRENCY_STANDARD = 20
@@ -50,27 +42,19 @@ async function processTask(
   jobId: string,
   task: GenerationTask,
   generator: ImageGenerator,
-  generationMethod: string,
-  rulesByLang: Record<string, string[]>,
   customBasePrompt: string | undefined,
   customLangPrompt: string | undefined,
   resolution: string,
-  glossaryHints?: GlossaryHints,
   expertTranslations?: ExpertTranslations,
   extractedZones?: Record<string, ExtractedZone>
 ): Promise<void> {
   db.prepare("UPDATE generation_tasks SET status = 'running' WHERE id = ?").run(task.id)
 
   try {
-    // Classique: base prompt only — no glossary, no rules
-    // Précision: filtered glossary hints + language rules per image
-    // Natif: pre-translated zones by text model → quoted in image prompt with typographic hints
-    const isPrecision = generationMethod === 'precision'
-
-    const hints = isPrecision ? glossaryHints?.[task.target_language] : undefined
-    const languageRules = isPrecision ? rulesByLang[task.target_language] : undefined
+    // Natif pipeline: pre-translated zones by text model → quoted in image prompt with typographic hints.
+    // If pre-translation returned empty (rare — would mean both Gemini + OpenAI failed), we fall back
+    // to the standard translation prompt as a safety net.
     const preTranslations = expertTranslations?.[task.target_language]
-
     const usedPreTranslation = preTranslations && Object.keys(preTranslations).length > 0
     const prompt = usedPreTranslation
       ? buildGoogleModePrompt(preTranslations!, task.target_language, customLangPrompt || customBasePrompt, extractedZones)
@@ -78,12 +62,9 @@ async function processTask(
           targetLanguage: task.target_language,
           customPrompt: customLangPrompt,
           basePrompt: customBasePrompt,
-          glossaryHints: hints && hints.length > 0 ? hints : undefined,
-          languageRules: languageRules && languageRules.length > 0 ? languageRules : undefined,
         })
 
-    // Prefix with fallback warning when text extraction failed (visible in admin logs)
-    const fallbackWarning = (!usedPreTranslation && generationMethod === 'google')
+    const fallbackWarning = !usedPreTranslation
       ? `[FALLBACK: text extraction returned empty — using standard prompt]\n\n`
       : ''
 
@@ -94,7 +75,14 @@ async function processTask(
       task.id
     )
 
-    const result = await generator.generateImage(task.source_image_path, task.target_language, prompt, resolution)
+    // Try generation — on failure, auto-retry once after a short delay
+    let result = await generator.generateImage(task.source_image_path, task.target_language, prompt, resolution)
+    if (!result.success) {
+      console.log(`[processTask] ${task.id} failed (${result.error}), auto-retry in 5s...`)
+      await new Promise((r) => setTimeout(r, 5000))
+      result = await generator.generateImage(task.source_image_path, task.target_language, prompt, resolution)
+      if (result.success) console.log(`[processTask] ${task.id} retry OK`)
+    }
 
     if (result.success) {
       db.prepare(
@@ -137,12 +125,13 @@ export async function renderJobTasks(
   runningJobs.add(jobId)
 
   try {
-    db.prepare("UPDATE generation_jobs SET status = 'running', updated_at = datetime('now') WHERE id = ?").run(jobId)
+    // Reset counters — pre_render inflated completed_tasks to total_tasks to signal "phase 1 done",
+    // but NB2 generation needs to start at 0
+    db.prepare("UPDATE generation_jobs SET status = 'running', completed_tasks = 0, failed_tasks = 0, updated_at = datetime('now') WHERE id = ?").run(jobId)
 
     const jobRow = db.prepare('SELECT config FROM generation_jobs WHERE id = ?').get(jobId) as { config: string } | undefined
     const jobConfig = jobRow?.config ? JSON.parse(jobRow.config) : {}
     const countryOrder: string[] = (jobConfig.countries || []).filter((c: string) => c !== 'FR')
-    const generationMethod: string = jobConfig.generationMethod || 'standard'
     const generationMode: string = jobConfig.mode || 'standard'
     const resolution: string = jobConfig.resolution || '1K'
     const customPromptsByLang: Record<string, string> = jobConfig.customPrompts || {}
@@ -157,18 +146,8 @@ export async function renderJobTasks(
       return (aIdx === -1 ? 999 : aIdx) - (bIdx === -1 ? 999 : bIdx)
     })
 
-    const ruleRows = db.prepare('SELECT language_code, rule FROM language_rules').all() as { language_code: string; rule: string }[]
-    const rulesByLang: Record<string, string[]> = {}
-    for (const row of ruleRows) {
-      if (!rulesByLang[row.language_code]) rulesByLang[row.language_code] = []
-      rulesByLang[row.language_code].push(row.rule)
-    }
-
-    const rawBasePrompt = getAppConfig(db, 'base_prompt') || undefined
-    const configFileContent: string = jobConfig.configFileContent || ''
-    const customBasePrompt = configFileContent
-      ? [rawBasePrompt, `--- Données additionnelles ---\n${configFileContent}\n---`].filter(Boolean).join('\n\n')
-      : rawBasePrompt || undefined
+    // Doc config is applied at translation time (per language), not injected raw into NB2 prompts
+    const customBasePrompt: string | undefined = undefined
 
     // Use approved translations (user-edited) or fall back to the ones from preTranslationLog
     const translations: ExpertTranslations = approvedTranslations || jobConfig.preTranslationLog?.translations || {}
@@ -225,7 +204,7 @@ export async function renderJobTasks(
             await rateLimiter.acquire()
             const expertTranslations = imagePreTranslations.get(task.source_image_path)
             const customLangPrompt = customPromptsByLang[task.target_language] || undefined
-            return processTask(db, jobId, task, generator, generationMethod, rulesByLang, customBasePrompt, customLangPrompt, resolution, undefined, expertTranslations, extractedZones)
+            return processTask(db, jobId, task, generator, customBasePrompt, customLangPrompt, resolution, expertTranslations, extractedZones)
           })
         )
       }
@@ -269,7 +248,6 @@ export async function processJob(
     const jobConfig = jobRow?.config ? JSON.parse(jobRow.config) : {}
     const countryOrder: string[] = (jobConfig.countries || []).filter((c: string) => c !== 'FR')
 
-    const generationMethod: string = jobConfig.generationMethod || 'standard'
     const generationMode: string = jobConfig.mode || 'standard'   // 'standard' | 'batch'
     const resolution: string = jobConfig.resolution || '1K'
     const customPromptsByLang: Record<string, string> = jobConfig.customPrompts || {}
@@ -296,35 +274,59 @@ export async function processJob(
       rulesByLang[row.language_code].push(row.rule)
     }
 
-    const rawBasePrompt2 = getAppConfig(db, 'base_prompt') || undefined
     const configFileContent2: string = jobConfig.configFileContent || ''
-    const customBasePrompt = configFileContent2
-      ? [rawBasePrompt2, `--- Données additionnelles ---\n${configFileContent2}\n---`].filter(Boolean).join('\n\n')
-      : rawBasePrompt2 || undefined
+    // The config doc is now injected intelligently per language at the translation step (preValidateTranslations).
+    // NB2 generation receives only the base prompt — no raw doc dump, since the translated text already carries the right info.
+    const customBasePrompt: string | undefined = undefined
 
     // ── Natif mode: pre-translate zones with text model ──────────────────
     const imagePreTranslations = new Map<string, ExpertTranslations>()
     const imageExtractedZones = new Map<string, Record<string, ExtractedZone>>()
 
-    if (generationMethod === 'google') {
+    {
+      // Natif pipeline (single supported mode):
       // All images in a job belong to the same French campaign — same content, different formats.
       // Extract text from ONE representative (prefer 1080x1080, fallback to first task),
       // translate to ALL target languages in one call, then share the result across every task.
-      // No glossary or rules injected — pure translation by the text model.
       const targetLanguages = [...new Set(tasks.map((t) => t.target_language))]
       const representative = tasks.find((t) => t.source_image_name.includes('1080x1080')) || tasks[0]
 
       let preResult: PreTranslationResult = { translations: {}, extractedZones: {} }
       try {
+        console.log('[processJob] starting preValidateTranslations with 3min timeout...')
+        const timeoutStart = Date.now()
         const timeout = new Promise<PreTranslationResult>((resolve) =>
-          setTimeout(() => resolve({ translations: {}, extractedZones: {}, error: 'timeout 3min' }), 180_000)
+          setTimeout(() => {
+            console.log('[processJob] ⏱ TIMEOUT 3min FIRED after', Math.round((Date.now() - timeoutStart) / 1000), 's')
+            resolve({ translations: {}, extractedZones: {}, error: 'timeout 3min' })
+          }, 180_000)
         )
+        // Progress callback — persist intermediate state + per-phase timestamps for the synthesis report
+        const onProgress = (phase: string, data: Partial<PreTranslationResult>) => {
+          try {
+            const jr = db.prepare('SELECT config FROM generation_jobs WHERE id = ?').get(jobId) as { config: string } | undefined
+            const jc = jr?.config ? JSON.parse(jr.config) : {}
+            const prevTimings = (jc.preTranslationLog?.timings || {}) as Record<string, string>
+            const now = new Date().toISOString()
+            const newTimings = { ...prevTimings, [phase + '_at']: prevTimings[phase + '_at'] || now }
+            jc.preTranslationLog = {
+              representativeImage: representative.source_image_name,
+              ...(jc.preTranslationLog || {}),
+              ...data,
+              phase,
+              timings: newTimings,
+            }
+            db.prepare('UPDATE generation_jobs SET config = ?, updated_at = datetime(\'now\') WHERE id = ?').run(JSON.stringify(jc), jobId)
+          } catch { /* best-effort */ }
+        }
         preResult = await Promise.race([
-          preValidateTranslations(representative.source_image_path, targetLanguages, {}, {}),
+          preValidateTranslations(representative.source_image_path, targetLanguages, {}, {}, undefined, configFileContent2, onProgress),
           timeout,
         ])
-      } catch {
-        // Pre-translation failed — continue with empty translations (standard prompt fallback)
+        console.log('[processJob] preValidateTranslations resolved in', Math.round((Date.now() - timeoutStart) / 1000), 's | error:', preResult.error || 'none')
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err)
+        console.error('[processJob] preValidateTranslations THREW:', msg)
       }
 
       // Save extracted zones + translations to job config for display in logs
@@ -335,66 +337,31 @@ export async function processJob(
         extractedZones: preResult.extractedZones,
         translations: preResult.translations,
         ...(preResult.error ? { error: preResult.error } : {}),
+        ...(preResult.provider ? { provider: preResult.provider } : {}),
+        ...(preResult.configDocHints && Object.keys(preResult.configDocHints).length > 0 ? { configDocHints: preResult.configDocHints } : {}),
+        ...(preResult.docFilterError ? { docFilterError: preResult.docFilterError } : {}),
+        ...(preResult.configDocInjected ? { configDocInjected: true } : {}),
+        ...(preResult.extractionPrompt ? { extractionPrompt: preResult.extractionPrompt.slice(0, 4000) } : {}),
+        ...(preResult.translationPrompt ? { translationPrompt: preResult.translationPrompt.slice(0, 6000) } : {}),
       }
       db.prepare('UPDATE generation_jobs SET config = ? WHERE id = ?').run(JSON.stringify(jobCfg2), jobId)
 
-      // Pre-render mode: always pause for text review — user decides what to do
-      if (getVerificationMode(db) === 'pre_render') {
-        db.prepare("UPDATE generation_jobs SET status = 'pending_text_review', completed_tasks = total_tasks, updated_at = datetime('now') WHERE id = ?").run(jobId)
-        const jmPre = db.prepare('SELECT session_id FROM generation_jobs WHERE id = ?').get(jobId) as { session_id: string } | undefined
-        if (jmPre) db.prepare("UPDATE sessions SET current_step = 'text-review', updated_at = datetime('now') WHERE id = ?").run(jmPre.session_id)
-        runningJobs.delete(jobId)
-        return
-      }
-
-      // Apply the same translations + zones to ALL tasks (all formats, all languages)
-      for (const task of tasks) {
-        imagePreTranslations.set(task.source_image_path, preResult.translations)
-        imageExtractedZones.set(task.source_image_path, preResult.extractedZones)
-      }
-    }
-
-    // ── Precision mode: filter glossary hints per image ────────────────────
-    // Classique mode does NOT use glossary (too many tokens, no filtering)
-    const imageGlossaryHints = new Map<string, GlossaryHints>()
-
-    if (generationMethod === 'precision') {
-      const glossaryRows = db.prepare('SELECT term_source, term_target, language_code FROM glossary').all() as { term_source: string; term_target: string; language_code: string }[]
-
-      const glossaryByLang: Record<string, { source: string; target: string }[]> = {}
-      for (const row of glossaryRows) {
-        if (!glossaryByLang[row.language_code]) glossaryByLang[row.language_code] = []
-        glossaryByLang[row.language_code].push({ source: row.term_source, target: row.term_target })
-      }
-
-      // Same logic as Gemini Pro: all formats in a job show the same French content.
-      // Filter the glossary once from one representative image, share across all tasks.
-      const targetLanguages = [...new Set(tasks.map((t) => t.target_language))]
-      const representative = tasks.find((t) => t.source_image_name.includes('1080x1080')) || tasks[0]
-
-      const hints = await filterGlossaryForImage(
-        representative.source_image_path,
-        targetLanguages,
-        glossaryByLang,
-        rulesByLang
-      )
-
-      for (const task of tasks) {
-        imageGlossaryHints.set(task.source_image_path, hints)
-      }
+      // Always pause for text review — single supported pipeline ("Avant la génération").
+      // The user can edit translations on the text-review page, then approve to fire NB2.
+      db.prepare("UPDATE generation_jobs SET status = 'pending_text_review', updated_at = datetime('now') WHERE id = ?").run(jobId)
+      const jmPre = db.prepare('SELECT session_id FROM generation_jobs WHERE id = ?').get(jobId) as { session_id: string } | undefined
+      if (jmPre) db.prepare("UPDATE sessions SET current_step = 'text-review', updated_at = datetime('now') WHERE id = ?").run(jmPre.session_id)
+      runningJobs.delete(jobId)
+      return
     }
 
     // ── BATCH MODE — submit all tasks to Gemini Batch API ─────────────────
     if (generationMode === 'batch') {
       const apiKey = getApiKey()
 
-      // Build prompt for every task (same logic as standard, no generator needed yet)
+      // Build prompt for every task (Natif pipeline: pre-translated zones → quoted in image prompt)
       const batchTasks = tasks.map((task) => {
-        const hints = imageGlossaryHints.get(task.source_image_path)
         const preTranslations = imagePreTranslations.get(task.source_image_path)
-        const isPrecision = generationMethod === 'precision'
-        const taskHints = isPrecision ? hints?.[task.target_language] : undefined
-        const taskRules = isPrecision ? rulesByLang[task.target_language] : undefined
         const langTranslations = preTranslations?.[task.target_language]
         const customLangPrompt = customPromptsByLang[task.target_language] || undefined
 
@@ -406,11 +373,9 @@ export async function processJob(
               targetLanguage: task.target_language,
               customPrompt: customLangPrompt,
               basePrompt: customBasePrompt,
-              glossaryHints: taskHints && taskHints.length > 0 ? taskHints : undefined,
-              languageRules: taskRules && taskRules.length > 0 ? taskRules : undefined,
             })
 
-        const fallbackWarning = (!usedPreTranslation && generationMethod === 'google')
+        const fallbackWarning = !usedPreTranslation
           ? `[FALLBACK: text extraction returned empty — using standard prompt]\n\n`
           : ''
 
@@ -476,14 +441,13 @@ export async function processJob(
       await Promise.allSettled(
         batch.map(async (task) => {
           await rateLimiter.acquire()
-          const hints = imageGlossaryHints.get(task.source_image_path)
           const expertTranslations = imagePreTranslations.get(task.source_image_path)
           const taskExtractedZones = imageExtractedZones.get(task.source_image_path)
           const customLangPrompt = customPromptsByLang[task.target_language] || undefined
           return processTask(
             db, jobId, task, generator,
-            generationMethod, rulesByLang, customBasePrompt, customLangPrompt,
-            resolution, hints, expertTranslations, taskExtractedZones
+            customBasePrompt, customLangPrompt,
+            resolution, expertTranslations, taskExtractedZones
           )
         })
       )
@@ -492,6 +456,21 @@ export async function processJob(
     // Check if cancelled
     const finalStatus = db.prepare('SELECT status FROM generation_jobs WHERE id = ?').get(jobId) as { status: string } | undefined
     if (finalStatus?.status === 'cancelled') return
+
+    // Record when image generation completed
+    try {
+      const jr3 = db.prepare('SELECT config FROM generation_jobs WHERE id = ?').get(jobId) as { config: string } | undefined
+      if (jr3!.config) {
+        const jc3 = JSON.parse(jr3!.config)
+        if (jc3.preTranslationLog) {
+          jc3.preTranslationLog.timings = {
+            ...(jc3.preTranslationLog.timings || {}),
+            image_generation_done_at: new Date().toISOString(),
+          }
+          db.prepare('UPDATE generation_jobs SET config = ? WHERE id = ?').run(JSON.stringify(jc3), jobId)
+        }
+      }
+    } catch { /* best-effort */ }
 
     db.prepare("UPDATE generation_jobs SET status = 'done', updated_at = datetime('now') WHERE id = ?").run(jobId)
 

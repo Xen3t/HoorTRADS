@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Configure · C · Wizard multi-étapes</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Titillium+Web:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --brand-teal: #0ea5a4; --text-primary: #1a1f2c; --text-secondary: #6b7280; --text-disabled: #9ca3af; --border: #e5e7eb; --bg: #f7f8fa; }
+  body { font-family: 'Titillium Web', system-ui, sans-serif; background: var(--bg); color: var(--text-primary); }
+</style>
+</head>
+<body class="min-h-screen">
+
+<div class="text-[10px] text-center py-1 text-white" style="background: var(--brand-teal)">
+  MOCKUP · Configure (graphiste) · Direction C — Wizard multi-étapes · <a href="index.html" class="underline">retour à l'index</a>
+</div>
+
+<header class="bg-white border-b" style="border-color: var(--border)">
+  <div class="max-w-[900px] mx-auto px-8 py-5 flex items-center justify-between">
+    <div>
+      <p class="text-xs uppercase tracking-wider" style="color: var(--text-disabled)">Campagne</p>
+      <h1 class="font-bold text-lg">SOLDES_PRINTEMPS_2026</h1>
+    </div>
+    <a href="#" class="text-sm" style="color: var(--brand-teal)">← Quitter sans enregistrer</a>
+  </div>
+</header>
+
+<!-- Stepper -->
+<div class="bg-white border-b" style="border-color: var(--border)">
+  <div class="max-w-[900px] mx-auto px-8 py-5">
+    <div class="flex items-center justify-between">
+
+      <div class="flex items-center gap-3 flex-1">
+        <div class="w-8 h-8 rounded-full font-bold text-sm flex items-center justify-center text-white" style="background: var(--brand-teal)">1</div>
+        <div>
+          <div class="text-xs uppercase font-semibold" style="color: var(--brand-teal)">Étape 1 — en cours</div>
+          <div class="font-bold text-sm">Type d'image</div>
+        </div>
+      </div>
+
+      <div class="flex-1 h-1 rounded-full mx-2" style="background:linear-gradient(90deg, var(--brand-teal) 50%, #e5e7eb 50%)"></div>
+
+      <div class="flex items-center gap-3 flex-1">
+        <div class="w-8 h-8 rounded-full font-bold text-sm flex items-center justify-center" style="background:#f1f5f9; color: var(--text-disabled)">2</div>
+        <div>
+          <div class="text-xs uppercase" style="color: var(--text-disabled)">Étape 2</div>
+          <div class="text-sm" style="color: var(--text-secondary)">Pays cibles</div>
+        </div>
+      </div>
+
+      <div class="flex-1 h-1 rounded-full mx-2" style="background:#e5e7eb"></div>
+
+      <div class="flex items-center gap-3 flex-1">
+        <div class="w-8 h-8 rounded-full font-bold text-sm flex items-center justify-center" style="background:#f1f5f9; color: var(--text-disabled)">3</div>
+        <div>
+          <div class="text-xs uppercase" style="color: var(--text-disabled)">Étape 3</div>
+          <div class="text-sm" style="color: var(--text-secondary)">Options</div>
+        </div>
+      </div>
+
+      <div class="flex-1 h-1 rounded-full mx-2" style="background:#e5e7eb"></div>
+
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-full font-bold text-sm flex items-center justify-center" style="background:#f1f5f9; color: var(--text-disabled)">4</div>
+        <div>
+          <div class="text-xs uppercase" style="color: var(--text-disabled)">Étape 4</div>
+          <div class="text-sm" style="color: var(--text-secondary)">Récap & lancer</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<main class="max-w-[900px] mx-auto px-8 py-10">
+
+  <div class="bg-white rounded-[16px] p-8 shadow-sm">
+
+    <h2 class="text-2xl font-bold mb-2">Quel type d'image traites-tu ?</h2>
+    <p class="text-sm mb-8" style="color: var(--text-secondary)">Le workflow choisi détermine tout : extraction, traduction, modèles utilisés, vérification… Tu peux changer plus tard si besoin.</p>
+
+    <!-- Workflow choices in stacked rows -->
+    <div class="space-y-3 mb-8">
+
+      <label class="flex items-start gap-4 p-4 rounded-[12px] cursor-pointer transition" style="border:2px solid var(--brand-teal); background:#f0fdfa">
+        <input type="radio" name="wf" checked class="mt-1.5 accent-teal-600">
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-0.5">
+            <span class="font-bold text-base">ADS Standard</span>
+            <span class="text-xs px-2 py-0.5 rounded-full font-semibold" style="background:#ecfeff;color:#0e7490">ADS</span>
+            <span class="text-xs px-2 py-0.5 rounded-full font-semibold" style="background: var(--brand-teal);color:white">Recommandé</span>
+          </div>
+          <p class="text-sm" style="color: var(--text-secondary)">NB2 direct image→image. Le plus rapide. Pour visuels publicitaires classiques avec textes courts (headlines, CTAs, prix).</p>
+          <div class="text-[11px] mt-2" style="color: var(--text-secondary)">5 étapes · ~45s par image · auto-correction incluse</div>
+        </div>
+        <button class="text-xs" style="color: var(--brand-teal)">👁 Pipeline</button>
+      </label>
+
+      <label class="flex items-start gap-4 p-4 rounded-[12px] cursor-pointer transition hover:bg-gray-50" style="border:2px solid var(--border)">
+        <input type="radio" name="wf" class="mt-1.5">
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-0.5">
+            <span class="font-bold text-base">ADS Natif</span>
+            <span class="text-xs px-2 py-0.5 rounded-full font-semibold" style="background:#ecfeff;color:#0e7490">ADS</span>
+          </div>
+          <p class="text-sm" style="color: var(--text-secondary)">Extraction des textes → review humaine → render. Pour visuels avec textes longs ou nuancés où tu veux valider la traduction avant la génération.</p>
+          <div class="text-[11px] mt-2" style="color: var(--text-secondary)">9 étapes · pause review · ~3min par image</div>
+        </div>
+        <button class="text-xs" style="color: var(--brand-teal)">👁 Pipeline</button>
+      </label>
+
+      <label class="flex items-start gap-4 p-4 rounded-[12px] cursor-pointer transition hover:bg-gray-50" style="border:2px solid var(--border)">
+        <input type="radio" name="wf" class="mt-1.5">
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-0.5">
+            <span class="font-bold text-base">Schéma technique v1</span>
+            <span class="text-xs px-2 py-0.5 rounded-full font-semibold" style="background:#faf5ff;color:#7e22ce">Schéma</span>
+            <span class="text-xs px-2 py-0.5 rounded-full font-semibold" style="background:#fef3c7;color:#b45309">Brouillon</span>
+          </div>
+          <p class="text-sm" style="color: var(--text-secondary)">Préservation stricte du layout. On ne traduit que les étiquettes, on ne touche pas au dessin. Idéal pour schémas, diagrammes, plans techniques.</p>
+          <div class="text-[11px] mt-2" style="color: var(--text-secondary)">7 étapes · ~1min par image</div>
+        </div>
+        <button class="text-xs" style="color: var(--brand-teal)">👁 Pipeline</button>
+      </label>
+
+      <label class="flex items-start gap-4 p-4 rounded-[12px] cursor-pointer transition hover:bg-gray-50" style="border:2px solid var(--border)">
+        <input type="radio" name="wf" class="mt-1.5">
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-0.5">
+            <span class="font-bold text-base">Packaging EU</span>
+            <span class="text-xs px-2 py-0.5 rounded-full font-semibold" style="background:#fef3c7;color:#b45309">Packaging</span>
+          </div>
+          <p class="text-sm" style="color: var(--text-secondary)">Multi-langues côte à côte sur un même packaging. Glossaire technique strict pour ingrédients et mentions légales.</p>
+          <div class="text-[11px] mt-2" style="color: var(--text-secondary)">8 étapes · ~2min par image</div>
+        </div>
+        <button class="text-xs" style="color: var(--brand-teal)">👁 Pipeline</button>
+      </label>
+
+    </div>
+
+    <!-- Pipeline preview (active selection) -->
+    <div class="rounded-[12px] p-4" style="background: #f8fafc">
+      <div class="text-xs uppercase tracking-wider mb-3 font-semibold" style="color: var(--text-disabled)">Aperçu du pipeline · ADS Standard</div>
+      <svg viewBox="0 0 720 70" class="w-full h-14">
+        <defs>
+          <marker id="arrCC" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+            <polygon points="0 0, 6 3, 0 6" fill="#94a3b8"/>
+          </marker>
+        </defs>
+        <rect x="10" y="20" width="80" height="34" rx="8" fill="#ecfeff" stroke="#0891b2" stroke-width="1.5"/>
+        <text x="50" y="42" text-anchor="middle" font-size="12" fill="#0e7490" font-weight="600">Start</text>
+        <line x1="90" y1="37" x2="120" y2="37" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrCC)"/>
+        <rect x="120" y="20" width="100" height="34" rx="8" fill="white" stroke="#cbd5e1" stroke-width="1.5"/>
+        <text x="170" y="42" text-anchor="middle" font-size="12" font-weight="600">Generate</text>
+        <line x1="220" y1="37" x2="250" y2="37" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrCC)"/>
+        <rect x="250" y="20" width="90" height="34" rx="8" fill="white" stroke="#cbd5e1" stroke-width="1.5"/>
+        <text x="295" y="42" text-anchor="middle" font-size="12" font-weight="600">Verify</text>
+        <line x1="340" y1="37" x2="370" y2="37" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrCC)"/>
+        <rect x="370" y="20" width="110" height="34" rx="8" fill="#fce7f3" stroke="#db2777" stroke-width="1.5"/>
+        <text x="425" y="42" text-anchor="middle" font-size="12" fill="#9d174d" font-weight="600">score &lt; 4 ?</text>
+        <line x1="480" y1="37" x2="510" y2="37" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrCC)"/>
+        <rect x="510" y="20" width="110" height="34" rx="8" fill="white" stroke="#cbd5e1" stroke-width="1.5"/>
+        <text x="565" y="42" text-anchor="middle" font-size="12" font-weight="600">Auto-correct</text>
+        <line x1="620" y1="37" x2="650" y2="37" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrCC)"/>
+        <rect x="650" y="20" width="60" height="34" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
+        <text x="680" y="42" text-anchor="middle" font-size="12" fill="#15803d" font-weight="600">End</text>
+      </svg>
+    </div>
+
+  </div>
+
+  <div class="flex items-center justify-between pt-6">
+    <button class="text-sm" style="color: var(--text-secondary)">← Annuler</button>
+    <div class="flex items-center gap-3">
+      <button class="text-sm" style="color: var(--text-secondary)">Sauvegarder en brouillon</button>
+      <button class="px-6 py-3 rounded-[12px] text-white font-semibold" style="background: var(--brand-teal)">
+        Étape suivante : Pays →
+      </button>
+    </div>
+  </div>
+
+</main>
+</body>
+</html>

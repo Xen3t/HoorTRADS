@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Generate · C · Timeline persistante en bas</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Titillium+Web:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --brand-teal: #0ea5a4; --text-primary: #1a1f2c; --text-secondary: #6b7280; --text-disabled: #9ca3af; --border: #e5e7eb; --bg: #f7f8fa; }
+  body { font-family: 'Titillium Web', system-ui, sans-serif; background: var(--bg); color: var(--text-primary); }
+  .img-tile { background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%); border-radius: 8px; aspect-ratio: 1; }
+  @keyframes pulse-running { 0%,100% { box-shadow: 0 0 0 0 #0ea5a4cc; } 50% { box-shadow: 0 0 0 8px transparent; } }
+  .step-running { animation: pulse-running 1.5s infinite; }
+</style>
+</head>
+<body class="min-h-screen pb-[200px]">
+
+<div class="text-[10px] text-center py-1 text-white" style="background: var(--brand-teal)">
+  MOCKUP · Generate live · Direction C — Timeline persistante en bas · <a href="index.html" class="underline">retour à l'index</a>
+</div>
+
+<header class="bg-white border-b" style="border-color: var(--border)">
+  <div class="px-8 py-4 flex items-center justify-between">
+    <div>
+      <p class="text-xs uppercase tracking-wider" style="color: var(--text-disabled)">Génération en cours</p>
+      <h1 class="font-bold text-base">SOLDES_PRINTEMPS_2026 · ADS Standard</h1>
+    </div>
+    <div class="flex items-center gap-3 text-sm" style="color: var(--text-secondary)">
+      <span>12 / 24 images · 4min restantes</span>
+      <button class="px-3 py-2 rounded-[10px] border text-sm" style="border-color: var(--border)">Mettre en pause</button>
+    </div>
+  </div>
+</header>
+
+<main class="px-8 py-6">
+
+  <!-- Progress -->
+  <div class="bg-white rounded-[16px] p-5 shadow-sm mb-6">
+    <div class="flex items-center justify-between mb-3">
+      <span class="font-semibold text-sm">Progression globale</span>
+      <span class="text-xs font-mono" style="color: var(--text-secondary)">50%</span>
+    </div>
+    <div class="h-2 rounded-full overflow-hidden" style="background:#e5e7eb">
+      <div class="h-full rounded-full" style="background: var(--brand-teal); width: 50%"></div>
+    </div>
+    <div class="grid grid-cols-4 gap-3 mt-4 text-xs">
+      <div><div class="font-bold text-base" style="color:#16a34a">10</div><div style="color: var(--text-secondary)">Terminées</div></div>
+      <div><div class="font-bold text-base" style="color: var(--brand-teal)">2</div><div style="color: var(--text-secondary)">En cours</div></div>
+      <div><div class="font-bold text-base" style="color: var(--text-disabled)">12</div><div style="color: var(--text-secondary)">En attente</div></div>
+      <div><div class="font-bold text-base" style="color:#dc2626">0</div><div style="color: var(--text-secondary)">Erreurs</div></div>
+    </div>
+  </div>
+
+  <!-- Image grid full width -->
+  <div class="grid grid-cols-6 gap-3">
+    <div class="bg-white rounded-[8px] p-2 shadow-sm">
+      <div class="img-tile mb-2 relative">
+        <span class="absolute top-1.5 right-1.5 text-[10px] px-1.5 py-0.5 rounded-full font-semibold text-white" style="background:#16a34a">DE ✓</span>
+      </div>
+      <div class="text-xs font-mono truncate">soldes_01.jpg</div>
+    </div>
+    <div class="bg-white rounded-[8px] p-2 shadow-sm">
+      <div class="img-tile mb-2 relative">
+        <span class="absolute top-1.5 right-1.5 text-[10px] px-1.5 py-0.5 rounded-full font-semibold text-white" style="background:#16a34a">ES ✓</span>
+      </div>
+      <div class="text-xs font-mono truncate">soldes_01.jpg</div>
+    </div>
+    <div class="bg-white rounded-[8px] p-2 shadow-sm">
+      <div class="img-tile mb-2 relative">
+        <span class="absolute top-1.5 right-1.5 text-[10px] px-1.5 py-0.5 rounded-full font-semibold text-white" style="background:#16a34a">IT ✓</span>
+      </div>
+      <div class="text-xs font-mono truncate">soldes_01.jpg</div>
+    </div>
+    <div class="bg-white rounded-[8px] p-2 shadow-sm">
+      <div class="img-tile mb-2 relative">
+        <span class="absolute top-1.5 right-1.5 text-[10px] px-1.5 py-0.5 rounded-full font-semibold text-white" style="background:#16a34a">DE ✓</span>
+      </div>
+      <div class="text-xs font-mono truncate">soldes_02.jpg</div>
+    </div>
+    <div class="bg-white rounded-[8px] p-2 shadow-sm">
+      <div class="img-tile mb-2 relative">
+        <span class="absolute top-1.5 right-1.5 text-[10px] px-1.5 py-0.5 rounded-full font-semibold text-white" style="background:#16a34a">ES ✓</span>
+      </div>
+      <div class="text-xs font-mono truncate">soldes_02.jpg</div>
+    </div>
+    <div class="bg-white rounded-[8px] p-2 shadow-sm">
+      <div class="img-tile mb-2 relative animate-pulse">
+        <span class="absolute top-1.5 right-1.5 text-[10px] px-1.5 py-0.5 rounded-full font-semibold text-white" style="background: var(--brand-teal)">IT ⟳</span>
+      </div>
+      <div class="text-xs font-mono truncate">soldes_02.jpg</div>
+    </div>
+    <div class="bg-white rounded-[8px] p-2 shadow-sm opacity-60">
+      <div class="img-tile mb-2"></div>
+      <div class="text-xs font-mono truncate">soldes_03.jpg</div>
+    </div>
+    <div class="bg-white rounded-[8px] p-2 shadow-sm opacity-60">
+      <div class="img-tile mb-2"></div>
+      <div class="text-xs font-mono truncate">soldes_03.jpg</div>
+    </div>
+    <div class="bg-white rounded-[8px] p-2 shadow-sm opacity-60">
+      <div class="img-tile mb-2"></div>
+      <div class="text-xs font-mono truncate">soldes_03.jpg</div>
+    </div>
+    <div class="bg-white rounded-[8px] p-2 shadow-sm opacity-60">
+      <div class="img-tile mb-2"></div>
+      <div class="text-xs font-mono truncate">soldes_04.jpg</div>
+    </div>
+    <div class="bg-white rounded-[8px] p-2 shadow-sm opacity-60">
+      <div class="img-tile mb-2"></div>
+      <div class="text-xs font-mono truncate">soldes_04.jpg</div>
+    </div>
+    <div class="bg-white rounded-[8px] p-2 shadow-sm opacity-60">
+      <div class="img-tile mb-2"></div>
+      <div class="text-xs font-mono truncate">soldes_04.jpg</div>
+    </div>
+  </div>
+
+</main>
+
+<!-- Persistent timeline footer (always visible) -->
+<aside class="fixed bottom-0 left-0 right-0 bg-white border-t shadow-[0_-4px_12px_rgba(0,0,0,0.06)]" style="border-color: var(--border)">
+
+  <!-- Compact header bar (always visible) -->
+  <div class="px-6 py-3 border-b flex items-center justify-between" style="border-color: var(--border)">
+    <div class="flex items-center gap-2 text-sm">
+      <span class="text-[10px] uppercase font-semibold tracking-wider" style="color: var(--text-disabled)">Workflow</span>
+      <span class="font-bold">ADS Standard</span>
+      <span class="text-xs px-2 py-0.5 rounded-full font-semibold" style="background:#ecfeff;color:#0e7490">v3</span>
+      <span style="color: var(--text-disabled)">·</span>
+      <span class="flex items-center gap-1.5 text-xs" style="color: var(--brand-teal)"><span class="w-2 h-2 rounded-full" style="background: var(--brand-teal)"></span>Étape 3/5 — Vérifier image</span>
+    </div>
+    <div class="flex items-center gap-2">
+      <button class="text-xs px-2 py-1 rounded-[8px] hover:bg-gray-100" style="color: var(--text-secondary)">⊟ Réduire</button>
+      <button class="text-xs px-2 py-1 rounded-[8px] hover:bg-gray-100" style="color: var(--text-secondary)">↗ Plein écran</button>
+    </div>
+  </div>
+
+  <!-- Timeline horizontale -->
+  <div class="px-6 py-5">
+    <div class="flex items-center gap-2">
+
+      <!-- Step 1 done -->
+      <div class="flex flex-col items-center min-w-[110px]">
+        <div class="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm" style="background:#16a34a">✓</div>
+        <div class="font-bold text-xs mt-2">Start</div>
+        <div class="text-[10px]" style="color: var(--text-disabled)">0.2s</div>
+      </div>
+      <div class="flex-1 h-0.5 mb-7" style="background:#16a34a"></div>
+
+      <!-- Step 2 done -->
+      <div class="flex flex-col items-center min-w-[110px]">
+        <div class="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm" style="background:#16a34a">✓</div>
+        <div class="font-bold text-xs mt-2">Générer image</div>
+        <div class="text-[10px]" style="color: var(--text-disabled)">3m12s · 10/24</div>
+      </div>
+      <div class="flex-1 h-0.5 mb-7" style="background:#16a34a"></div>
+
+      <!-- Step 3 running (focused) -->
+      <div class="flex flex-col items-center min-w-[140px]">
+        <div class="step-running w-11 h-11 rounded-full flex items-center justify-center text-white font-bold animate-spin" style="background: var(--brand-teal); box-shadow: 0 0 0 4px #0ea5a420">⟳</div>
+        <div class="font-bold text-xs mt-2" style="color: var(--brand-teal)">Vérifier image</div>
+        <div class="text-[10px] font-semibold" style="color: var(--brand-teal)">2/10 · score moy 4.3</div>
+      </div>
+      <div class="flex-1 h-0.5 mb-7" style="background: linear-gradient(90deg, var(--brand-teal) 50%, #e5e7eb 50%); background-size: 8px 100%"></div>
+
+      <!-- Step 4 idle (condition) -->
+      <div class="flex flex-col items-center min-w-[110px] opacity-60">
+        <div class="w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm" style="background:#fce7f3;color:#9d174d">⋔</div>
+        <div class="font-bold text-xs mt-2" style="color: var(--text-secondary)">Condition</div>
+        <div class="text-[10px]" style="color: var(--text-disabled)">score &lt; 4 ?</div>
+      </div>
+      <div class="flex-1 h-0.5 mb-7 border-t-2 border-dashed" style="border-color: var(--border)"></div>
+
+      <!-- Branches stacked -->
+      <div class="flex flex-col gap-2 min-w-[120px] opacity-50">
+        <div class="flex items-center gap-2 px-3 py-1.5 rounded-[8px] border" style="border-color: var(--border)">
+          <span class="w-6 h-6 rounded-full flex items-center justify-center text-xs" style="background:#dcfce7;color:#15803d">↻</span>
+          <div class="text-[11px] font-semibold">Auto-corriger</div>
+        </div>
+        <div class="flex items-center gap-2 px-3 py-1.5 rounded-[8px] border" style="border-color: var(--border)">
+          <span class="w-6 h-6 rounded-full flex items-center justify-center text-xs" style="background:#dcfce7;color:#15803d">⏏</span>
+          <div class="text-[11px] font-semibold">Export</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</aside>
+
+</body>
+</html>

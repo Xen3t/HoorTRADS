@@ -15,7 +15,7 @@ export default function ReviewPage() {
   const [tasks, setTasks] = useState<GenerationTask[]>([])
   const [jobId, setJobId] = useState<string | null>(null)
   const [activeLang, setActiveLang] = useState<string | null>(null)
-  const [density, setDensity] = useState<Density>('large')
+  const [density, setDensity] = useState<Density>('compact')
   const [selectedTask, setSelectedTask] = useState<GenerationTask | null>(null)
   const [countries, setCountries] = useState<string[]>([])
   const [langToCountries, setLangToCountries] = useState<Record<string, string[]>>({})
@@ -229,7 +229,19 @@ export default function ReviewPage() {
               {selectionActive && (
                 <span className="text-xs font-semibold text-brand-teal">{selectedTaskIds.size} sélectionné{selectedTaskIds.size > 1 ? 's' : ''}</span>
               )}
-              <span className="text-xs text-text-secondary">{filteredTasks.length} / {tasks.length} visuels</span>
+              {regeneratingTaskIds.size > 0 && (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-100 text-amber-700 text-xs font-bold">
+                  <motion.span
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                    className="w-3 h-3 border-[1.5px] border-amber-700 border-t-transparent rounded-full inline-block"
+                  />
+                  {regeneratingTaskIds.size} en régénération
+                </span>
+              )}
+              <span className="text-xs text-text-secondary">
+                {activeLang ? `${filteredTasks.length} visuels` : `${tasks.length} visuels`}
+              </span>
             </div>
           </div>
 
@@ -241,96 +253,142 @@ export default function ReviewPage() {
               >
                 Tous
               </button>
-              {langGroups.map(({ lang, countries: gc }) => (
-                <button
-                  key={lang}
-                  onClick={(e) => { e.stopPropagation(); setActiveLang(lang) }}
-                  className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${activeLang === lang ? 'bg-brand-teal text-white' : 'bg-surface text-text-secondary hover:bg-border'}`}
-                >
-                  {gc.map((code, i) => (
-                    <span key={code} className="inline-flex items-center gap-0.5">
-                      {i > 0 && <span className="opacity-50">/</span>}
-                      <span className={`fi fi-${code.toLowerCase()}`} style={{ fontSize: '10px' }} />
-                      <span>{code}</span>
-                    </span>
-                  ))}
-                </button>
-              ))}
+              {langGroups.map(({ lang, countries: gc }) => {
+                const isRegen = tasks.some((t) => t.target_language === lang && regeneratingTaskIds.has(t.id))
+                return (
+                  <button
+                    key={lang}
+                    onClick={(e) => { e.stopPropagation(); setActiveLang(lang) }}
+                    className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${activeLang === lang ? 'bg-brand-teal text-white' : 'bg-surface text-text-secondary hover:bg-border'}`}
+                  >
+                    {gc.map((code, i) => (
+                      <span key={code} className="inline-flex items-center gap-0.5">
+                        {i > 0 && <span className="opacity-50">/</span>}
+                        <span className={`fi fi-${code.toLowerCase()}`} style={{ fontSize: '10px' }} />
+                        <span>{code}</span>
+                      </span>
+                    ))}
+                    {isRegen && (
+                      <motion.span
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                        className={`ml-0.5 w-2.5 h-2.5 border-[1.5px] rounded-full inline-block shrink-0 ${activeLang === lang ? 'border-white border-t-transparent' : 'border-amber-500 border-t-transparent'}`}
+                      />
+                    )}
+                  </button>
+                )
+              })}
             </div>
 
-            {/* Density toggle — Étendue / Alignée */}
+            {/* Density toggle — Alignée (défaut) / Étendue */}
             <div className="flex border border-border rounded-full overflow-hidden">
-              <button
-                onClick={(e) => { e.stopPropagation(); setDensity('large') }}
-                className={`px-3 py-1 text-xs font-semibold transition-colors ${density === 'large' ? 'bg-brand-green text-white' : 'bg-white text-text-secondary'}`}
-              >
-                Étendue
-              </button>
               <button
                 onClick={(e) => { e.stopPropagation(); setDensity('compact') }}
                 className={`px-3 py-1 text-xs font-semibold transition-colors ${density === 'compact' ? 'bg-brand-green text-white' : 'bg-white text-text-secondary'}`}
               >
                 Alignée
               </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); setDensity('large') }}
+                className={`px-3 py-1 text-xs font-semibold transition-colors ${density === 'large' ? 'bg-brand-green text-white' : 'bg-white text-text-secondary'}`}
+              >
+                Étendue
+              </button>
             </div>
 
-            {jobId && (
-              <a
-                href={`/api/translations/${jobId}`}
-                download="traductions.json"
-                onClick={(e) => e.stopPropagation()}
-                className="text-xs text-text-secondary hover:text-text-primary transition-colors"
-              >
-                ⬇ translations.json
-              </a>
-            )}
           </div>
         </div>
 
-        {/* Image grid */}
-        <div className={`pt-4 gap-3 ${density === 'large' ? 'columns-3' : 'columns-5'}`}>
-          <AnimatePresence>
-            {filteredTasks.map((task) => (
-              <div
-                key={task.id}
-                className="mb-3 break-inside-avoid"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  if (selectionActive) {
-                    handleToggleSelect(task.id)
-                  } else {
-                    setSelectedTask(task)
-                  }
-                }}
-              >
-                <ImageCard
-                  task={task}
-                  size={density}
-                  onReload={() => handleReload(task)}
-                  isRegenerating={regeneratingTaskIds.has(task.id)}
-                  isSelected={selectedTaskIds.has(task.id)}
-                  onToggleSelect={handleToggleSelect}
-                  selectionActive={selectionActive}
-                />
-              </div>
-            ))}
-          </AnimatePresence>
-        </div>
+        {/* Image grid — Alignée (grille CSS pleine largeur, ratios préservés) ou Étendue (masonry) */}
+        {density === 'compact' ? (
+          <div
+            className="pt-4 grid gap-3 w-full"
+            style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}
+          >
+            <AnimatePresence>
+              {filteredTasks.map((task) => (
+                <div
+                  key={task.id}
+                  className="w-full"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    if (selectionActive) {
+                      handleToggleSelect(task.id)
+                    } else {
+                      setSelectedTask(task)
+                    }
+                  }}
+                >
+                  <ImageCard
+                    task={task}
+                    size={density}
+                    onReload={() => handleReload(task)}
+                    isRegenerating={regeneratingTaskIds.has(task.id)}
+                    isSelected={selectedTaskIds.has(task.id)}
+                    onToggleSelect={handleToggleSelect}
+                    selectionActive={selectionActive}
+                  />
+                </div>
+              ))}
+            </AnimatePresence>
+          </div>
+        ) : (
+          <div className="pt-4 gap-3 columns-3">
+            <AnimatePresence>
+              {filteredTasks.map((task) => (
+                <div
+                  key={task.id}
+                  className="mb-3 break-inside-avoid"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    if (selectionActive) {
+                      handleToggleSelect(task.id)
+                    } else {
+                      setSelectedTask(task)
+                    }
+                  }}
+                >
+                  <ImageCard
+                    task={task}
+                    size={density}
+                    onReload={() => handleReload(task)}
+                    isRegenerating={regeneratingTaskIds.has(task.id)}
+                    isSelected={selectedTaskIds.has(task.id)}
+                    onToggleSelect={handleToggleSelect}
+                    selectionActive={selectionActive}
+                  />
+                </div>
+              ))}
+            </AnimatePresence>
+          </div>
+        )}
 
         {/* Detail Modal */}
         <AnimatePresence>
-          {selectedTask && jobId && (
-            <ImageDetailModal
-              task={selectedTask}
-              jobId={jobId}
-              onClose={() => setSelectedTask(null)}
-              onRegenerated={handleRegenerated}
-              onRegeneratingChange={(taskId) => {
-                if (taskId) addRegenerating([taskId])
-                else if (selectedTask) removeRegenerating([selectedTask.id])
-              }}
-            />
-          )}
+          {selectedTask && jobId && (() => {
+            const idx = filteredTasks.findIndex((t) => t.id === selectedTask.id)
+            const hasPrev = idx > 0
+            const hasNext = idx >= 0 && idx < filteredTasks.length - 1
+            const navigate = (direction: 'prev' | 'next') => {
+              const target = direction === 'prev' ? filteredTasks[idx - 1] : filteredTasks[idx + 1]
+              if (target) setSelectedTask(target)
+            }
+            return (
+              <ImageDetailModal
+                task={selectedTask}
+                jobId={jobId}
+                onClose={() => setSelectedTask(null)}
+                onRegenerated={handleRegenerated}
+                onRegeneratingChange={(taskId) => {
+                  if (taskId) addRegenerating([taskId])
+                  else if (selectedTask) removeRegenerating([selectedTask.id])
+                }}
+                onNavigate={navigate}
+                hasPrev={hasPrev}
+                hasNext={hasNext}
+              />
+            )
+          })()}
         </AnimatePresence>
       </div>
 

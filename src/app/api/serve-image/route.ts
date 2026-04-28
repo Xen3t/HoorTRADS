@@ -1,6 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server'
 import fs from 'fs'
 import path from 'path'
+import os from 'os'
+
+function isUncPath(p: string): boolean {
+  return /^\\\\[^\\]+\\[^\\]+/.test(p) || /^\/\/[^/]+\/[^/]+/.test(p)
+}
+
+function isPathAllowed(absPath: string, generatedDir: string): boolean {
+  // Always allow our own generated images
+  if (absPath.startsWith(generatedDir)) return true
+
+  const normalized = absPath.replace(/\\/g, '/').toLowerCase()
+  // Any drive letter path (C:\, M:\, Z:\, etc.)
+  if (/^[a-z]:\//i.test(normalized)) return true
+  // UNC network path
+  if (/^\/\/[^/]+\/[^/]+/.test(normalized)) return true
+  // User home folder
+  const home = os.homedir().replace(/\\/g, '/').toLowerCase()
+  if (normalized.startsWith(home + '/')) return true
+  return false
+}
 
 export async function GET(request: NextRequest) {
   const filePath = request.nextUrl.searchParams.get('path')
@@ -9,16 +29,25 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Path required' }, { status: 400 })
   }
 
-  // Security: only serve from data/generated — use realpath to resolve symlinks
   const generatedDir = path.join(process.cwd(), 'data', 'generated')
 
   if (!fs.existsSync(filePath)) {
     return NextResponse.json({ error: 'File not found' }, { status: 404 })
   }
 
-  const resolved = fs.realpathSync(filePath)
+  // Resolve real path — fall back to normalized for UNC paths (realpath can fail on some)
+  let resolved: string
+  try {
+    resolved = fs.realpathSync(filePath)
+  } catch {
+    if (isUncPath(filePath)) {
+      resolved = path.normalize(filePath)
+    } else {
+      return NextResponse.json({ error: 'Cannot resolve path' }, { status: 404 })
+    }
+  }
 
-  if (!resolved.startsWith(generatedDir)) {
+  if (!isPathAllowed(resolved, generatedDir)) {
     return NextResponse.json({ error: 'Access denied' }, { status: 403 })
   }
 

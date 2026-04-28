@@ -2,9 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { randomUUID } from 'crypto'
 import { getDb } from '@/lib/db/database'
 import { verifyTaskImage } from '@/lib/verification/verifier'
-import { GeminiClient } from '@/lib/gemini/gemini-client'
-import { buildTranslationPrompt } from '@/lib/gemini/prompt-builder'
-import { getAppConfig } from '@/lib/db/queries'
+import { createImageGenerator } from '@/lib/image-generator-factory'
+import { buildGoogleModeCorrectionPrompt } from '@/lib/gemini/prompt-builder'
 import type { GenerationTask } from '@/types/generation'
 
 const SCORE_THRESHOLD = 4.0
@@ -48,38 +47,18 @@ export async function POST(
 
     // Step 2 — Regenerate tasks below threshold from original French source
     const toCorrect = verificationResults.filter((r) => r.score < SCORE_THRESHOLD)
-    const generator = new GeminiClient()
-
-    const ruleRows = db.prepare('SELECT language_code, rule FROM language_rules').all() as { language_code: string; rule: string }[]
-    const rulesByLang: Record<string, string[]> = {}
-    for (const row of ruleRows) {
-      if (!rulesByLang[row.language_code]) rulesByLang[row.language_code] = []
-      rulesByLang[row.language_code].push(row.rule)
-    }
-
-    const glossaryRows = db.prepare('SELECT term_source, term_target, language_code FROM glossary').all() as { term_source: string; term_target: string; language_code: string }[]
-    const customBasePrompt = getAppConfig(db, 'base_prompt') || undefined
+    const generator = createImageGenerator()
 
     for (const bad of toCorrect) {
       const task = tasks.find((t) => t.id === bad.taskId)
       if (!task) continue
 
-      // Build correction prompt from verifier issues
+      // Build correction prompt from verifier issues (single Natif pipeline — quoted text correction)
       const correctionNotes = bad.issues.length > 0
         ? `Corrections required based on quality review:\n${bad.issues.map((i) => `- ${i}`).join('\n')}`
         : bad.summary
 
-      const glossaryTerms = glossaryRows
-        .filter((r) => r.language_code === task.target_language)
-        .map((r) => ({ source: r.term_source, target: r.term_target }))
-
-      const prompt = buildTranslationPrompt({
-        targetLanguage: task.target_language,
-        customPrompt: correctionNotes,
-        basePrompt: customBasePrompt,
-        glossaryTerms: glossaryTerms.length > 0 ? glossaryTerms : undefined,
-        languageRules: rulesByLang[task.target_language],
-      })
+      const prompt = buildGoogleModeCorrectionPrompt(correctionNotes)
 
       // Always regenerate from the original French source
       db.prepare("UPDATE generation_tasks SET status = 'running' WHERE id = ?").run(task.id)

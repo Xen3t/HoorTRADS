@@ -37,6 +37,7 @@ export default function ImageCard({ task, size, onReload, isRegenerating = false
       className={`
         relative group rounded-[8px] overflow-hidden cursor-pointer
         transition-all duration-200 hover:shadow-default
+        w-full
         ${isFailed ? 'ring-2 ring-brand-red' : ''}
         ${isSelected ? 'ring-2 ring-brand-teal' : ''}
       `}
@@ -44,29 +45,12 @@ export default function ImageCard({ task, size, onReload, isRegenerating = false
       {/* Image */}
       <div className={`relative ${bgColor} w-full`}>
         {task.output_path && task.status === 'done' ? (
-          <>
-            <img
-              src={`/api/serve-image?path=${encodeURIComponent(task.output_path)}&v=${task.created_at}`}
-              alt={`${task.source_image_name} - ${task.country_code}`}
-              loading="lazy"
-              className={`w-full h-auto block transition-opacity duration-300 ${isRegenerating ? 'opacity-30' : 'opacity-100'}`}
-            />
-            {/* Before/after: source FR overlay on hover */}
-            {task.source_image_path && (
-              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
-                <img
-                  src={`/api/serve-image?path=${encodeURIComponent(task.source_image_path)}`}
-                  alt="Source FR"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute top-1.5 left-1/2 -translate-x-1/2">
-                  <span className="bg-black/70 text-white text-[9px] font-bold px-2 py-0.5 rounded-full tracking-wide">
-                    SOURCE FR
-                  </span>
-                </div>
-              </div>
-            )}
-          </>
+          <img
+            src={`/api/serve-image?path=${encodeURIComponent(task.output_path)}&v=${task.created_at}`}
+            alt={`${task.source_image_name} - ${task.country_code}`}
+            loading="lazy"
+            className={`w-full h-auto block transition-opacity duration-300 ${isRegenerating ? 'opacity-30' : 'opacity-100'}`}
+          />
         ) : (
           <div
             className="flex items-center justify-center"
@@ -78,12 +62,13 @@ export default function ImageCard({ task, size, onReload, isRegenerating = false
 
         {/* Regenerating overlay */}
         {isRegenerating && (
-          <div className="absolute inset-0 flex items-center justify-center">
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/30 backdrop-blur-[1px]">
             <motion.div
               animate={{ rotate: 360 }}
               transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-              className="w-8 h-8 border-2 border-brand-green border-t-transparent rounded-full"
+              className="w-8 h-8 border-2 border-white border-t-transparent rounded-full"
             />
+            <span className="text-[10px] font-bold text-white tracking-wide drop-shadow">RÉGÉNÉRATION...</span>
           </div>
         )}
       </div>
@@ -138,26 +123,32 @@ export default function ImageCard({ task, size, onReload, isRegenerating = false
         </div>
       )}
 
-      {/* Reload icon — bottom right */}
-      <button
-        onClick={(e) => {
-          e.stopPropagation()
-          onReload()
-        }}
-        aria-label="Régénérer"
-        className="
-          absolute bottom-1.5 right-1.5
-          w-6 h-6 rounded-full
-          bg-black/50 text-white text-xs
-          flex items-center justify-center
-          opacity-0 group-hover:opacity-100
-          transition-opacity duration-200
-          hover:bg-black/70
-        "
-        title="Régénérer depuis source FR"
-      >
-        ⟳
-      </button>
+      {/* Action icons — bottom right */}
+      <div className="absolute bottom-1.5 right-1.5 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+        {task.output_path && task.status === 'done' && (
+          <a
+            href={`/api/serve-image?path=${encodeURIComponent(task.output_path)}&download=1`}
+            onClick={(e) => e.stopPropagation()}
+            aria-label="Télécharger"
+            title="Télécharger cette image"
+            className="w-6 h-6 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+          </a>
+        )}
+        <button
+          onClick={(e) => { e.stopPropagation(); onReload() }}
+          aria-label="Régénérer"
+          title="Régénérer depuis source FR"
+          className="w-6 h-6 rounded-full bg-black/50 text-white text-xs flex items-center justify-center hover:bg-black/70"
+        >
+          ⟳
+        </button>
+      </div>
     </motion.div>
   )
 }

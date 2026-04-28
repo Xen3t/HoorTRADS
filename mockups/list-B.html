@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Liste workflows · B · Cartes avec mini-aperçu</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Titillium+Web:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --brand-teal: #0ea5a4; --text-primary: #1a1f2c; --text-secondary: #6b7280; --text-disabled: #9ca3af; --border: #e5e7eb; --bg: #f7f8fa; }
+  body { font-family: 'Titillium Web', system-ui, sans-serif; background: var(--bg); color: var(--text-primary); }
+  .mini-node { fill: white; stroke: #cbd5e1; stroke-width: 1.5; rx: 4; }
+  .mini-edge { stroke: #94a3b8; stroke-width: 1.5; fill: none; marker-end: url(#arrow); }
+  .mini-node-start { fill: #ecfeff; stroke: #0891b2; }
+  .mini-node-end { fill: #dcfce7; stroke: #16a34a; }
+</style>
+</head>
+<body class="min-h-screen">
+
+<div class="text-[10px] text-center py-1 text-white" style="background: var(--brand-teal)">
+  MOCKUP · Liste workflows · Direction B — Cartes avec mini-aperçu · <a href="index.html" class="underline">retour à l'index</a>
+</div>
+
+<header class="bg-white border-b" style="border-color: var(--border)">
+  <div class="max-w-[1200px] mx-auto px-8 py-5 flex items-center justify-between">
+    <div class="flex items-center gap-2 text-sm">
+      <a href="#" style="color: var(--brand-teal)">Admin</a>
+      <span style="color: var(--text-disabled)">/</span>
+      <span class="font-semibold">Workflows</span>
+    </div>
+    <a href="#" class="text-sm" style="color: var(--brand-teal)">← Accueil</a>
+  </div>
+</header>
+
+<main class="max-w-[1200px] mx-auto px-8 py-10">
+
+  <div class="flex items-end justify-between mb-8">
+    <div>
+      <h1 class="text-2xl font-bold">Workflows</h1>
+      <p class="text-sm mt-1" style="color: var(--text-secondary)">Configurations de pipeline par type d'image. Cliquez sur une carte pour éditer.</p>
+    </div>
+    <button class="px-4 py-2 rounded-[10px] text-white font-semibold text-sm" style="background: var(--brand-teal)">+ Nouveau workflow</button>
+  </div>
+
+  <!-- SVG defs for arrows -->
+  <svg width="0" height="0">
+    <defs>
+      <marker id="arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+        <polygon points="0 0, 6 3, 0 6" fill="#94a3b8" />
+      </marker>
+    </defs>
+  </svg>
+
+  <div class="grid grid-cols-3 gap-5">
+
+    <!-- Card 1 -->
+    <div class="bg-white rounded-[16px] shadow-sm hover:shadow-md transition cursor-pointer overflow-hidden">
+      <div class="px-5 pt-4 pb-3 flex items-center justify-between">
+        <span class="text-xs px-2 py-1 rounded-full font-semibold" style="background:#ecfeff;color:#0e7490">ADS</span>
+        <label class="relative inline-block w-10 h-5">
+          <span class="absolute inset-0 rounded-full transition" style="background: var(--brand-teal)"></span>
+          <span class="absolute top-0.5 right-0.5 w-4 h-4 bg-white rounded-full shadow"></span>
+        </label>
+      </div>
+      <div class="px-5">
+        <h3 class="font-bold text-base">ADS Standard</h3>
+        <p class="text-xs mt-1 mb-3" style="color: var(--text-secondary)">NB2 direct image→image, sans extraction. Workflow par défaut.</p>
+      </div>
+      <!-- mini diagram -->
+      <div class="px-3 py-3 mx-3 mb-3 rounded-[12px]" style="background: #f8fafc">
+        <svg viewBox="0 0 320 60" class="w-full h-12">
+          <rect class="mini-node mini-node-start" x="4" y="20" width="42" height="22" rx="4"/>
+          <text x="25" y="34" text-anchor="middle" font-size="9" fill="#0e7490">Start</text>
+          <line class="mini-edge" x1="46" y1="31" x2="68" y2="31"/>
+          <rect class="mini-node" x="68" y="20" width="50" height="22" rx="4"/>
+          <text x="93" y="34" text-anchor="middle" font-size="9">Generate</text>
+          <line class="mini-edge" x1="118" y1="31" x2="140" y2="31"/>
+          <rect class="mini-node" x="140" y="20" width="46" height="22" rx="4"/>
+          <text x="163" y="34" text-anchor="middle" font-size="9">Verify</text>
+          <line class="mini-edge" x1="186" y1="31" x2="208" y2="31"/>
+          <rect class="mini-node" x="208" y="20" width="58" height="22" rx="4"/>
+          <text x="237" y="34" text-anchor="middle" font-size="9">Auto-corr</text>
+          <line class="mini-edge" x1="266" y1="31" x2="284" y2="31"/>
+          <rect class="mini-node mini-node-end" x="284" y="20" width="32" height="22" rx="4"/>
+          <text x="300" y="34" text-anchor="middle" font-size="9" fill="#15803d">End</text>
+        </svg>
+      </div>
+      <div class="px-5 py-3 border-t flex items-center justify-between text-xs" style="border-color: var(--border); color: var(--text-secondary)">
+        <span>5 étapes · v3</span>
+        <span>il y a 2 jours</span>
+      </div>
+    </div>
+
+    <!-- Card 2 -->
+    <div class="bg-white rounded-[16px] shadow-sm hover:shadow-md transition cursor-pointer overflow-hidden">
+      <div class="px-5 pt-4 pb-3 flex items-center justify-between">
+        <span class="text-xs px-2 py-1 rounded-full font-semibold" style="background:#ecfeff;color:#0e7490">ADS</span>
+        <label class="relative inline-block w-10 h-5">
+          <span class="absolute inset-0 rounded-full transition" style="background: var(--brand-teal)"></span>
+          <span class="absolute top-0.5 right-0.5 w-4 h-4 bg-white rounded-full shadow"></span>
+        </label>
+      </div>
+      <div class="px-5">
+        <h3 class="font-bold text-base">ADS Natif</h3>
+        <p class="text-xs mt-1 mb-3" style="color: var(--text-secondary)">Extract → Review → Render. Validation humaine des textes traduits.</p>
+      </div>
+      <div class="px-3 py-3 mx-3 mb-3 rounded-[12px]" style="background: #f8fafc">
+        <svg viewBox="0 0 320 60" class="w-full h-12">
+          <rect class="mini-node mini-node-start" x="4" y="20" width="36" height="22" rx="4"/>
+          <text x="22" y="34" text-anchor="middle" font-size="9" fill="#0e7490">Start</text>
+          <line class="mini-edge" x1="40" y1="31" x2="58" y2="31"/>
+          <rect class="mini-node" x="58" y="20" width="44" height="22" rx="4"/>
+          <text x="80" y="34" text-anchor="middle" font-size="9">Extract</text>
+          <line class="mini-edge" x1="102" y1="31" x2="120" y2="31"/>
+          <rect class="mini-node" x="120" y="20" width="46" height="22" rx="4"/>
+          <text x="143" y="34" text-anchor="middle" font-size="9">Translate</text>
+          <line class="mini-edge" x1="166" y1="31" x2="184" y2="31"/>
+          <rect class="mini-node" x="184" y="20" width="40" height="22" rx="4" style="fill:#fef3c7;stroke:#d97706"/>
+          <text x="204" y="34" text-anchor="middle" font-size="9" fill="#b45309">Review</text>
+          <line class="mini-edge" x1="224" y1="31" x2="242" y2="31"/>
+          <rect class="mini-node" x="242" y="20" width="42" height="22" rx="4"/>
+          <text x="263" y="34" text-anchor="middle" font-size="9">Render</text>
+          <line class="mini-edge" x1="284" y1="31" x2="298" y2="31"/>
+          <rect class="mini-node mini-node-end" x="298" y="20" width="18" height="22" rx="4"/>
+          <text x="307" y="34" text-anchor="middle" font-size="9" fill="#15803d">✓</text>
+        </svg>
+      </div>
+      <div class="px-5 py-3 border-t flex items-center justify-between text-xs" style="border-color: var(--border); color: var(--text-secondary)">
+        <span>9 étapes · v5</span>
+        <span>il y a 5 jours</span>
+      </div>
+    </div>
+
+    <!-- Card 3 (draft) -->
+    <div class="bg-white rounded-[16px] shadow-sm hover:shadow-md transition cursor-pointer overflow-hidden border-2 border-dashed" style="border-color:#fbbf24">
+      <div class="px-5 pt-4 pb-3 flex items-center justify-between">
+        <span class="text-xs px-2 py-1 rounded-full font-semibold" style="background:#faf5ff;color:#7e22ce">Schéma</span>
+        <span class="text-[10px] px-2 py-0.5 rounded-full font-semibold" style="background:#fef3c7;color:#b45309">Brouillon</span>
+      </div>
+      <div class="px-5">
+        <h3 class="font-bold text-base">Schéma technique v1</h3>
+        <p class="text-xs mt-1 mb-3" style="color: var(--text-secondary)">Préservation layout + swap labels uniquement. WIP.</p>
+      </div>
+      <div class="px-3 py-3 mx-3 mb-3 rounded-[12px]" style="background: #f8fafc">
+        <svg viewBox="0 0 320 60" class="w-full h-12">
+          <rect class="mini-node mini-node-start" x="4" y="20" width="36" height="22" rx="4"/>
+          <text x="22" y="34" text-anchor="middle" font-size="9" fill="#0e7490">Start</text>
+          <line class="mini-edge" x1="40" y1="31" x2="58" y2="31"/>
+          <rect class="mini-node" x="58" y="20" width="56" height="22" rx="4"/>
+          <text x="86" y="34" text-anchor="middle" font-size="9">Labels-only</text>
+          <line class="mini-edge" x1="114" y1="31" x2="132" y2="31"/>
+          <rect class="mini-node" x="132" y="20" width="46" height="22" rx="4"/>
+          <text x="155" y="34" text-anchor="middle" font-size="9">Translate</text>
+          <line class="mini-edge" x1="178" y1="31" x2="196" y2="31"/>
+          <rect class="mini-node" x="196" y="20" width="58" height="22" rx="4"/>
+          <text x="225" y="34" text-anchor="middle" font-size="9">Re-stamp</text>
+          <line class="mini-edge" x1="254" y1="31" x2="270" y2="31"/>
+          <rect class="mini-node mini-node-end" x="270" y="20" width="46" height="22" rx="4"/>
+          <text x="293" y="34" text-anchor="middle" font-size="9" fill="#15803d">End</text>
+        </svg>
+      </div>
+      <div class="px-5 py-3 border-t flex items-center justify-between text-xs" style="border-color: var(--border); color: var(--text-secondary)">
+        <span>7 étapes · v1</span>
+        <span>aujourd'hui</span>
+      </div>
+    </div>
+
+    <!-- Card 4 -->
+    <div class="bg-white rounded-[16px] shadow-sm hover:shadow-md transition cursor-pointer overflow-hidden">
+      <div class="px-5 pt-4 pb-3 flex items-center justify-between">
+        <span class="text-xs px-2 py-1 rounded-full font-semibold" style="background:#fef3c7;color:#b45309">Packaging</span>
+        <label class="relative inline-block w-10 h-5">
+          <span class="absolute inset-0 rounded-full transition" style="background: var(--brand-teal)"></span>
+          <span class="absolute top-0.5 right-0.5 w-4 h-4 bg-white rounded-full shadow"></span>
+        </label>
+      </div>
+      <div class="px-5">
+        <h3 class="font-bold text-base">Packaging EU</h3>
+        <p class="text-xs mt-1 mb-3" style="color: var(--text-secondary)">Ingrédients, mentions légales multi-langues côte à côte.</p>
+      </div>
+      <div class="px-3 py-3 mx-3 mb-3 rounded-[12px]" style="background: #f8fafc">
+        <svg viewBox="0 0 320 60" class="w-full h-12">
+          <rect class="mini-node mini-node-start" x="4" y="20" width="32" height="22" rx="4"/>
+          <text x="20" y="34" text-anchor="middle" font-size="9" fill="#0e7490">Start</text>
+          <line class="mini-edge" x1="36" y1="31" x2="54" y2="31"/>
+          <rect class="mini-node" x="54" y="20" width="44" height="22" rx="4"/>
+          <text x="76" y="34" text-anchor="middle" font-size="9">Extract</text>
+          <line class="mini-edge" x1="98" y1="31" x2="116" y2="31"/>
+          <rect class="mini-node" x="116" y="20" width="50" height="22" rx="4"/>
+          <text x="141" y="34" text-anchor="middle" font-size="9">Glossaire</text>
+          <line class="mini-edge" x1="166" y1="31" x2="184" y2="31"/>
+          <rect class="mini-node" x="184" y="20" width="46" height="22" rx="4"/>
+          <text x="207" y="34" text-anchor="middle" font-size="9">Translate</text>
+          <line class="mini-edge" x1="230" y1="31" x2="248" y2="31"/>
+          <rect class="mini-node" x="248" y="20" width="42" height="22" rx="4"/>
+          <text x="269" y="34" text-anchor="middle" font-size="9">Render</text>
+          <line class="mini-edge" x1="290" y1="31" x2="298" y2="31"/>
+          <rect class="mini-node mini-node-end" x="298" y="20" width="18" height="22" rx="4"/>
+          <text x="307" y="34" text-anchor="middle" font-size="9" fill="#15803d">✓</text>
+        </svg>
+      </div>
+      <div class="px-5 py-3 border-t flex items-center justify-between text-xs" style="border-color: var(--border); color: var(--text-secondary)">
+        <span>8 étapes · v2</span>
+        <span>il y a 1 sem</span>
+      </div>
+    </div>
+
+    <!-- Card 5 (disabled) -->
+    <div class="bg-white rounded-[16px] shadow-sm hover:shadow-md transition cursor-pointer overflow-hidden opacity-60">
+      <div class="px-5 pt-4 pb-3 flex items-center justify-between">
+        <span class="text-xs px-2 py-1 rounded-full font-semibold" style="background:#dcfce7;color:#15803d">Infographie</span>
+        <label class="relative inline-block w-10 h-5">
+          <span class="absolute inset-0 rounded-full transition" style="background:#cbd5e1"></span>
+          <span class="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow"></span>
+        </label>
+      </div>
+      <div class="px-5">
+        <h3 class="font-bold text-base">Infographie produit</h3>
+        <p class="text-xs mt-1 mb-3" style="color: var(--text-secondary)">Workflow expérimental, en pause.</p>
+      </div>
+      <div class="px-3 py-3 mx-3 mb-3 rounded-[12px]" style="background: #f8fafc">
+        <svg viewBox="0 0 320 60" class="w-full h-12">
+          <rect class="mini-node mini-node-start" x="4" y="20" width="36" height="22" rx="4"/>
+          <line class="mini-edge" x1="40" y1="31" x2="58" y2="31"/>
+          <rect class="mini-node" x="58" y="20" width="60" height="22" rx="4"/>
+          <line class="mini-edge" x1="118" y1="31" x2="136" y2="31"/>
+          <rect class="mini-node" x="136" y="20" width="60" height="22" rx="4"/>
+          <line class="mini-edge" x1="196" y1="31" x2="214" y2="31"/>
+          <rect class="mini-node mini-node-end" x="214" y="20" width="40" height="22" rx="4"/>
+        </svg>
+      </div>
+      <div class="px-5 py-3 border-t flex items-center justify-between text-xs" style="border-color: var(--border); color: var(--text-secondary)">
+        <span>6 étapes · v1</span>
+        <span>il y a 3 sem</span>
+      </div>
+    </div>
+
+    <!-- New card placeholder -->
+    <button class="rounded-[16px] border-2 border-dashed flex flex-col items-center justify-center py-12 hover:bg-white transition" style="border-color: var(--border); color: var(--text-secondary)">
+      <span class="text-3xl mb-2">+</span>
+      <span class="text-sm font-semibold">Nouveau workflow</span>
+      <span class="text-xs mt-1">Partir d'un blanc ou dupliquer un existant</span>
+    </button>
+
+  </div>
+
+</main>
+</body>
+</html>

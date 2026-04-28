@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Configure · B · Cards en grille</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Titillium+Web:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --brand-teal: #0ea5a4; --text-primary: #1a1f2c; --text-secondary: #6b7280; --text-disabled: #9ca3af; --border: #e5e7eb; --bg: #f7f8fa; }
+  body { font-family: 'Titillium Web', system-ui, sans-serif; background: var(--bg); color: var(--text-primary); }
+  .mini-edge { stroke: #94a3b8; stroke-width: 1.5; fill: none; marker-end: url(#arrCB); }
+</style>
+</head>
+<body class="min-h-screen">
+
+<div class="text-[10px] text-center py-1 text-white" style="background: var(--brand-teal)">
+  MOCKUP · Configure (graphiste) · Direction B — Cards en grille · <a href="index.html" class="underline">retour à l'index</a>
+</div>
+
+<header class="bg-white border-b" style="border-color: var(--border)">
+  <div class="max-w-[1100px] mx-auto px-8 py-5 flex items-center justify-between">
+    <div>
+      <p class="text-xs uppercase tracking-wider" style="color: var(--text-disabled)">Campagne</p>
+      <h1 class="font-bold text-lg">SOLDES_PRINTEMPS_2026</h1>
+    </div>
+    <div class="flex items-center gap-4 text-sm" style="color: var(--text-secondary)">
+      <span>Étape 2/4 · Configuration</span>
+      <a href="#" style="color: var(--brand-teal)">← Retour</a>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-[1100px] mx-auto px-8 py-10">
+
+  <svg width="0" height="0">
+    <defs>
+      <marker id="arrCB" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+        <polygon points="0 0, 6 3, 0 6" fill="#94a3b8" />
+      </marker>
+    </defs>
+  </svg>
+
+  <!-- Step 1 : choose workflow -->
+  <section class="mb-10">
+    <div class="flex items-baseline gap-3 mb-2">
+      <span class="w-7 h-7 rounded-full font-bold text-sm flex items-center justify-center text-white" style="background: var(--brand-teal)">1</span>
+      <h2 class="text-xl font-bold">Quel type d'image traites-tu ?</h2>
+    </div>
+    <p class="text-sm mb-6 ml-10" style="color: var(--text-secondary)">Choisis le workflow le mieux adapté à tes visuels. Chaque workflow définit son propre pipeline d'extraction, traduction et génération.</p>
+
+    <div class="grid grid-cols-2 gap-4">
+
+      <!-- Card 1 (selected) -->
+      <button class="text-left bg-white rounded-[16px] p-5 transition" style="border:2px solid var(--brand-teal); box-shadow: 0 0 0 4px #0ea5a420">
+        <div class="flex items-start justify-between mb-3">
+          <span class="text-xs px-2 py-1 rounded-full font-semibold" style="background:#ecfeff;color:#0e7490">ADS</span>
+          <span class="text-xs px-2 py-1 rounded-full font-semibold flex items-center gap-1" style="background: var(--brand-teal);color:white">✓ Sélectionné</span>
+        </div>
+        <h3 class="font-bold text-base">ADS Standard</h3>
+        <p class="text-xs mt-1 mb-4" style="color: var(--text-secondary)">NB2 direct image→image. Le plus rapide. Pour visuels publicitaires classiques avec textes courts.</p>
+        <div class="rounded-[10px] py-3 px-3 mb-3" style="background:#f8fafc">
+          <svg viewBox="0 0 320 50" class="w-full h-10">
+            <rect x="4" y="15" width="42" height="22" rx="4" fill="#ecfeff" stroke="#0891b2" stroke-width="1.5"/>
+            <text x="25" y="30" text-anchor="middle" font-size="10" fill="#0e7490">Start</text>
+            <line class="mini-edge" x1="46" y1="26" x2="68" y2="26"/>
+            <rect x="68" y="15" width="58" height="22" rx="4" fill="white" stroke="#cbd5e1"/>
+            <text x="97" y="30" text-anchor="middle" font-size="10">Generate</text>
+            <line class="mini-edge" x1="126" y1="26" x2="148" y2="26"/>
+            <rect x="148" y="15" width="50" height="22" rx="4" fill="white" stroke="#cbd5e1"/>
+            <text x="173" y="30" text-anchor="middle" font-size="10">Verify</text>
+            <line class="mini-edge" x1="198" y1="26" x2="220" y2="26"/>
+            <rect x="220" y="15" width="60" height="22" rx="4" fill="white" stroke="#cbd5e1"/>
+            <text x="250" y="30" text-anchor="middle" font-size="10">Auto-corr</text>
+            <line class="mini-edge" x1="280" y1="26" x2="298" y2="26"/>
+            <rect x="298" y="15" width="18" height="22" rx="4" fill="#dcfce7" stroke="#16a34a"/>
+          </svg>
+        </div>
+        <div class="text-[11px] flex items-center justify-between" style="color: var(--text-secondary)">
+          <span>5 étapes · ~45s/image</span>
+          <span class="font-semibold" style="color: var(--brand-teal)">Recommandé pour ADS</span>
+        </div>
+      </button>
+
+      <!-- Card 2 -->
+      <button class="text-left bg-white rounded-[16px] p-5 hover:shadow-md transition" style="border:2px solid var(--border)">
+        <div class="flex items-start justify-between mb-3">
+          <span class="text-xs px-2 py-1 rounded-full font-semibold" style="background:#ecfeff;color:#0e7490">ADS</span>
+        </div>
+        <h3 class="font-bold text-base">ADS Natif</h3>
+        <p class="text-xs mt-1 mb-4" style="color: var(--text-secondary)">Extraction → review humaine → render. Pour textes complexes nécessitant validation avant génération.</p>
+        <div class="rounded-[10px] py-3 px-3 mb-3" style="background:#f8fafc">
+          <svg viewBox="0 0 320 50" class="w-full h-10">
+            <rect x="4" y="15" width="32" height="22" rx="4" fill="#ecfeff" stroke="#0891b2" stroke-width="1.5"/>
+            <line class="mini-edge" x1="36" y1="26" x2="54" y2="26"/>
+            <rect x="54" y="15" width="44" height="22" rx="4" fill="white" stroke="#cbd5e1"/>
+            <text x="76" y="30" text-anchor="middle" font-size="10">Extract</text>
+            <line class="mini-edge" x1="98" y1="26" x2="116" y2="26"/>
+            <rect x="116" y="15" width="50" height="22" rx="4" fill="white" stroke="#cbd5e1"/>
+            <text x="141" y="30" text-anchor="middle" font-size="10">Translate</text>
+            <line class="mini-edge" x1="166" y1="26" x2="184" y2="26"/>
+            <rect x="184" y="15" width="40" height="22" rx="4" fill="#fef3c7" stroke="#d97706"/>
+            <text x="204" y="30" text-anchor="middle" font-size="9" fill="#b45309">Review</text>
+            <line class="mini-edge" x1="224" y1="26" x2="242" y2="26"/>
+            <rect x="242" y="15" width="46" height="22" rx="4" fill="white" stroke="#cbd5e1"/>
+            <text x="265" y="30" text-anchor="middle" font-size="10">Render</text>
+            <line class="mini-edge" x1="288" y1="26" x2="298" y2="26"/>
+            <rect x="298" y="15" width="18" height="22" rx="4" fill="#dcfce7" stroke="#16a34a"/>
+          </svg>
+        </div>
+        <div class="text-[11px] flex items-center justify-between" style="color: var(--text-secondary)">
+          <span>9 étapes · pause review</span>
+          <span>~3min/image</span>
+        </div>
+      </button>
+
+      <!-- Card 3 -->
+      <button class="text-left bg-white rounded-[16px] p-5 hover:shadow-md transition" style="border:2px solid var(--border)">
+        <div class="flex items-start justify-between mb-3">
+          <span class="text-xs px-2 py-1 rounded-full font-semibold" style="background:#faf5ff;color:#7e22ce">Schéma</span>
+          <span class="text-[10px] px-2 py-0.5 rounded-full font-semibold" style="background:#fef3c7;color:#b45309">Brouillon</span>
+        </div>
+        <h3 class="font-bold text-base">Schéma technique v1</h3>
+        <p class="text-xs mt-1 mb-4" style="color: var(--text-secondary)">Préservation stricte du layout. On ne traduit que les étiquettes, on ne touche pas au dessin.</p>
+        <div class="rounded-[10px] py-3 px-3 mb-3" style="background:#f8fafc">
+          <svg viewBox="0 0 320 50" class="w-full h-10">
+            <rect x="4" y="15" width="32" height="22" rx="4" fill="#ecfeff" stroke="#0891b2" stroke-width="1.5"/>
+            <line class="mini-edge" x1="36" y1="26" x2="54" y2="26"/>
+            <rect x="54" y="15" width="60" height="22" rx="4" fill="white" stroke="#cbd5e1"/>
+            <text x="84" y="30" text-anchor="middle" font-size="10">Labels</text>
+            <line class="mini-edge" x1="114" y1="26" x2="132" y2="26"/>
+            <rect x="132" y="15" width="50" height="22" rx="4" fill="white" stroke="#cbd5e1"/>
+            <text x="157" y="30" text-anchor="middle" font-size="10">Translate</text>
+            <line class="mini-edge" x1="182" y1="26" x2="200" y2="26"/>
+            <rect x="200" y="15" width="60" height="22" rx="4" fill="white" stroke="#cbd5e1"/>
+            <text x="230" y="30" text-anchor="middle" font-size="10">Re-stamp</text>
+            <line class="mini-edge" x1="260" y1="26" x2="280" y2="26"/>
+            <rect x="280" y="15" width="36" height="22" rx="4" fill="#dcfce7" stroke="#16a34a"/>
+          </svg>
+        </div>
+        <div class="text-[11px] flex items-center justify-between" style="color: var(--text-secondary)">
+          <span>7 étapes · ~1min/image</span>
+          <span style="color:#b45309">⚠ En cours de validation</span>
+        </div>
+      </button>
+
+      <!-- Card 4 -->
+      <button class="text-left bg-white rounded-[16px] p-5 hover:shadow-md transition" style="border:2px solid var(--border)">
+        <div class="flex items-start justify-between mb-3">
+          <span class="text-xs px-2 py-1 rounded-full font-semibold" style="background:#fef3c7;color:#b45309">Packaging</span>
+        </div>
+        <h3 class="font-bold text-base">Packaging EU</h3>
+        <p class="text-xs mt-1 mb-4" style="color: var(--text-secondary)">Multi-langues côte à côte sur un même packaging. Glossaire technique strict.</p>
+        <div class="rounded-[10px] py-3 px-3 mb-3" style="background:#f8fafc">
+          <svg viewBox="0 0 320 50" class="w-full h-10">
+            <rect x="4" y="15" width="32" height="22" rx="4" fill="#ecfeff" stroke="#0891b2" stroke-width="1.5"/>
+            <line class="mini-edge" x1="36" y1="26" x2="54" y2="26"/>
+            <rect x="54" y="15" width="44" height="22" rx="4" fill="white" stroke="#cbd5e1"/>
+            <text x="76" y="30" text-anchor="middle" font-size="10">Extract</text>
+            <line class="mini-edge" x1="98" y1="26" x2="116" y2="26"/>
+            <rect x="116" y="15" width="60" height="22" rx="4" fill="white" stroke="#cbd5e1"/>
+            <text x="146" y="30" text-anchor="middle" font-size="9">Glossaire</text>
+            <line class="mini-edge" x1="176" y1="26" x2="194" y2="26"/>
+            <rect x="194" y="15" width="50" height="22" rx="4" fill="white" stroke="#cbd5e1"/>
+            <text x="219" y="30" text-anchor="middle" font-size="10">Translate</text>
+            <line class="mini-edge" x1="244" y1="26" x2="262" y2="26"/>
+            <rect x="262" y="15" width="42" height="22" rx="4" fill="white" stroke="#cbd5e1"/>
+            <text x="283" y="30" text-anchor="middle" font-size="10">Render</text>
+            <line class="mini-edge" x1="304" y1="26" x2="312" y2="26"/>
+          </svg>
+        </div>
+        <div class="text-[11px] flex items-center justify-between" style="color: var(--text-secondary)">
+          <span>8 étapes</span>
+          <span>~2min/image</span>
+        </div>
+      </button>
+
+    </div>
+  </section>
+
+  <!-- Step 2 : countries (preview) -->
+  <section class="mb-6 opacity-100">
+    <div class="flex items-baseline gap-3 mb-2">
+      <span class="w-7 h-7 rounded-full font-bold text-sm flex items-center justify-center text-white" style="background: var(--brand-teal)">2</span>
+      <h2 class="text-xl font-bold">Pays cibles</h2>
+    </div>
+    <p class="text-sm mb-4 ml-10" style="color: var(--text-secondary)">3 pays sélectionnés. Modifiable plus tard.</p>
+    <div class="ml-10 flex flex-wrap gap-2">
+      <span class="px-3 py-2 rounded-[10px] bg-white text-sm font-semibold flex items-center gap-2" style="border:1px solid var(--brand-teal)"><span>🇩🇪</span>Allemagne</span>
+      <span class="px-3 py-2 rounded-[10px] bg-white text-sm font-semibold flex items-center gap-2" style="border:1px solid var(--brand-teal)"><span>🇪🇸</span>Espagne</span>
+      <span class="px-3 py-2 rounded-[10px] bg-white text-sm font-semibold flex items-center gap-2" style="border:1px solid var(--brand-teal)"><span>🇮🇹</span>Italie</span>
+      <button class="px-3 py-2 rounded-[10px] border-dashed border-2 text-sm" style="border-color:var(--border); color:var(--text-secondary)">+ Ajouter</button>
+    </div>
+  </section>
+
+  <!-- Step 3 : options collapsed -->
+  <section class="mb-6">
+    <div class="flex items-baseline gap-3 mb-2">
+      <span class="w-7 h-7 rounded-full font-bold text-sm flex items-center justify-center" style="background:#e5e7eb;color: var(--text-secondary)">3</span>
+      <h2 class="text-xl font-bold" style="color: var(--text-secondary)">Options avancées</h2>
+      <span class="text-xs" style="color: var(--text-disabled)">(résolution, auto-correct, doc config)</span>
+    </div>
+  </section>
+
+  <div class="flex items-center justify-between pt-4 border-t" style="border-color: var(--border)">
+    <button class="text-sm" style="color: var(--text-secondary)">Sauvegarder en brouillon</button>
+    <button class="px-6 py-3 rounded-[12px] text-white font-semibold" style="background: var(--brand-teal)">
+      Lancer la génération →
+    </button>
+  </div>
+
+</main>
+</body>
+</html>

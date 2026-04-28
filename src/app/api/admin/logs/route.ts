@@ -43,14 +43,17 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ tasks: tasksWithVersions })
     }
 
-    // Return list of recent jobs with session info
+    // Return list of recent jobs with session info + creator user
     const jobs = db.prepare(`
       SELECT
         j.id, j.status, j.total_tasks, j.completed_tasks, j.failed_tasks,
         j.config, j.created_at, j.updated_at,
-        s.name as session_name
+        s.name as session_name,
+        u.name as user_name,
+        u.email as user_email
       FROM generation_jobs j
       LEFT JOIN sessions s ON s.id = j.session_id
+      LEFT JOIN users u ON u.id = s.user_id
       ORDER BY j.created_at DESC
       LIMIT 30
     `).all() as {
@@ -63,11 +66,44 @@ export async function GET(request: NextRequest) {
       created_at: string
       updated_at: string
       session_name: string
+      user_name: string | null
+      user_email: string | null
     }[]
 
     return NextResponse.json({ jobs })
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to fetch logs'
+    return NextResponse.json({ error: message }, { status: 500 })
+  }
+}
+
+/**
+ * DELETE /api/admin/logs — wipe log fields (preTranslationLog, processorError, renderError,
+ * task error_messages) for ALL jobs. Doesn't touch task statuses or output_paths.
+ */
+export async function DELETE() {
+  try {
+    const db = getDb()
+    const jobs = db.prepare('SELECT id, config FROM generation_jobs').all() as { id: string; config: string }[]
+    let cleaned = 0
+    const update = db.prepare('UPDATE generation_jobs SET config = ?, updated_at = datetime(\'now\') WHERE id = ?')
+    for (const j of jobs) {
+      try {
+        const cfg = j.config ? JSON.parse(j.config) : {}
+        let changed = false
+        if (cfg.preTranslationLog) { delete cfg.preTranslationLog; changed = true }
+        if (cfg.processorError) { delete cfg.processorError; changed = true }
+        if (cfg.renderError) { delete cfg.renderError; changed = true }
+        if (changed) {
+          update.run(JSON.stringify(cfg), j.id)
+          cleaned++
+        }
+      } catch {}
+    }
+    db.prepare('UPDATE generation_tasks SET error_message = NULL WHERE error_message IS NOT NULL').run()
+    return NextResponse.json({ success: true, jobsCleaned: cleaned })
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Failed to clear logs'
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }

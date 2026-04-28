@@ -3,8 +3,9 @@ import fs from 'fs'
 import path from 'path'
 import sharp from 'sharp'
 import { getDb } from '@/lib/db/database'
-import { getSessionById } from '@/lib/db/queries'
+import { getSessionById, getAppConfig } from '@/lib/db/queries'
 import { getJobBySessionId } from '@/lib/jobs/job-manager'
+import { generateSynthesisHtml } from '@/lib/synthesis/generate-synthesis-html'
 import type { GenerationTask } from '@/types/generation'
 
 const ADS_FORMATS = ['1920x1080', '1080x1080', '1080x1920', '1080x1350']
@@ -90,8 +91,9 @@ export async function POST(request: NextRequest) {
         // This ensures e.g. C:\Campagnes\visuel_générique\ → C:\Campagnes\visuel_générique\RENDU\
         // even when multiple subfolders are part of the same job.
         const sourceDir = path.dirname(task.source_image_path)
-        // If the source is already inside a RENDU folder (ADS structure), use it directly
-        const isAlreadyInRendu = path.basename(sourceDir).toUpperCase() === 'RENDU'
+        // If the source is already inside a RENDU-like folder (ADS structure, variations: RENDU / Rendu / Rendus / RENDU_FR…),
+        // use it directly to avoid creating a nested RENDU/RENDU.
+        const isAlreadyInRendu = /rendu/i.test(path.basename(sourceDir))
         const destinationRoot = customPath?.trim() || (isAlreadyInRendu ? sourceDir : path.join(sourceDir, 'RENDU'))
         if (!firstDestinationRoot) firstDestinationRoot = destinationRoot
 
@@ -141,6 +143,22 @@ export async function POST(request: NextRequest) {
           fs.writeFileSync(jsonPath, JSON.stringify(approvedTranslations, null, 2), 'utf-8')
         }
       } catch { /* non-bloquant */ }
+    }
+
+    // Auto-generate synthesis HTML if enabled in admin config
+    if (firstDestinationRoot) {
+      try {
+        const enabled = getAppConfig(db, 'synthesis_html_enabled')
+        if (enabled === 'true' || enabled === '1') {
+          const html = generateSynthesisHtml(db, job.id)
+          const safeName = (campaignName || session.name || 'session').replace(/[<>:"/\\|?*]/g, '_').replace(/\s+/g, '_').slice(0, 60)
+          const dateStamp = new Date().toISOString().slice(0, 10).replace(/-/g, '')
+          const synthesisPath = path.join(firstDestinationRoot, `synthese_${safeName}_${dateStamp}.html`)
+          fs.writeFileSync(synthesisPath, html, 'utf-8')
+        }
+      } catch (err) {
+        console.error('[export] synthesis html generation failed:', err)
+      }
     }
 
     // Mark session as exported

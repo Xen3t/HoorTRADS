@@ -5,7 +5,8 @@ import { getDb } from '@/lib/db/database'
 import { getSessionById } from '@/lib/db/queries'
 import { createGenerationJob } from '@/lib/jobs/job-manager'
 import { processJob } from '@/lib/jobs/job-processor'
-import { GeminiClient } from '@/lib/gemini/gemini-client'
+import { createImageGenerator } from '@/lib/image-generator-factory'
+import type { ImageGenerator } from '@/types/generation'
 import { scanFolderTree } from '@/lib/files/folder-scanner'
 
 export async function POST(request: NextRequest) {
@@ -24,9 +25,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Session not found' }, { status: 404 })
     }
 
-    // Prevent duplicate generation — if a job already exists for this session, return it
+    // Prevent duplicate generation — only block if job is still in progress
     const existingJob = db.prepare(
-      "SELECT id, total_tasks FROM generation_jobs WHERE session_id = ? AND status IN ('pending', 'running', 'done') ORDER BY rowid DESC LIMIT 1"
+      "SELECT id, total_tasks FROM generation_jobs WHERE session_id = ? AND status IN ('pending', 'running', 'pending_text_review') ORDER BY rowid DESC LIMIT 1"
     ).get(sessionId) as { id: string; total_tasks: number } | undefined
     if (existingJob) {
       return NextResponse.json({ jobId: existingJob.id, totalTasks: existingJob.total_tasks })
@@ -82,12 +83,12 @@ export async function POST(request: NextRequest) {
     db.prepare("UPDATE sessions SET status = 'generating', current_step = 'generate', updated_at = datetime('now') WHERE id = ?").run(sessionId)
 
     // Start processing in background (non-blocking)
-    // GeminiClient checks DB key first, then GEMINI_API_KEY env — throws if neither is set
-    let generator: GeminiClient
+    // Picks the right client based on admin 'image_provider' config (Gemini NB2 or gpt-image-2)
+    let generator: ImageGenerator
     try {
-      generator = new GeminiClient()
+      generator = createImageGenerator()
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Clé API Gemini manquante ou invalide'
+      const msg = e instanceof Error ? e.message : 'Générateur d’image non configuré'
       return NextResponse.json({ error: msg }, { status: 500 })
     }
     processJob(db, job.id, generator).catch(() => {

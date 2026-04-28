@@ -1,20 +1,20 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { motion } from 'framer-motion'
 
 const adminSections: { name: string; href: string; icon: string; description: string; disabled?: boolean }[] = [
   // ── Setup ──────────────────────────────────────────────────────────────────
-  { name: 'Configuration API', href: '/admin/api-config', icon: '🔑', description: 'Clé Gemini, modèles par étape, pipeline de vérification, Google Drive' },
+  { name: 'Configuration API', href: '/admin/api-config', icon: '🔑', description: 'Clés API, modèles par étape, Google Drive' },
   { name: 'Pays & Langues', href: '/admin/countries', icon: '🌍', description: 'Gérer les associations pays-langues' },
   // ── Contenu & IA ───────────────────────────────────────────────────────────
-  { name: 'Prompts système', href: '/admin/prompts', icon: '💬', description: 'Configurer les prompts de chaque IA par mode (Classique, Précision, Natif)' },
+  { name: 'Prompts système', href: '/admin/prompts', icon: '💬', description: 'Configurer les prompts du pipeline (extraction, traduction, rendu)' },
   { name: 'Glossaire', href: '/admin/glossary', icon: '📖', description: 'Gérer les traductions de terminologie de marque' },
-  // ── Expérimentation ────────────────────────────────────────────────────────
-  { name: 'Laboratoire de modèles', href: '/admin/lab', icon: '🧪', description: 'Tester extraction + traduction avec différents modèles Gemini' },
   // ── Observabilité ──────────────────────────────────────────────────────────
-  { name: 'Logs Gemini', href: '/admin/logs', icon: '🔬', description: 'Prompts envoyés à Gemini, scores de vérification, erreurs' },
+  { name: 'Logs IA', href: '/admin/logs', icon: '🔬', description: 'Prompts envoyés aux modèles, scores de vérification, erreurs' },
   { name: 'Utilisation API', href: '/admin/usage', icon: '📊', description: 'Voir les coûts et statistiques de génération' },
+  { name: 'Feedback', href: '/admin/feedback', icon: '💬', description: 'Bugs, suggestions et questions envoyés depuis l\'app' },
   // ── Équipe ─────────────────────────────────────────────────────────────────
   { name: 'Utilisateurs', href: '/admin/users', icon: '👥', description: 'Gérer les comptes et les rôles (graphiste / admin)' },
   // ── Référence ──────────────────────────────────────────────────────────────
@@ -49,10 +49,13 @@ export default function AdminPage() {
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
+          className="flex items-center justify-between mb-8"
         >
-          <h1 className="text-2xl font-bold text-text-primary">Panneau Admin</h1>
-          <p className="text-sm text-text-secondary mt-1">Configurer les paramètres HoorTRADS</p>
+          <div>
+            <h1 className="text-2xl font-bold text-text-primary">Panneau Admin</h1>
+            <p className="text-sm text-text-secondary mt-1">Configurer les paramètres HoorTRADS</p>
+          </div>
+          <Link href="/" className="text-sm text-brand-teal hover:text-brand-teal-hover">← Accueil</Link>
         </motion.div>
 
         <div className="space-y-3">
@@ -115,14 +118,6 @@ export default function AdminPage() {
           </button>
         </div>
 
-        <div className="mt-8 text-center">
-          <button
-            onClick={() => { window.location.href = '/' }}
-            className="text-sm text-brand-teal hover:text-brand-teal-hover transition-colors font-semibold block w-full text-center"
-          >
-            ← Retour à l&apos;accueil
-          </button>
-        </div>
       </div>
     </main>
   )
