@@ -424,8 +424,8 @@ export async function processJob(
       const batchFinalStatus = db.prepare('SELECT status FROM generation_jobs WHERE id = ?').get(jobId) as { status: string } | undefined
       if (batchFinalStatus?.status !== 'cancelled') {
         db.prepare("UPDATE generation_jobs SET status = 'done', updated_at = datetime('now') WHERE id = ?").run(jobId)
-        const jm = db.prepare('SELECT session_id FROM generation_jobs WHERE id = ?').get(jobId) as { session_id: string } | undefined
-        if (jm) db.prepare("UPDATE sessions SET status = 'done', current_step = 'review', updated_at = datetime('now') WHERE id = ?").run(jm.session_id)
+        const jmSessionId = (db.prepare('SELECT session_id FROM generation_jobs WHERE id = ?').get(jobId) as { session_id: string } | undefined)?.session_id
+        if (jmSessionId) db.prepare("UPDATE sessions SET status = 'done', current_step = 'review', updated_at = datetime('now') WHERE id = ?").run(jmSessionId)
       }
       return
     }
@@ -474,9 +474,9 @@ export async function processJob(
 
     db.prepare("UPDATE generation_jobs SET status = 'done', updated_at = datetime('now') WHERE id = ?").run(jobId)
 
-    const jobMeta = db.prepare('SELECT session_id FROM generation_jobs WHERE id = ?').get(jobId) as { session_id: string } | undefined
-    if (jobMeta) {
-      db.prepare("UPDATE sessions SET status = 'done', current_step = 'review', updated_at = datetime('now') WHERE id = ?").run(jobMeta.session_id)
+    const jobMetaSessionId = (db.prepare('SELECT session_id FROM generation_jobs WHERE id = ?').get(jobId) as { session_id: string } | undefined)?.session_id
+    if (jobMetaSessionId) {
+      db.prepare("UPDATE sessions SET status = 'done', current_step = 'review', updated_at = datetime('now') WHERE id = ?").run(jobMetaSessionId)
     }
   } catch (err: unknown) {
     // Unhandled error in job processor — write to job config so it's visible in admin logs
