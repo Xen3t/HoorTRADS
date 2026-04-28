@@ -1,12 +1,12 @@
 module.exports = {
   apps: [
     {
-      name: 'hoortrad',
+      name: 'HoorTRADS',
       script: 'node_modules/.bin/next',
       args: 'start',
       env: {
         NODE_ENV: 'production',
-        PORT: 3000,
+        PORT: 3003,
       },
     },
   ],
