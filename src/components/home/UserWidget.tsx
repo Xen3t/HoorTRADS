@@ -104,6 +104,12 @@ export default function UserWidget() {
                       Panneau Admin
                     </a>
                   )}
+                  <a
+                    href="/archives"
+                    className="block w-full text-left px-4 py-2.5 text-sm text-text-secondary hover:bg-surface hover:text-text-primary transition-colors"
+                  >
+                    Archives
+                  </a>
                   <button
                     onClick={() => setShowChangePwd(true)}
                     className="w-full text-left px-4 py-2.5 text-sm text-text-secondary hover:bg-surface hover:text-text-primary transition-colors"

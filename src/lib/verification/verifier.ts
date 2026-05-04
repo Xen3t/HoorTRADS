@@ -1,9 +1,11 @@
 import fs from 'fs'
 import path from 'path'
 import { GoogleGenerativeAI } from '@google/generative-ai'
+import type { ChatCompletionContentPart } from 'openai/resources/chat/completions'
 import { getDb } from '@/lib/db/database'
 import { getAppConfig } from '@/lib/db/queries'
 import { getModel } from '@/lib/gemini/gemini-client'
+import { inferProvider, isTestModel } from '@/lib/provider-utils'
 
 export interface TaskVerificationResult {
   taskId: string
@@ -41,6 +43,59 @@ function getApiKey(): string {
 function getMimeType(filePath: string): string {
   const ext = path.extname(filePath).toLowerCase()
   return ({ '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp' })[ext] || 'image/jpeg'
+}
+
+function isBackupEnabled(): boolean {
+  try {
+    const val = getAppConfig(getDb(), 'backup_enabled')
+    if (val === null || val === undefined) return true
+    return val === 'true' || val === '1'
+  } catch { return true }
+}
+
+function getPrimaryVerifyModel(): string {
+  try {
+    const db = getDb()
+    return getAppConfig(db, 'primary_model_verify') || getModel('model_verify')
+  } catch { return getModel('model_verify') }
+}
+
+function getBackupVerifyModel(): string {
+  try { return getAppConfig(getDb(), 'backup_model_verify') || '' } catch { return '' }
+}
+
+async function callVerifyModel(
+  modelId: string,
+  prompt: string,
+  imageData?: { base64: string; mimeType: string }
+): Promise<string> {
+  if (isTestModel(modelId)) throw new Error('TEST model — toujours en échec (test backup)')
+  const provider = inferProvider(modelId)
+  if (provider === 'openai') {
+    const { default: OpenAI } = await import('openai')
+    const key = (() => { try { return getAppConfig(getDb(), 'openai_api_key') || process.env.OPENAI_API_KEY || null } catch { return null } })()
+    if (!key) throw new Error('OpenAI key not configured')
+    const openai = new OpenAI({ apiKey: key })
+    const content: ChatCompletionContentPart[] = imageData
+      ? [
+          { type: 'text', text: prompt },
+          { type: 'image_url', image_url: { url: `data:${imageData.mimeType};base64,${imageData.base64}` } },
+        ]
+      : [{ type: 'text', text: prompt }]
+    const res = await openai.chat.completions.create({
+      model: modelId,
+      messages: [{ role: 'user', content }],
+    })
+    return res.choices[0]?.message?.content?.trim() || ''
+  }
+  // Gemini
+  const client = new GoogleGenerativeAI(getApiKey())
+  const model = client.getGenerativeModel({ model: modelId, generationConfig: { temperature: 0.1 } })
+  const parts = imageData
+    ? [{ text: prompt }, { inlineData: { mimeType: imageData.mimeType, data: imageData.base64 } }]
+    : [{ text: prompt }]
+  const response = await model.generateContent({ contents: [{ role: 'user', parts }] })
+  return response.response.text().trim()
 }
 
 /**
@@ -105,43 +160,40 @@ Détail:
 Commentaire: [1 à 3 phrases maximum]
 Correction proposée: [uniquement si verdict = LIMITE ou À CORRIGER, sinon écrire "RAS. Le texte est clair et correctement traduit"]`
 
-  const client = new GoogleGenerativeAI(getApiKey())
-  const model = client.getGenerativeModel({
-    model: getModel('model_verify'),
-    generationConfig: { temperature: 0.1 },
-  })
+  const primaryModel = getPrimaryVerifyModel()
+  const backupModel = isBackupEnabled() ? getBackupVerifyModel() : ''
 
+  let raw = ''
   try {
-    const response = await model.generateContent({
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-    })
-    const raw = response.response.text().trim()
-
-    const verdictMatch = raw.match(/Verdict\s*:\s*(VALIDE|LIMITE|À CORRIGER)/i)
-    const noteMatch = raw.match(/Note finale\s*:\s*(\d)\/5/)
-    const commentaireMatch = raw.match(/Commentaire\s*:\s*(.+?)(?=\nCorrection proposée\s*:|$)/s)
-    const correctionMatch = raw.match(/Correction proposée\s*:\s*(.+?)$/s)
-
-    const verdict = verdictMatch?.[1]?.toUpperCase() || 'LIMITE'
-    const score = Math.max(0, Math.min(5, parseInt(noteMatch?.[1] || '3')))
-    const commentaire = commentaireMatch?.[1]?.trim() || ''
-    const correction = correctionMatch?.[1]?.trim() || ''
-
-    const issues: string[] = []
-    if (commentaire) issues.push(commentaire)
-    if (correction && correction !== 'RAS. Le texte est clair et correctement traduit') issues.push(`Correction : ${correction}`)
-
-    return { targetLanguage, score, verdict, commentaire, correction, issues }
+    raw = await callVerifyModel(primaryModel, prompt)
   } catch (err) {
-    return {
-      targetLanguage,
-      score: 0,
-      verdict: 'LIMITE',
-      commentaire: `Erreur : ${err instanceof Error ? err.message : 'unknown'}`,
-      correction: '',
-      issues: ['Verification failed'],
+    if (backupModel) {
+      try {
+        console.log('[verifier] primary verify failed, trying backup:', backupModel)
+        raw = await callVerifyModel(backupModel, prompt)
+      } catch (err2) {
+        return { targetLanguage, score: 0, verdict: 'LIMITE', commentaire: `Erreur: ${err2 instanceof Error ? err2.message : 'unknown'}`, correction: '', issues: ['Verification failed'] }
+      }
+    } else {
+      return { targetLanguage, score: 0, verdict: 'LIMITE', commentaire: `Erreur: ${err instanceof Error ? err.message : 'unknown'}`, correction: '', issues: ['Verification failed'] }
     }
   }
+
+  const verdictMatch = raw.match(/Verdict\s*:\s*(VALIDE|LIMITE|À CORRIGER)/i)
+  const noteMatch = raw.match(/Note finale\s*:\s*(\d)\/5/)
+  const commentaireMatch = raw.match(/Commentaire\s*:\s*(.+?)(?=\nCorrection proposée\s*:|$)/s)
+  const correctionMatch = raw.match(/Correction proposée\s*:\s*(.+?)$/s)
+
+  const verdict = verdictMatch?.[1]?.toUpperCase() || 'LIMITE'
+  const score = Math.max(0, Math.min(5, parseInt(noteMatch?.[1] || '3')))
+  const commentaire = commentaireMatch?.[1]?.trim() || ''
+  const correction = correctionMatch?.[1]?.trim() || ''
+
+  const issues: string[] = []
+  if (commentaire) issues.push(commentaire)
+  if (correction && correction !== 'RAS. Le texte est clair et correctement traduit') issues.push(`Correction : ${correction}`)
+
+  return { targetLanguage, score, verdict, commentaire, correction, issues }
 }
 
 export async function verifyTaskImage(
@@ -158,12 +210,6 @@ export async function verifyTaskImage(
   const imageBuffer = fs.readFileSync(imagePath)
   const base64Image = imageBuffer.toString('base64')
   const mimeType = getMimeType(imagePath)
-
-  const client = new GoogleGenerativeAI(getApiKey())
-  const model = client.getGenerativeModel({
-    model: getModel('model_verify'),
-    generationConfig: { temperature: 0.1 },
-  })
 
   const prompt = `Tu es un validateur de texte publicitaire.
 
@@ -214,54 +260,64 @@ Commentaire: [1 à 3 phrases maximum]
 Correction proposée: [uniquement si verdict = LIMITE ou À CORRIGER, sinon écrire "RAS. Le texte est clair et correctement traduit"]
 Texte extrait: {"<zone>": "<texte visible>", ...} (JSON sur une seule ligne — toutes les zones de texte visibles dans l'image, hors logos)`
 
+  const primaryModel = getPrimaryVerifyModel()
+  const backupModel = isBackupEnabled() ? getBackupVerifyModel() : ''
+  const imageData = { base64: base64Image, mimeType }
+
+  let raw = ''
   try {
-    const response = await model.generateContent({
-      contents: [{
-        role: 'user',
-        parts: [
-          { text: prompt },
-          { inlineData: { mimeType, data: base64Image } },
-        ],
-      }],
-    })
-
-    const raw = response.response.text().trim()
-
-    const verdictMatch = raw.match(/Verdict\s*:\s*(VALIDE|LIMITE|À CORRIGER)/i)
-    const noteMatch = raw.match(/Note finale\s*:\s*(\d)\/5/)
-    const commentaireMatch = raw.match(/Commentaire\s*:\s*(.+?)(?=\nCorrection proposée\s*:|$)/s)
-    const correctionMatch = raw.match(/Correction proposée\s*:\s*(.+?)(?=\nTexte extrait\s*:|$)/s)
-    const texteExtraitMatch = raw.match(/Texte extrait\s*:\s*(\{.+?\})/s)
-
-    const verdict = verdictMatch?.[1]?.toUpperCase() || 'LIMITE'
-    const score = Math.max(0, Math.min(5, parseInt(noteMatch?.[1] || '3')))
-
-    const commentaire = commentaireMatch?.[1]?.trim() || ''
-    const correction = correctionMatch?.[1]?.trim() || ''
-
-    let extractedText: Record<string, string> = {}
-    if (texteExtraitMatch?.[1]) {
-      try { extractedText = JSON.parse(texteExtraitMatch[1]) } catch {}
-    }
-
-    const issues: string[] = []
-    if (commentaire) issues.push(commentaire)
-    if (correction && correction !== 'RAS. Le texte est clair et correctement traduit') issues.push(`Correction : ${correction}`)
-
-    return {
-      taskId,
-      score,
-      extractedText,
-      issues,
-      summary: `${verdict} — ${commentaire || 'Aucun commentaire'}`,
-    }
+    raw = await callVerifyModel(primaryModel, prompt, imageData)
   } catch (err) {
-    return {
-      taskId,
-      score: 0,
-      extractedText: {},
-      issues: [`Verification failed: ${err instanceof Error ? err.message : 'unknown error'}`],
-      summary: 'Could not analyze image',
+    if (backupModel) {
+      try {
+        console.log('[verifier] primary verify (image) failed, trying backup:', backupModel)
+        raw = await callVerifyModel(backupModel, prompt, imageData)
+      } catch (err2) {
+        return {
+          taskId,
+          score: 0,
+          extractedText: {},
+          issues: [`Verification failed: ${err2 instanceof Error ? err2.message : 'unknown error'}`],
+          summary: 'Could not analyze image',
+        }
+      }
+    } else {
+      return {
+        taskId,
+        score: 0,
+        extractedText: {},
+        issues: [`Verification failed: ${err instanceof Error ? err.message : 'unknown error'}`],
+        summary: 'Could not analyze image',
+      }
     }
+  }
+
+  const verdictMatch = raw.match(/Verdict\s*:\s*(VALIDE|LIMITE|À CORRIGER)/i)
+  const noteMatch = raw.match(/Note finale\s*:\s*(\d)\/5/)
+  const commentaireMatch = raw.match(/Commentaire\s*:\s*(.+?)(?=\nCorrection proposée\s*:|$)/s)
+  const correctionMatch = raw.match(/Correction proposée\s*:\s*(.+?)(?=\nTexte extrait\s*:|$)/s)
+  const texteExtraitMatch = raw.match(/Texte extrait\s*:\s*(\{.+?\})/s)
+
+  const verdict = verdictMatch?.[1]?.toUpperCase() || 'LIMITE'
+  const score = Math.max(0, Math.min(5, parseInt(noteMatch?.[1] || '3')))
+
+  const commentaire = commentaireMatch?.[1]?.trim() || ''
+  const correction = correctionMatch?.[1]?.trim() || ''
+
+  let extractedText: Record<string, string> = {}
+  if (texteExtraitMatch?.[1]) {
+    try { extractedText = JSON.parse(texteExtraitMatch[1]) } catch {}
+  }
+
+  const issues: string[] = []
+  if (commentaire) issues.push(commentaire)
+  if (correction && correction !== 'RAS. Le texte est clair et correctement traduit') issues.push(`Correction : ${correction}`)
+
+  return {
+    taskId,
+    score,
+    extractedText,
+    issues,
+    summary: `${verdict} — ${commentaire || 'Aucun commentaire'}`,
   }
 }

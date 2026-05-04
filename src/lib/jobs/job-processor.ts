@@ -5,23 +5,29 @@ import { preValidateTranslations } from '@/lib/gemini/text-extractor'
 import type { ExpertTranslations, PreTranslationResult, ExtractedZone } from '@/lib/gemini/text-extractor'
 import { processBatch } from '@/lib/gemini/batch-client'
 import { getApiKey } from '@/lib/gemini/gemini-client'
+import { createBackupImageGenerator } from '@/lib/image-generator-factory'
+import { OpenAiImageClient } from '@/lib/openai/openai-image-client'
 
 // Returns the active verification mode from app config
 
 // NB2 (gemini-3.1-flash-image-preview) limits: 100 RPM, 200K TPM
 const CONCURRENCY_STANDARD = 20
 const REQUESTS_PER_MINUTE = 95
+// gpt-image-2: ~10 input-images/min max (documented Tier 3 limit)
+const REQUESTS_PER_MINUTE_OPENAI = 8
 
-// Sliding window rate limiter — ensures we never exceed REQUESTS_PER_MINUTE
+// Sliding window rate limiter — ensures we never exceed the per-minute limit
 class RateLimiter {
   private timestamps: number[] = []
+
+  constructor(private readonly limit: number = REQUESTS_PER_MINUTE) {}
 
   async acquire(): Promise<void> {
     const windowMs = 60_000
     const now = Date.now()
     // Remove expired timestamps
     this.timestamps = this.timestamps.filter((t) => now - t < windowMs)
-    if (this.timestamps.length < REQUESTS_PER_MINUTE) {
+    if (this.timestamps.length < this.limit) {
       this.timestamps.push(Date.now())
       return
     }
@@ -46,7 +52,8 @@ async function processTask(
   customLangPrompt: string | undefined,
   resolution: string,
   expertTranslations?: ExpertTranslations,
-  extractedZones?: Record<string, ExtractedZone>
+  extractedZones?: Record<string, ExtractedZone>,
+  backupGenerator?: ImageGenerator
 ): Promise<void> {
   db.prepare("UPDATE generation_tasks SET status = 'running' WHERE id = ?").run(task.id)
 
@@ -82,6 +89,13 @@ async function processTask(
       await new Promise((r) => setTimeout(r, 5000))
       result = await generator.generateImage(task.source_image_path, task.target_language, prompt, resolution)
       if (result.success) console.log(`[processTask] ${task.id} retry OK`)
+    }
+
+    // If still failing and a backup generator is configured, try it
+    if (!result.success && backupGenerator) {
+      console.log(`[processTask] ${task.id} primary failed — switching to backup generator`)
+      result = await backupGenerator.generateImage(task.source_image_path, task.target_language, prompt, resolution)
+      if (result.success) console.log(`[processTask] ${task.id} backup generator OK`)
     }
 
     if (result.success) {
@@ -194,7 +208,8 @@ export async function renderJobTasks(
         }
       }
     } else {
-      const rateLimiter = new RateLimiter()
+      const backupGenerator = createBackupImageGenerator()
+      const rateLimiter = new RateLimiter(generator instanceof OpenAiImageClient ? REQUESTS_PER_MINUTE_OPENAI : REQUESTS_PER_MINUTE)
       for (let i = 0; i < tasks.length; i += CONCURRENCY_STANDARD) {
         const jobStatus = db.prepare('SELECT status FROM generation_jobs WHERE id = ?').get(jobId) as { status: string } | undefined
         if (jobStatus?.status === 'cancelled') break
@@ -204,7 +219,7 @@ export async function renderJobTasks(
             await rateLimiter.acquire()
             const expertTranslations = imagePreTranslations.get(task.source_image_path)
             const customLangPrompt = customPromptsByLang[task.target_language] || undefined
-            return processTask(db, jobId, task, generator, customBasePrompt, customLangPrompt, resolution, expertTranslations, extractedZones)
+            return processTask(db, jobId, task, generator, customBasePrompt, customLangPrompt, resolution, expertTranslations, extractedZones, backupGenerator ?? undefined)
           })
         )
       }
@@ -431,7 +446,8 @@ export async function processJob(
     }
 
     // ── STANDARD MODE — process in parallel batches ────────────────────────
-    const rateLimiter = new RateLimiter()
+    const backupGenerator = createBackupImageGenerator()
+    const rateLimiter = new RateLimiter(generator instanceof OpenAiImageClient ? REQUESTS_PER_MINUTE_OPENAI : REQUESTS_PER_MINUTE)
 
     for (let i = 0; i < tasks.length; i += CONCURRENCY) {
       const jobStatus = db.prepare('SELECT status FROM generation_jobs WHERE id = ?').get(jobId) as { status: string } | undefined
@@ -447,7 +463,8 @@ export async function processJob(
           return processTask(
             db, jobId, task, generator,
             customBasePrompt, customLangPrompt,
-            resolution, expertTranslations, taskExtractedZones
+            resolution, expertTranslations, taskExtractedZones,
+            backupGenerator ?? undefined
           )
         })
       )

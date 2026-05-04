@@ -4,11 +4,20 @@ import type { Session, CreateSessionInput } from '@/types/session'
 
 export function getRecentSessions(db: Database.Database, limit = 10, userId?: string | null): Session[] {
   if (userId) {
-    const stmt = db.prepare('SELECT * FROM sessions WHERE user_id = ? ORDER BY rowid DESC LIMIT ?')
+    const stmt = db.prepare('SELECT * FROM sessions WHERE user_id = ? AND (archived IS NULL OR archived = 0) ORDER BY rowid DESC LIMIT ?')
     return stmt.all(userId, limit) as Session[]
   }
-  const stmt = db.prepare('SELECT * FROM sessions ORDER BY rowid DESC LIMIT ?')
+  const stmt = db.prepare('SELECT * FROM sessions WHERE (archived IS NULL OR archived = 0) ORDER BY rowid DESC LIMIT ?')
   return stmt.all(limit) as Session[]
+}
+
+export function getArchivedSessions(db: Database.Database, userId?: string | null): Session[] {
+  if (userId) {
+    const stmt = db.prepare('SELECT * FROM sessions WHERE user_id = ? AND archived = 1 ORDER BY rowid DESC')
+    return stmt.all(userId) as Session[]
+  }
+  const stmt = db.prepare('SELECT * FROM sessions WHERE archived = 1 ORDER BY rowid DESC')
+  return stmt.all() as Session[]
 }
 
 export function createSession(db: Database.Database, input: CreateSessionInput): Session {
@@ -90,6 +99,10 @@ export function updateSession(
   if (data.config !== undefined) {
     fields.push('config = ?')
     values.push(data.config)
+  }
+  if (data.archived !== undefined) {
+    fields.push('archived = ?')
+    values.push(data.archived)
   }
 
   if (fields.length === 0) return

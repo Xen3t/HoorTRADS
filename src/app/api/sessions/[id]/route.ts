@@ -20,7 +20,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 }
 
 // Only these fields can be updated via PATCH
-const ALLOWED_PATCH_FIELDS = ['name', 'status', 'image_count', 'market_count', 'current_step', 'source_path', 'config'] as const
+const ALLOWED_PATCH_FIELDS = ['name', 'status', 'image_count', 'market_count', 'current_step', 'source_path', 'config', 'archived'] as const
 
 export async function PATCH(
   request: NextRequest,

@@ -4,6 +4,9 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 
 const GEMINI_MODELS = [
+  { group: 'Debug', models: [
+    { value: 'TEST', label: 'TEST — Toujours en échec (test backup)' },
+  ]},
   { group: 'Gemini 3.1 — Texte', models: [
     { value: 'gemini-3.1-pro-preview', label: 'Gemini 3.1 Pro (preview)' },
     { value: 'gemini-3.1-flash-lite-preview', label: 'Gemini 3.1 Flash-Lite (preview)' },
@@ -131,9 +134,11 @@ const ALL_GEMINI_VALUES = GEMINI_MODELS.flatMap((g) => g.models.map((m) => m.val
 const ALL_OPENAI_VALUES = OPENAI_MODELS.flatMap((g) => g.models.map((m) => m.value))
 
 function isImageModel(modelId: string): boolean {
+  if (modelId === 'TEST') return false
   return modelId.toLowerCase().includes('image')
 }
 function isTextModel(modelId: string): boolean {
+  if (modelId === 'TEST') return true
   return !isImageModel(modelId) && !modelId.startsWith('o')
 }
 function isGeminiImageModel(modelId: string): boolean {
@@ -366,7 +371,11 @@ export default function AdminApiConfigPage() {
                 {steps.map((s) => {
                   const configKey = `${prefix}_model_${s.key}` as keyof ApiConfig
                   const currentValue = (config[configKey] as string) || ''
-                  const filter = s.key === 'generate' ? isImageModel : s.key === 'verify' ? (v: string) => !isImageModel(v) : isTextModel
+                  const filter = s.key === 'generate'
+                    ? (v: string) => v === 'TEST' || isImageModel(v)
+                    : s.key === 'verify'
+                      ? (v: string) => v === 'TEST' || !isImageModel(v)
+                      : isTextModel
                   return (
                     <div key={s.key}>
                       <div className="flex items-center gap-2 mb-1">

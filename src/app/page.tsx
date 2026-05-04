@@ -30,7 +30,7 @@ export default function Home() {
   const [campaignName, setCampaignName] = useState('')
   const [sessions, setSessions] = useState<Session[]>([])
   const [selectedFolders, setSelectedFolders] = useState<Set<string>>(new Set())
-  const [showAllSessions, setShowAllSessions] = useState(false)
+  const [hasArchives, setHasArchives] = useState(false)
 
 
   const ALL_FLAGS = ['de', 'es', 'it', 'gb', 'nl', 'pt', 'pl', 'se', 'be', 'cz', 'dk', 'fi', 'gr', 'hr', 'hu', 'ie', 'lt', 'lv', 'ro', 'si', 'sk', 'lu']
@@ -46,8 +46,29 @@ export default function Home() {
     let cancelled = false
     fetch('/api/sessions')
       .then((res) => res.json())
-      .then((data) => {
-        if (!cancelled && data.sessions) setSessions(data.sessions)
+      .then(async (data) => {
+        if (cancelled || !data.sessions) return
+        const all: Session[] = data.sessions
+        if (all.length > 3) {
+          const toArchive = all.slice(3)
+          await Promise.all(
+            toArchive.map((s) =>
+              fetch(`/api/sessions/${s.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ archived: 1 }),
+              })
+            )
+          )
+          if (!cancelled) {
+            setSessions(all.slice(0, 3))
+            setHasArchives(true)
+          }
+        } else {
+          if (!cancelled) setSessions(all)
+          const archived = await fetch('/api/sessions/archived').then((r) => r.json())
+          if (!cancelled) setHasArchives((archived.sessions?.length ?? 0) > 0)
+        }
       })
       .catch(() => {})
     return () => {
@@ -183,6 +204,37 @@ export default function Home() {
     }
   }
 
+  const handleSessionRename = async (session: Session, newName: string) => {
+    try {
+      const res = await fetch(`/api/sessions/${session.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newName }),
+      })
+      if (res.ok) {
+        setSessions((prev) => prev.map((s) => s.id === session.id ? { ...s, name: newName } : s))
+      }
+    } catch {
+      setToast({ message: 'Erreur lors du renommage. Réessayez.', variant: 'error' })
+    }
+  }
+
+  const handleSessionArchive = async (session: Session) => {
+    try {
+      const res = await fetch(`/api/sessions/${session.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ archived: 1 }),
+      })
+      if (res.ok) {
+        setSessions((prev) => prev.filter((s) => s.id !== session.id))
+        setHasArchives(true)
+      }
+    } catch {
+      setToast({ message: 'Erreur lors de l\'archivage. Réessayez.', variant: 'error' })
+    }
+  }
+
   const hasContent = folderData !== null || dragImages.length > 0
 
   const [toast, setToast] = useState<{ message: string; variant: 'error' | 'success' | 'info' } | null>(null)
@@ -245,7 +297,7 @@ export default function Home() {
             transition={{ duration: 0.5, delay: 0.4 }}
             className="mt-4 text-text-secondary text-base tracking-wide"
           >
-            Traduisez vos visuels publicitaires en un clic
+            Traduisez vos visuels publicitaires en quelques clics
           </motion.p>
           <motion.div
             initial={{ opacity: 0 }}
@@ -419,24 +471,34 @@ export default function Home() {
           >
             <h3 className="text-sm font-semibold text-text-secondary mb-3">Sessions récentes</h3>
             <div className="space-y-2">
-              {(showAllSessions ? sessions : sessions.slice(0, 3)).map((session, i) => (
+              {sessions.map((session, i) => (
                 <motion.div
                   key={session.id}
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3, delay: i * 0.05 }}
                 >
-                  <SessionCard session={session} onDelete={handleSessionDelete} />
+                  <SessionCard
+                    session={session}
+                    onDelete={handleSessionDelete}
+                    onRename={handleSessionRename}
+                    onArchive={handleSessionArchive}
+                  />
                 </motion.div>
               ))}
             </div>
-            {sessions.length > 3 && !showAllSessions && (
-              <button
-                onClick={() => setShowAllSessions(true)}
-                className="mt-2 text-xs text-text-disabled hover:text-text-secondary transition-colors"
+            {hasArchives && (
+              <a
+                href="/archives"
+                className="mt-2 text-xs text-text-disabled hover:text-text-secondary transition-colors flex items-center gap-1"
               >
-                Voir les {sessions.length - 3} autres sessions...
-              </button>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="21 8 21 21 3 21 3 8"/>
+                  <rect x="1" y="3" width="22" height="5"/>
+                  <line x1="10" y1="12" x2="14" y2="12"/>
+                </svg>
+                Voir vos archives
+              </a>
             )}
           </motion.div>
         )}

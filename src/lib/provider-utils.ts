@@ -18,3 +18,7 @@ export function isGeminiImageModel(modelId: string): boolean {
   const id = (modelId || '').toLowerCase()
   return id.includes('image') && inferProvider(id) === 'gemini'
 }
+
+export function isTestModel(modelId: string): boolean {
+  return (modelId || '').trim().toUpperCase() === 'TEST'
+}

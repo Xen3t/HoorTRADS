@@ -7,25 +7,40 @@ import { inferProvider, type Provider } from '@/lib/provider-utils'
 
 export type ImageProvider = Provider
 
-/**
- * Reads the primary image model from admin config, infers its provider, and returns the right client.
- * Falls back to backup if primary fails to construct AND backup is enabled.
- * Legacy keys are supported for backward compatibility.
- */
-export function getImageProvider(): ImageProvider {
+function getConfiguredModel(key: 'primary' | 'backup'): string {
   try {
     const db = getDb()
-    const primaryModel = getAppConfig(db, 'primary_model_generate') || getAppConfig(db, 'model_generate')
-    if (primaryModel) return inferProvider(primaryModel)
-    // Legacy fallback: explicit image_provider key
-    const legacy = getAppConfig(db, 'image_provider')
-    if (legacy === 'openai') return 'openai'
-  } catch {}
-  return 'gemini'
+    if (key === 'primary') {
+      return getAppConfig(db, 'primary_model_generate') || getAppConfig(db, 'model_generate') || 'gemini-3.1-flash-image-preview'
+    }
+    return getAppConfig(db, 'backup_model_generate') || ''
+  } catch { return key === 'primary' ? 'gemini-3.1-flash-image-preview' : '' }
+}
+
+function isBackupEnabled(): boolean {
+  try {
+    const val = getAppConfig(getDb(), 'backup_enabled')
+    if (val === null || val === undefined) return true
+    return val === 'true' || val === '1'
+  } catch { return true }
+}
+
+function createGeneratorForModel(modelId: string): ImageGenerator {
+  const provider = inferProvider(modelId)
+  // TEST routes to gemini (handled inside GeminiClient)
+  if (provider === 'openai') return new OpenAiImageClient(modelId)
+  return new GeminiClient(modelId)
 }
 
 export function createImageGenerator(): ImageGenerator {
-  const provider = getImageProvider()
-  if (provider === 'openai') return new OpenAiImageClient()
-  return new GeminiClient()
+  return createGeneratorForModel(getConfiguredModel('primary'))
+}
+
+export function createBackupImageGenerator(): ImageGenerator | null {
+  if (!isBackupEnabled()) return null
+  const backupModelId = getConfiguredModel('backup')
+  if (!backupModelId) return null
+  try {
+    return createGeneratorForModel(backupModelId)
+  } catch { return null }
 }

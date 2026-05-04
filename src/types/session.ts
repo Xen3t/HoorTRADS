@@ -18,6 +18,7 @@ export interface Session {
   current_step: string
   source_path: string | null
   config: string | null
+  archived?: number
 }
 
 export interface CreateSessionInput {

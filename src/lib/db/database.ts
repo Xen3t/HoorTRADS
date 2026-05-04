@@ -152,4 +152,8 @@ function runMigrations(database: Database.Database): void {
       database.exec(`ALTER TABLE ${table} ADD COLUMN ${column} TEXT`)
     }
   }
+
+  if (!hasColumn('sessions', 'archived')) {
+    database.exec(`ALTER TABLE sessions ADD COLUMN archived INTEGER NOT NULL DEFAULT 0`)
+  }
 }

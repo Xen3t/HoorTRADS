@@ -80,7 +80,7 @@ CRITICAL instructions:
 2. Translate ONLY these zones. Do not add, remove, or duplicate any text element
 3. Write as a professional native copywriter — idiomatic, not word-for-word`
 
-export async function openaiExtractZones(imagePath: string): Promise<{ zones: Record<string, ExtractedZone>; error?: string }> {
+export async function openaiExtractZones(imagePath: string, modelId?: string): Promise<{ zones: Record<string, ExtractedZone>; error?: string }> {
   const key = getOpenAiKey()
   if (!key) return { zones: {}, error: 'OpenAI key not configured' }
   if (!fs.existsSync(imagePath)) return { zones: {}, error: 'image not found' }
@@ -91,10 +91,11 @@ export async function openaiExtractZones(imagePath: string): Promise<{ zones: Re
   const dataUrl = `data:${mimeType};base64,${base64Image}`
 
   const client = new OpenAI({ apiKey: key })
+  const resolvedModel = modelId || getOpenAiModel('openai_model_extract')
   try {
-    console.log('[openai] calling extraction model:', getOpenAiModel('openai_model_extract'))
+    console.log('[openai] calling extraction model:', resolvedModel)
     const res = await client.chat.completions.create({
-      model: getOpenAiModel('openai_model_extract'),
+      model: resolvedModel,
       messages: [
         {
           role: 'user',
@@ -121,7 +122,8 @@ export async function openaiExtractZones(imagePath: string): Promise<{ zones: Re
 export async function openaiTranslateZones(
   frenchZones: Record<string, ExtractedZone>,
   targetLanguages: string[],
-  customPrompt?: string
+  customPrompt?: string,
+  modelId?: string
 ): Promise<{ translations: ExpertTranslations; error?: string }> {
   const key = getOpenAiKey()
   if (!key) return { translations: {}, error: 'OpenAI key not configured' }
@@ -150,10 +152,11 @@ Respond ONLY with valid JSON, no markdown:
   }
 
   const client = new OpenAI({ apiKey: key })
+  const resolvedModel = modelId || getOpenAiModel('openai_model_translate')
   try {
-    console.log('[openai] calling translation model:', getOpenAiModel('openai_model_translate'), '| langs:', targetLanguages)
+    console.log('[openai] calling translation model:', resolvedModel, '| langs:', targetLanguages)
     const res = await client.chat.completions.create({
-      model: getOpenAiModel('openai_model_translate'),
+      model: resolvedModel,
       messages: [{ role: 'user', content: prompt }],
       response_format: { type: 'json_object' },
     })

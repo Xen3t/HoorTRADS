@@ -3,6 +3,7 @@ import path from 'path'
 import { getDb } from '@/lib/db/database'
 import { getAppConfig } from '@/lib/db/queries'
 import type { ImageGenerator, GeneratedImage } from '@/types/generation'
+import { isTestModel } from '@/lib/provider-utils'
 
 const OUTPUT_DIR = path.join(process.cwd(), 'data', 'generated')
 const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta'
@@ -56,9 +57,11 @@ export function getModel(key: 'model_generate' | 'model_extract' | 'model_transl
 
 export class GeminiClient implements ImageGenerator {
   private apiKey: string
+  private modelId?: string
 
-  constructor() {
+  constructor(modelId?: string) {
     this.apiKey = getApiKey()
+    this.modelId = modelId
   }
 
   async generateImage(
@@ -69,6 +72,9 @@ export class GeminiClient implements ImageGenerator {
   ): Promise<GeneratedImage> {
     try {
       ensureOutputDir()
+
+      const modelId = this.modelId || getModel('model_generate')
+      if (isTestModel(modelId)) return { success: false, outputPath: '', error: 'TEST model — toujours en échec (test backup)' }
 
       const imageBuffer = fs.readFileSync(sourceImagePath)
       const base64Image = imageBuffer.toString('base64')
@@ -92,8 +98,6 @@ export class GeminiClient implements ImageGenerator {
           topK,
         },
       }
-
-      const modelId = getModel('model_generate')
 
       // Retry up to 2 times on network errors (fetch failed / connection reset)
       let res: Response | null = null
