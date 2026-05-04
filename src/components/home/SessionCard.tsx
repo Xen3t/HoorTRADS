@@ -7,7 +7,7 @@ import type { Session } from '@/types/session'
 interface SessionCardProps {
   session: Session
   onDelete: (session: Session) => void
-  onRename: (session: Session, newName: string) => void
+  onRename?: (session: Session, newName: string) => void
   onArchive?: (session: Session) => void
   onUnarchive?: (session: Session) => void
 }
@@ -71,7 +71,7 @@ export default function SessionCard({ session, onDelete, onRename, onArchive, on
 
   const confirmRename = () => {
     const trimmed = editName.trim()
-    if (trimmed && trimmed !== session.name) onRename(session, trimmed)
+    if (trimmed && trimmed !== session.name) onRename?.(session, trimmed)
     else setEditName(session.name)
     setIsEditing(false)
   }

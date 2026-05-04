@@ -150,7 +150,7 @@ export default function ArchivesPage() {
           <NotificationToast
             message={toast.message}
             variant={toast.variant}
-            onClose={() => setToast(null)}
+            onDismiss={() => setToast(null)}
           />
         )}
       </AnimatePresence>

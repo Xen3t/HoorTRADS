@@ -161,7 +161,7 @@ export class OpenAiImageClient implements ImageGenerator {
         }
       }
 
-      const b64 = result?.data?.[0]?.b64_json
+      const b64 = result && 'data' in result ? result.data?.[0]?.b64_json : undefined
       if (!b64) {
         return { success: false, outputPath: '', error: 'Aucune image dans la réponse OpenAI' }
       }
