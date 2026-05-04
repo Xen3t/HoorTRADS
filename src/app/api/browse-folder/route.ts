@@ -20,6 +20,38 @@ interface FolderEntry {
 const ALL_DRIVE_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
 const ALLOWED_USER_FOLDERS = ['Desktop', 'Downloads', 'Documents']
 
+// Parse NETWORK_SHARES env var: "\\SERVER\Share1|\\SERVER\Share2"
+function getNetworkSharesFromEnv(): string[] {
+  return (process.env.NETWORK_SHARES || '').split('|').map((s) => s.trim()).filter(Boolean)
+}
+
+// Parse DRIVE_LETTER_MAP env var: "M:=\\SERVER\Share1,N:=\\SERVER\Share2"
+function getDriveLetterMap(): Record<string, string> {
+  const map: Record<string, string> = {}
+  for (const entry of (process.env.DRIVE_LETTER_MAP || '').split(',')) {
+    const eqIdx = entry.indexOf('=')
+    if (eqIdx === -1) continue
+    const letter = entry.slice(0, eqIdx).trim().toUpperCase().replace(/:$/, '')
+    const unc = entry.slice(eqIdx + 1).trim()
+    if (letter && unc) map[letter] = unc
+  }
+  return map
+}
+
+// Convert a drive-letter path to UNC using DRIVE_LETTER_MAP, if applicable
+function applyDriveLetterMap(inputPath: string): string {
+  const map = getDriveLetterMap()
+  const match = inputPath.match(/^([A-Za-z]):[/\\](.*)$/)
+  if (match) {
+    const letter = match[1].toUpperCase()
+    if (map[letter]) {
+      const rest = match[2].replace(/\//g, '\\')
+      return rest ? `${map[letter]}\\${rest}` : map[letter]
+    }
+  }
+  return inputPath
+}
+
 // DriveType values from Win32_LogicalDisk:
 // 2=Removable, 3=Local, 4=Network, 5=CD-ROM
 const DRIVE_TYPE_LABEL: Record<number, string> = {
@@ -97,8 +129,11 @@ export async function GET(request: NextRequest) {
   try {
     const folderPath = request.nextUrl.searchParams.get('path')
 
+    // Convert drive letter to UNC if DRIVE_LETTER_MAP has a matching entry
+    const effectivePath = folderPath ? applyDriveLetterMap(folderPath) : folderPath
+
     // If no path provided, return common root locations (Windows drives + user folders)
-    if (!folderPath) {
+    if (!effectivePath) {
       const roots: FolderEntry[] = []
 
       // Add all available Windows drives (including network drives mapped as letters)
@@ -126,6 +161,19 @@ export async function GET(request: NextRequest) {
         })
       }
 
+      // Add UNC shares from NETWORK_SHARES env var
+      for (const share of getNetworkSharesFromEnv()) {
+        const shareName = share.replace(/^\\\\[^\\]+\\/, '').replace(/\$$/, '').replace(/_/g, ' ')
+        roots.push({
+          name: `${shareName}  (${share})`,
+          path: share,
+          isDirectory: true,
+          label: shareName,
+          driveType: 'Réseau',
+          uncPath: share,
+        })
+      }
+
       // Add user Desktop and Downloads
       const home = os.homedir()
       for (const folder of ALLOWED_USER_FOLDERS) {
@@ -145,19 +193,19 @@ export async function GET(request: NextRequest) {
     // For UNC paths, realpath can fail on some systems — fall back to normalized path
     let resolvedPath: string
     try {
-      resolvedPath = await realpath(folderPath)
+      resolvedPath = await realpath(effectivePath)
     } catch {
-      if (isUncPath(folderPath)) {
+      if (isUncPath(effectivePath)) {
         // UNC path: verify it's accessible via stat, then use it as-is
         try {
-          const s = await stat(folderPath)
+          const s = await stat(effectivePath)
           if (!s.isDirectory()) return NextResponse.json({ error: 'Not a directory' }, { status: 400 })
-          resolvedPath = path.normalize(folderPath)
+          resolvedPath = path.normalize(effectivePath)
         } catch {
-          return NextResponse.json({ error: `Chemin réseau inaccessible : "${folderPath}"` }, { status: 404 })
+          return NextResponse.json({ error: `Chemin réseau inaccessible : "${effectivePath}"` }, { status: 404 })
         }
       } else {
-        return NextResponse.json({ error: `Chemin introuvable : "${folderPath}"` }, { status: 404 })
+        return NextResponse.json({ error: `Chemin introuvable : "${effectivePath}"` }, { status: 404 })
       }
     }
 

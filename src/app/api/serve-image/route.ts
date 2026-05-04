@@ -7,6 +7,27 @@ function isUncPath(p: string): boolean {
   return /^\\\\[^\\]+\\[^\\]+/.test(p) || /^\/\/[^/]+\/[^/]+/.test(p)
 }
 
+function applyDriveLetterMap(inputPath: string): string {
+  const raw = process.env.DRIVE_LETTER_MAP || ''
+  const map: Record<string, string> = {}
+  for (const entry of raw.split(',')) {
+    const eqIdx = entry.indexOf('=')
+    if (eqIdx === -1) continue
+    const letter = entry.slice(0, eqIdx).trim().toUpperCase().replace(/:$/, '')
+    const unc = entry.slice(eqIdx + 1).trim()
+    if (letter && unc) map[letter] = unc
+  }
+  const match = inputPath.match(/^([A-Za-z]):[/\\](.*)$/)
+  if (match) {
+    const letter = match[1].toUpperCase()
+    if (map[letter]) {
+      const rest = match[2].replace(/\//g, '\\')
+      return rest ? `${map[letter]}\\${rest}` : map[letter]
+    }
+  }
+  return inputPath
+}
+
 function isPathAllowed(absPath: string, generatedDir: string): boolean {
   // Always allow our own generated images
   if (absPath.startsWith(generatedDir)) return true
@@ -29,19 +50,20 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Path required' }, { status: 400 })
   }
 
+  const effectivePath = applyDriveLetterMap(filePath)
   const generatedDir = path.join(process.cwd(), 'data', 'generated')
 
-  if (!fs.existsSync(filePath)) {
+  if (!fs.existsSync(effectivePath)) {
     return NextResponse.json({ error: 'File not found' }, { status: 404 })
   }
 
   // Resolve real path — fall back to normalized for UNC paths (realpath can fail on some)
   let resolved: string
   try {
-    resolved = fs.realpathSync(filePath)
+    resolved = fs.realpathSync(effectivePath)
   } catch {
-    if (isUncPath(filePath)) {
-      resolved = path.normalize(filePath)
+    if (isUncPath(effectivePath)) {
+      resolved = path.normalize(effectivePath)
     } else {
       return NextResponse.json({ error: 'Cannot resolve path' }, { status: 404 })
     }
