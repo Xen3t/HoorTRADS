@@ -1,3 +1,4 @@
+import packageJson from '../../package.json'
 import type { Metadata } from 'next'
 import { Titillium_Web } from 'next/font/google'
 import { headers, cookies } from 'next/headers'
@@ -58,7 +59,7 @@ export default async function RootLayout({
       <body className="min-h-full flex flex-col">
         <div className="flex-1">{children}</div>
         <footer className="flex items-center justify-between px-8 py-3 text-[11px] text-text-disabled border-t border-border/50">
-          <span>© 2026 - HOORTRADE</span>
+          <span>© 2026 - HOORTRADE <span className="opacity-50 ml-1">v{packageJson.version}</span></span>
           <UserBar />
         </footer>
         {showFeedback && <FeedbackButton />}

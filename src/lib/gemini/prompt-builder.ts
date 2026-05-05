@@ -4,6 +4,8 @@ import type { ExtractedZone } from '@/lib/gemini/text-extractor'
 
 const LONG_WORD_LANGUAGES = ['de', 'fi', 'hu', 'nl', 'hr', 'el']
 
+const LOGO_ZONE_LABELS = ['brand_name', 'brand', 'logo', 'marque', 'brand_logo']
+
 const LANGUAGE_NAMES: Record<string, string> = {
   fr: 'French', nl: 'Dutch', de: 'German', cs: 'Czech', da: 'Danish',
   es: 'Spanish', fi: 'Finnish', en: 'English', el: 'Greek', hr: 'Croatian',
@@ -47,7 +49,10 @@ export function buildGoogleModePrompt(
     parts.push(`IMPORTANT corrections to apply:\n${customPrompt.trim()}`)
   }
 
+  const logoZones = Object.keys(translations).filter((zone) => LOGO_ZONE_LABELS.includes(zone))
+
   const textList = Object.entries(translations)
+    .filter(([zone]) => !LOGO_ZONE_LABELS.includes(zone))
     .map(([zone, text]) => {
       const z = extractedZones?.[zone]
       if (z) {
@@ -57,11 +62,16 @@ export function buildGoogleModePrompt(
     })
     .join('\n')
 
+  const logoRule = logoZones.length > 0
+    ? `- Brand logos and typographic logos (${logoZones.join(', ')}) are already correct in the source image — do not redraw, alter, or re-render them in any way\n`
+    : ''
+
   parts.push(
     `Reproduce this French advertising image adapted to ${langName}.\n\n` +
     `A language expert has pre-translated all text zones. Render each one exactly as quoted:\n\n` +
     `${textList}\n\n` +
     `Critical rules:\n` +
+    logoRule +
     getGoogleRenderRules()
   )
 

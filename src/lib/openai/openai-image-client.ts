@@ -31,27 +31,14 @@ function getMimeType(filePath: string): string {
 
 async function computeOpenAiParams(
   sourceImagePath: string,
-  resolution: string
+  _resolution: string
 ): Promise<{ size: string; quality: 'medium' | 'high'; croppedPath?: string }> {
-  const is2K = resolution === '2K' || resolution === '2k'
-  const quality = is2K ? 'high' : 'medium'
-  const targetLong = is2K ? 2048 : 1024
-
   const { width: srcW = 0, height: srcH = 0 } = await sharp(sourceImagePath).metadata()
   if (!srcW || !srcH) throw new Error('Dimensions source invalides')
 
-  let w: number, h: number
-  if (srcW >= srcH) {
-    w = targetLong
-    h = Math.round(targetLong / (srcW / srcH))
-  } else {
-    h = targetLong
-    w = Math.round(targetLong * (srcW / srcH))
-  }
-
-  // Arrondir aux multiples de 16
-  let wFinal = Math.round(w / 16) * 16 || 16
-  let hFinal = Math.round(h / 16) * 16 || 16
+  // Arrondir aux multiples de 16 (exigence OpenAI)
+  let wFinal = Math.round(srcW / 16) * 16 || 16
+  let hFinal = Math.round(srcH / 16) * 16 || 16
 
   // Clamp ratio ≤ 3:1
   if (Math.max(wFinal, hFinal) / Math.min(wFinal, hFinal) > 3) {
@@ -68,31 +55,16 @@ async function computeOpenAiParams(
     hFinal = Math.round(hFinal * scale / 16) * 16 || 16
   }
 
-  // Si le ratio source correspond déjà exactement → pas de crop
-  const ratioDiff = Math.abs((srcW / srcH) - (wFinal / hFinal))
-  if (ratioDiff < 0.001) {
-    return { size: `${wFinal}x${hFinal}`, quality }
+  // Budget pixel minimum OpenAI (~1MP)
+  const MIN_PIXELS = 1024 * 1024
+  if (wFinal * hFinal < MIN_PIXELS) {
+    const scale = Math.sqrt(MIN_PIXELS / (wFinal * hFinal))
+    wFinal = Math.round(wFinal * scale / 16) * 16 || 16
+    hFinal = Math.round(hFinal * scale / 16) * 16 || 16
   }
 
-  // Center-crop la source pour aligner le ratio cible exactement
-  const targetRatio = wFinal / hFinal
-  let cropW: number, cropH: number
-  if (srcW / srcH > targetRatio) {
-    cropH = srcH
-    cropW = Math.round(srcH * targetRatio)
-  } else {
-    cropW = srcW
-    cropH = Math.round(srcW / targetRatio)
-  }
-  const left = Math.floor((srcW - cropW) / 2)
-  const top = Math.floor((srcH - cropH) / 2)
-
-  const croppedPath = sourceImagePath.replace(/(\.[^.]+)$/, '_cropped_openai$1')
-  await sharp(sourceImagePath)
-    .extract({ left, top, width: cropW, height: cropH })
-    .toFile(croppedPath)
-
-  return { size: `${wFinal}x${hFinal}`, quality, croppedPath }
+  const quality = wFinal * hFinal >= 2048 * 2048 ? 'high' : 'medium'
+  return { size: `${wFinal}x${hFinal}`, quality }
 }
 
 export class OpenAiImageClient implements ImageGenerator {

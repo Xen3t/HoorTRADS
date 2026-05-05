@@ -23,6 +23,7 @@ export default function GeneratePage() {
   const [autoCorrectStats, setAutoCorrectStats] = useState<{ verified: number; corrected: number } | null>(null)
   const [showLogs, setShowLogs] = useState(false)
   const [currentPhase, setCurrentPhase] = useState<string | null>(null)
+  const [currentRPM, setCurrentRPM] = useState<number | null>(null)
   const verificationEnabledRef = useRef(false)
   const pollingRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -53,6 +54,7 @@ export default function GeneratePage() {
         const data = await res.json()
         if (data.jobId) {
           setProgress(data)
+          if (data.currentRPM != null) setCurrentRPM(data.currentRPM)
 
           // Fetch completed images for the thumbnail grid
           const imgRes = await fetch(`/api/generate/${jobId}/images`)
@@ -239,26 +241,29 @@ export default function GeneratePage() {
             animate={{ opacity: 1, y: 0 }}
             className="grid grid-cols-5 gap-2 mb-8"
           >
-            {completedImages.slice(0, 15).map((img, i) => (
-              <motion.div
-                key={img.id}
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.3, delay: i * 0.03 }}
-                className="bg-surface flex items-center justify-center aspect-square"
-              >
-                <img
-                  src={`/api/serve-image?path=${encodeURIComponent(img.output_path)}`}
-                  alt=""
-                  className="max-w-full max-h-full w-auto h-auto object-contain"
-                />
-              </motion.div>
-            ))}
-            {completedImages.length > 15 && (
-              <div className="aspect-square bg-surface rounded-[8px] flex items-center justify-center text-xs text-text-secondary font-semibold">
-                +{completedImages.length - 15}
-              </div>
-            )}
+            {completedImages.slice(0, 15).map((img, i) => {
+              const isLast = i === 14 && completedImages.length > 15
+              return (
+                <motion.div
+                  key={img.id}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.3, delay: i * 0.03 }}
+                  className="relative bg-surface flex items-center justify-center aspect-square"
+                >
+                  <img
+                    src={`/api/serve-image?path=${encodeURIComponent(img.output_path)}`}
+                    alt=""
+                    className="max-w-full max-h-full w-auto h-auto object-contain"
+                  />
+                  {isLast && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-[4px]">
+                      <span className="text-white text-sm font-bold">+{completedImages.length - 15}</span>
+                    </div>
+                  )}
+                </motion.div>
+              )
+            })}
           </motion.div>
         )}
 
@@ -298,7 +303,7 @@ export default function GeneratePage() {
         )}
 
         {/* Logs panel (appears below the action links) */}
-        <LogPanel jobId={jobId} isActive={!isDone} enabled={showLogs} onEnabledChange={setShowLogs} hideInternalToggle />
+        <LogPanel jobId={jobId} isActive={!isDone} enabled={showLogs} onEnabledChange={setShowLogs} hideInternalToggle currentRPM={currentRPM} />
 
         {/* Auto-redirect en cours — message discret */}
         <AnimatePresence>

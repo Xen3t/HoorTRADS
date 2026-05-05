@@ -77,6 +77,7 @@ export async function POST(request: NextRequest) {
     const maxSizeBytes = (parseFloat(compressionTarget) || 1) * 1024 * 1024
     let exportedCount = 0
     const errors: string[] = []
+    const writtenPaths = new Set<string>()
     // Track the first destination used for the success message
     let firstDestinationRoot: string | null = null
 
@@ -124,7 +125,14 @@ export async function POST(request: NextRequest) {
           const outputFilename = `${opName}_${dimensions}_${countryLabel}${ext}`
           const outputDir = path.join(destinationRoot, countryCode)
           fs.mkdirSync(outputDir, { recursive: true })
-          const outputPath = path.join(outputDir, outputFilename)
+          let outputPath = path.join(outputDir, outputFilename)
+          if (writtenPaths.has(outputPath)) {
+            // Two source images share the same detected dimensions — disambiguate with source base name
+            const sourceBase = sanitizeFilename(path.parse(task.source_image_name).name)
+            const disambiguated = `${opName}_${dimensions}_${sourceBase}_${countryLabel}${ext}`
+            outputPath = path.join(outputDir, disambiguated)
+          }
+          writtenPaths.add(outputPath)
           fs.writeFileSync(outputPath, processedBuffer)
           exportedCount++
         }

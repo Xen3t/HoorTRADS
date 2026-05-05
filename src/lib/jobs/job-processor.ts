@@ -4,39 +4,101 @@ import { buildTranslationPrompt, buildGoogleModePrompt } from '@/lib/gemini/prom
 import { preValidateTranslations } from '@/lib/gemini/text-extractor'
 import type { ExpertTranslations, PreTranslationResult, ExtractedZone } from '@/lib/gemini/text-extractor'
 import { processBatch } from '@/lib/gemini/batch-client'
-import { getApiKey } from '@/lib/gemini/gemini-client'
+import { getApiKey, GeminiClient } from '@/lib/gemini/gemini-client'
+import { uploadJobImages, deleteJobImages } from '@/lib/gemini/files-client'
+import type { GeminiFile } from '@/lib/gemini/files-client'
 import { createBackupImageGenerator } from '@/lib/image-generator-factory'
 import { OpenAiImageClient } from '@/lib/openai/openai-image-client'
 
 // Returns the active verification mode from app config
 
 // NB2 (gemini-3.1-flash-image-preview) limits: 100 RPM, 200K TPM
-const CONCURRENCY_STANDARD = 20
 const REQUESTS_PER_MINUTE = 95
+const MAX_CONCURRENCY = 80
 // gpt-image-2: ~10 input-images/min max (documented Tier 3 limit)
 const REQUESTS_PER_MINUTE_OPENAI = 8
+const MAX_CONCURRENCY_OPENAI = 10
 
-// Sliding window rate limiter — ensures we never exceed the per-minute limit
+// Hard cap on requests per minute — sliding window
 class RateLimiter {
   private timestamps: number[] = []
 
-  constructor(private readonly limit: number = REQUESTS_PER_MINUTE) {}
+  constructor(private readonly limit: number) {}
+
+  // Number of requests fired in the last 60s — live observed RPM
+  get observedRPM(): number {
+    const now = Date.now()
+    return this.timestamps.filter((t) => now - t < 60_000).length
+  }
 
   async acquire(): Promise<void> {
     const windowMs = 60_000
     const now = Date.now()
-    // Remove expired timestamps
     this.timestamps = this.timestamps.filter((t) => now - t < windowMs)
     if (this.timestamps.length < this.limit) {
       this.timestamps.push(Date.now())
       return
     }
-    // Wait until the oldest request expires + small buffer
     const waitMs = windowMs - (now - this.timestamps[0]) + 100
     await new Promise((resolve) => setTimeout(resolve, waitMs))
-    // Retry after wait
     return this.acquire()
   }
+}
+
+// Dynamic worker pool — concurrency adjusts after each task based on observed latency.
+// Formula: ideal_concurrency = ceil(targetRPM × avg_latency_s / 60)
+// onStats is called after each task with live metrics (throttled by caller).
+async function runDynamic(
+  tasks: GenerationTask[],
+  worker: (task: GenerationTask) => Promise<void>,
+  rateLimiter: RateLimiter,
+  targetRPM: number,
+  maxConcurrency: number,
+  isCancelled: () => boolean,
+  onStats?: (rpm: number, concurrency: number, avgLatencyMs: number) => void
+): Promise<void> {
+  const queue = [...tasks]
+  const latencies: number[] = []
+  let active = 0
+  let lastStatsSave = 0
+
+  const getConcurrency = (): number => {
+    if (latencies.length < 3) return Math.min(5, maxConcurrency)
+    const avgMs = latencies.reduce((a, b) => a + b) / latencies.length
+    const ideal = Math.ceil(targetRPM * avgMs / 60_000)
+    return Math.max(5, Math.min(maxConcurrency, ideal))
+  }
+
+  return new Promise<void>((resolve) => {
+    const tryDispatch = () => {
+      while (queue.length > 0 && active < getConcurrency() && !isCancelled()) {
+        const task = queue.shift()!
+        active++
+        const start = Date.now()
+        ;(async () => {
+          await rateLimiter.acquire()
+          await worker(task)
+        })().catch(() => {}).finally(() => {
+          latencies.push(Date.now() - start)
+          if (latencies.length > 50) latencies.shift()
+          active--
+          // Report stats at most every 3s to avoid DB spam
+          if (onStats) {
+            const now = Date.now()
+            if (now - lastStatsSave > 3_000) {
+              lastStatsSave = now
+              const avgMs = latencies.length > 0 ? Math.round(latencies.reduce((a, b) => a + b) / latencies.length) : 0
+              onStats(rateLimiter.observedRPM, getConcurrency(), avgMs)
+            }
+          }
+          if (queue.length === 0 && active === 0) resolve()
+          else tryDispatch()
+        })
+      }
+      if (queue.length === 0 && active === 0) resolve()
+    }
+    tryDispatch()
+  })
 }
 
 // In-memory tracking of running jobs to prevent duplicate processing
@@ -209,19 +271,42 @@ export async function renderJobTasks(
       }
     } else {
       const backupGenerator = createBackupImageGenerator()
-      const rateLimiter = new RateLimiter(generator instanceof OpenAiImageClient ? REQUESTS_PER_MINUTE_OPENAI : REQUESTS_PER_MINUTE)
-      for (let i = 0; i < tasks.length; i += CONCURRENCY_STANDARD) {
-        const jobStatus = db.prepare('SELECT status FROM generation_jobs WHERE id = ?').get(jobId) as { status: string } | undefined
-        if (jobStatus?.status === 'cancelled') break
-        const batch = tasks.slice(i, i + CONCURRENCY_STANDARD)
-        await Promise.allSettled(
-          batch.map(async (task) => {
-            await rateLimiter.acquire()
+      const isOpenAI = generator instanceof OpenAiImageClient
+      const rateLimiter = new RateLimiter(isOpenAI ? REQUESTS_PER_MINUTE_OPENAI : REQUESTS_PER_MINUTE)
+      const maxConcurrency = isOpenAI ? MAX_CONCURRENCY_OPENAI : MAX_CONCURRENCY
+
+      // Pre-upload source images to Gemini Files API — avoids re-encoding base64 for each request
+      let uploadedFiles: GeminiFile[] = []
+      if (generator instanceof GeminiClient) {
+        const apiKey = getApiKey()
+        const fileMap = await uploadJobImages(tasks.map((t) => t.source_image_path), apiKey)
+        uploadedFiles = [...fileMap.values()]
+        for (const [filePath, file] of fileMap) (generator as GeminiClient).setFileUri(filePath, file.uri)
+      }
+
+      try {
+        await runDynamic(
+          tasks,
+          (task) => {
             const expertTranslations = imagePreTranslations.get(task.source_image_path)
             const customLangPrompt = customPromptsByLang[task.target_language] || undefined
             return processTask(db, jobId, task, generator, customBasePrompt, customLangPrompt, resolution, expertTranslations, extractedZones, backupGenerator ?? undefined)
-          })
+          },
+          rateLimiter,
+          isOpenAI ? REQUESTS_PER_MINUTE_OPENAI : REQUESTS_PER_MINUTE,
+          maxConcurrency,
+          () => (db.prepare('SELECT status FROM generation_jobs WHERE id = ?').get(jobId) as { status: string } | undefined)?.status === 'cancelled',
+        (rpm, concurrency, avgLatencyMs) => {
+          try {
+            const jr = db.prepare('SELECT config FROM generation_jobs WHERE id = ?').get(jobId) as { config: string } | undefined
+            const jc = jr?.config ? JSON.parse(jr.config) : {}
+            jc.runtimeStats = { observedRPM: rpm, concurrency, avgLatencyMs }
+            db.prepare("UPDATE generation_jobs SET config = ?, updated_at = datetime('now') WHERE id = ?").run(JSON.stringify(jc), jobId)
+          } catch { /* best-effort */ }
+        }
         )
+      } finally {
+        if (uploadedFiles.length > 0) deleteJobImages(uploadedFiles, getApiKey()).catch(() => {})
       }
     }
 
@@ -267,7 +352,7 @@ export async function processJob(
     const resolution: string = jobConfig.resolution || '1K'
     const customPromptsByLang: Record<string, string> = jobConfig.customPrompts || {}
 
-    const CONCURRENCY = CONCURRENCY_STANDARD
+
 
     const rawTasks = db.prepare(
       "SELECT * FROM generation_tasks WHERE job_id = ? AND status = 'pending'"
@@ -445,29 +530,37 @@ export async function processJob(
       return
     }
 
-    // ── STANDARD MODE — process in parallel batches ────────────────────────
+    // ── STANDARD MODE — dynamic worker pool ───────────────────────────────
     const backupGenerator = createBackupImageGenerator()
-    const rateLimiter = new RateLimiter(generator instanceof OpenAiImageClient ? REQUESTS_PER_MINUTE_OPENAI : REQUESTS_PER_MINUTE)
+    const isOpenAI = generator instanceof OpenAiImageClient
+    const rateLimiter = new RateLimiter(isOpenAI ? REQUESTS_PER_MINUTE_OPENAI : REQUESTS_PER_MINUTE)
+    const maxConcurrency = isOpenAI ? MAX_CONCURRENCY_OPENAI : MAX_CONCURRENCY
 
-    for (let i = 0; i < tasks.length; i += CONCURRENCY) {
-      const jobStatus = db.prepare('SELECT status FROM generation_jobs WHERE id = ?').get(jobId) as { status: string } | undefined
-      if (jobStatus?.status === 'cancelled') break
+    // Pre-upload source images to Gemini Files API — avoids re-encoding base64 for each request
+    let uploadedFiles: GeminiFile[] = []
+    if (generator instanceof GeminiClient) {
+      const apiKey = getApiKey()
+      const fileMap = await uploadJobImages(tasks.map((t) => t.source_image_path), apiKey)
+      uploadedFiles = [...fileMap.values()]
+      for (const [filePath, file] of fileMap) (generator as GeminiClient).setFileUri(filePath, file.uri)
+    }
 
-      const batch = tasks.slice(i, i + CONCURRENCY)
-      await Promise.allSettled(
-        batch.map(async (task) => {
-          await rateLimiter.acquire()
+    try {
+      await runDynamic(
+        tasks,
+        (task) => {
           const expertTranslations = imagePreTranslations.get(task.source_image_path)
           const taskExtractedZones = imageExtractedZones.get(task.source_image_path)
           const customLangPrompt = customPromptsByLang[task.target_language] || undefined
-          return processTask(
-            db, jobId, task, generator,
-            customBasePrompt, customLangPrompt,
-            resolution, expertTranslations, taskExtractedZones,
-            backupGenerator ?? undefined
-          )
-        })
+          return processTask(db, jobId, task, generator, customBasePrompt, customLangPrompt, resolution, expertTranslations, taskExtractedZones, backupGenerator ?? undefined)
+        },
+        rateLimiter,
+        isOpenAI ? REQUESTS_PER_MINUTE_OPENAI : REQUESTS_PER_MINUTE,
+        maxConcurrency,
+        () => (db.prepare('SELECT status FROM generation_jobs WHERE id = ?').get(jobId) as { status: string } | undefined)?.status === 'cancelled'
       )
+    } finally {
+      if (uploadedFiles.length > 0) deleteJobImages(uploadedFiles, getApiKey()).catch(() => {})
     }
 
     // Check if cancelled
@@ -476,9 +569,9 @@ export async function processJob(
 
     // Record when image generation completed
     try {
-      const jr3 = db.prepare('SELECT config FROM generation_jobs WHERE id = ?').get(jobId) as { config: string } | undefined
-      if (jr3!.config) {
-        const jc3 = JSON.parse(jr3!.config)
+      const jr3Config = (db.prepare('SELECT config FROM generation_jobs WHERE id = ?').get(jobId) as { config?: string } | undefined)?.config ?? ''
+      if (jr3Config) {
+        const jc3 = JSON.parse(jr3Config)
         if (jc3.preTranslationLog) {
           jc3.preTranslationLog.timings = {
             ...(jc3.preTranslationLog.timings || {}),

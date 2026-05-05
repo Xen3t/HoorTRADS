@@ -58,10 +58,16 @@ export function getModel(key: 'model_generate' | 'model_extract' | 'model_transl
 export class GeminiClient implements ImageGenerator {
   private apiKey: string
   private modelId?: string
+  // filePath → Gemini file URI — pre-populated before job starts to avoid per-request base64 encoding
+  private fileUriCache = new Map<string, string>()
 
   constructor(modelId?: string) {
     this.apiKey = getApiKey()
     this.modelId = modelId
+  }
+
+  setFileUri(filePath: string, uri: string): void {
+    this.fileUriCache.set(filePath, uri)
   }
 
   async generateImage(
@@ -76,9 +82,13 @@ export class GeminiClient implements ImageGenerator {
       const modelId = this.modelId || getModel('model_generate')
       if (isTestModel(modelId)) return { success: false, outputPath: '', error: 'TEST model — toujours en échec (test backup)' }
 
-      const imageBuffer = fs.readFileSync(sourceImagePath)
-      const base64Image = imageBuffer.toString('base64')
       const mimeType = getMimeType(sourceImagePath)
+      const fileUri = this.fileUriCache.get(sourceImagePath)
+
+      // Use pre-uploaded file URI if available, otherwise fall back to inline base64
+      const imagePart = fileUri
+        ? { fileData: { mimeType, fileUri } }
+        : { inlineData: { mimeType, data: fs.readFileSync(sourceImagePath).toString('base64') } }
 
       const { temperature, topP, topK } = getGenerationParams()
 
@@ -87,7 +97,7 @@ export class GeminiClient implements ImageGenerator {
           role: 'user',
           parts: [
             { text: prompt },
-            { inlineData: { mimeType, data: base64Image } },
+            imagePart,
           ],
         }],
         generationConfig: {
@@ -125,11 +135,11 @@ export class GeminiClient implements ImageGenerator {
       }
 
       const data = await res.json()
-      const imagePart = data.candidates?.[0]?.content?.parts?.find(
+      const responsePart = data.candidates?.[0]?.content?.parts?.find(
         (p: { inlineData?: { data: string; mimeType: string } }) => p.inlineData
       )
 
-      if (!imagePart?.inlineData?.data) {
+      if (!responsePart?.inlineData?.data) {
         return { success: false, outputPath: '', error: 'Aucune image dans la réponse Gemini' }
       }
 
@@ -137,7 +147,7 @@ export class GeminiClient implements ImageGenerator {
       const outputFilename = `${sourceName}_${targetLanguage}_${Date.now()}.jpg`
       const outputPath = path.join(OUTPUT_DIR, outputFilename)
 
-      fs.writeFileSync(outputPath, Buffer.from(imagePart.inlineData.data, 'base64'))
+      fs.writeFileSync(outputPath, Buffer.from(responsePart.inlineData.data, 'base64'))
 
       return { success: true, outputPath }
     } catch (error: unknown) {

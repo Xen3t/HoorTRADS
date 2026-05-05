@@ -8,7 +8,8 @@ interface LogEvent {
   level: 'info' | 'success' | 'warning' | 'error'
   source: 'pipeline' | 'extract' | 'translate' | 'image' | 'system'
   provider?: 'gemini' | 'openai' | 'mixed'
-  modelLabel?: string // Exact model ID used at this step
+  modelLabel?: string
+  label?: string  // identifier shown separately (e.g. "1080x1080 — de")
   message: string
   details?: string
 }
@@ -232,7 +233,8 @@ export async function GET(
     }
 
     for (const t of tasks) {
-      const taskLabel = `${t.country_code}/${t.target_language}`
+      const format = t.source_image_name.match(/(\d+x\d+)/)?.[1] ?? t.source_image_name.replace(/\.[^.]+$/, '')
+      const taskLabel = `${format} — ${t.target_language}`
       const baseDetails = t.prompt_sent
         ? `Source : ${t.source_image_name}\n\n──────── Prompt envoyé ────────\n${t.prompt_sent.slice(0, 1500)}${t.prompt_sent.length > 1500 ? '\n…[tronqué]' : ''}`
         : `Source : ${t.source_image_name}`
@@ -244,7 +246,8 @@ export async function GET(
           source: 'image',
           provider: generateProvider,
           modelLabel: cfgGenerate || undefined,
-          message: `${taskLabel} — image générée`,
+          label: taskLabel,
+          message: 'Image générée',
           details: baseDetails,
         })
       } else if (t.status === 'failed') {
@@ -254,7 +257,8 @@ export async function GET(
           source: 'image',
           provider: generateProvider,
           modelLabel: cfgGenerate || undefined,
-          message: `${taskLabel} — échec`,
+          label: taskLabel,
+          message: 'Échec',
           details: `${t.error_message || 'Erreur inconnue'}\n\n${baseDetails}`,
         })
       } else if (t.status === 'running') {
@@ -264,7 +268,8 @@ export async function GET(
           source: 'image',
           provider: generateProvider,
           modelLabel: cfgGenerate || undefined,
-          message: `${taskLabel} — génération en cours...`,
+          label: taskLabel,
+          message: 'Génération en cours',
           details: baseDetails,
         })
       } else if (t.status === 'pending' && !allPending) {
@@ -273,7 +278,8 @@ export async function GET(
           level: 'info',
           source: 'image',
           modelLabel: cfgGenerate || undefined,
-          message: `${taskLabel} — en attente`,
+          label: taskLabel,
+          message: 'En attente',
         })
       }
     }

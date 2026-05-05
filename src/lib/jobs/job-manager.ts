@@ -117,6 +117,9 @@ export function getJobProgress(db: Database.Database, jobId: string) {
     completedCountries: completedCountries.map((c) => c.country_code),
     pendingCountries: pendingCountries.map((c) => c.country_code),
     langToCountries: jobConfig.langToCountries || {},
+    currentRPM: (jobConfig.runtimeStats?.observedRPM as number | undefined) ?? null,
+    currentConcurrency: (jobConfig.runtimeStats?.concurrency as number | undefined) ?? null,
+    avgLatencyMs: (jobConfig.runtimeStats?.avgLatencyMs as number | undefined) ?? null,
   }
 }
 

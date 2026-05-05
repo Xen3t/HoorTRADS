@@ -22,6 +22,7 @@ export default function ExportPage() {
   const [jobId, setJobId] = useState<string | null>(null)
   const [exportProgress, setExportProgress] = useState(0)
   const [serverResult, setServerResult] = useState<string | null>(null)
+  const [serverErrors, setServerErrors] = useState<string[]>([])
   const [driveError, setDriveError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -59,6 +60,7 @@ export default function ExportPage() {
   const handleExportServer = async () => {
     setIsExportingServer(true)
     setServerResult(null)
+    setServerErrors([])
     setExportProgress(0)
     const progressInterval = setInterval(() => {
       setExportProgress((p) => Math.min(p + Math.random() * 12, 90))
@@ -79,6 +81,7 @@ export default function ExportPage() {
       const data = await res.json()
       if (data.success) {
         setServerResult(data.message)
+        if (data.errors?.length) setServerErrors(data.errors)
         // Persiste le nom d'opération dans la config de session
         try {
           const existingConfig = session?.config ? JSON.parse(session.config) : {}
@@ -384,6 +387,19 @@ export default function ExportPage() {
             className="mt-4 p-4 bg-brand-green-light rounded-[12px] text-sm text-brand-green font-semibold text-center"
           >
             ✓ {serverResult}
+          </motion.div>
+        )}
+
+        {serverErrors.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-2 p-4 bg-brand-red-light rounded-[12px] text-xs text-brand-red"
+          >
+            <p className="font-semibold mb-1">{serverErrors.length} fichier(s) manquant(s) à l&apos;export :</p>
+            <ul className="list-disc list-inside space-y-0.5">
+              {serverErrors.map((e, i) => <li key={i}>{e}</li>)}
+            </ul>
           </motion.div>
         )}
 
