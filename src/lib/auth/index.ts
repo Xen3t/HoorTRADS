@@ -49,7 +49,7 @@ export function getSession(token: string): AuthUser | null {
     SELECT u.id, u.email, u.name, u.role
     FROM auth_sessions s
     JOIN users u ON u.id = s.user_id
-    WHERE s.token = ? AND s.expires_at > datetime('now')
+    WHERE s.token = ? AND s.expires_at > datetime('now') AND u.is_suspended = 0
   `).get(token) as AuthUser | undefined
   return row ?? null
 }
@@ -72,18 +72,18 @@ export function createUser(email: string, name: string, password: string, role: 
   return { id, email: email.toLowerCase().trim(), name: name.trim(), role }
 }
 
-export function getUserByEmail(email: string): { id: string; email: string; name: string; role: UserRole; password_hash: string } | null {
+export function getUserByEmail(email: string): { id: string; email: string; name: string; role: UserRole; password_hash: string; is_suspended: number } | null {
   const db = getDb()
-  const row = db.prepare('SELECT id, email, name, role, password_hash FROM users WHERE email = ?').get(email.toLowerCase().trim()) as {
-    id: string; email: string; name: string; role: UserRole; password_hash: string
+  const row = db.prepare('SELECT id, email, name, role, password_hash, is_suspended FROM users WHERE email = ?').get(email.toLowerCase().trim()) as {
+    id: string; email: string; name: string; role: UserRole; password_hash: string; is_suspended: number
   } | undefined
   return row ?? null
 }
 
-export function listUsers(): { id: string; email: string; name: string; role: UserRole; created_at: string }[] {
+export function listUsers(): { id: string; email: string; name: string; role: UserRole; created_at: string; is_suspended: number }[] {
   const db = getDb()
-  return db.prepare('SELECT id, email, name, role, created_at FROM users ORDER BY created_at ASC').all() as {
-    id: string; email: string; name: string; role: UserRole; created_at: string
+  return db.prepare('SELECT id, email, name, role, created_at, is_suspended FROM users ORDER BY role ASC, created_at ASC').all() as {
+    id: string; email: string; name: string; role: UserRole; created_at: string; is_suspended: number
   }[]
 }
 
@@ -98,10 +98,27 @@ export function updateUserRole(userId: string, role: UserRole): void {
   db.prepare('UPDATE users SET role = ? WHERE id = ?').run(role, userId)
 }
 
+export function updateUserInfo(userId: string, name: string, email: string): void {
+  const db = getDb()
+  db.prepare('UPDATE users SET name = ?, email = ? WHERE id = ?').run(name.trim(), email.toLowerCase().trim(), userId)
+}
+
 export function changePassword(userId: string, newPassword: string): void {
   const db = getDb()
   const hash = hashPassword(newPassword)
   db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(hash, userId)
+}
+
+export function suspendUser(userId: string): void {
+  const db = getDb()
+  db.prepare('UPDATE users SET is_suspended = 1 WHERE id = ?').run(userId)
+  // Invalidate all existing sessions immediately
+  db.prepare('DELETE FROM auth_sessions WHERE user_id = ?').run(userId)
+}
+
+export function unsuspendUser(userId: string): void {
+  const db = getDb()
+  db.prepare('UPDATE users SET is_suspended = 0 WHERE id = ?').run(userId)
 }
 
 // ── Seed initial admin if no users exist ────────────────────────────────────

@@ -9,6 +9,13 @@ interface User {
   name: string
   role: 'admin' | 'graphiste'
   created_at: string
+  is_suspended: number
+}
+
+interface EditForm {
+  name: string
+  email: string
+  password: string
 }
 
 export default function AdminUsersPage() {
@@ -19,6 +26,10 @@ export default function AdminUsersPage() {
   const [formError, setFormError] = useState('')
   const [saving, setSaving] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
+  const [editingUser, setEditingUser] = useState<User | null>(null)
+  const [editForm, setEditForm] = useState<EditForm>({ name: '', email: '', password: '' })
+  const [editError, setEditError] = useState('')
+  const [editSaving, setEditSaving] = useState(false)
 
   const load = () => {
     setLoading(true)
@@ -70,6 +81,47 @@ export default function AdminUsersPage() {
       body: JSON.stringify({ userId }),
     })
     setDeleteConfirm(null)
+    load()
+  }
+
+  const openEdit = (user: User) => {
+    setEditingUser(user)
+    setEditForm({ name: user.name, email: user.email, password: '' })
+    setEditError('')
+  }
+
+  const handleEditSave = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingUser) return
+    setEditSaving(true)
+    setEditError('')
+    try {
+      const body: Record<string, string> = { userId: editingUser.id, name: editForm.name, email: editForm.email }
+      if (editForm.password) body.password = editForm.password
+      const res = await fetch('/api/admin/users', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+      if (res.ok) {
+        setEditingUser(null)
+        load()
+      } else {
+        const d = await res.json()
+        setEditError(d.error || 'Erreur')
+      }
+    } finally {
+      setEditSaving(false)
+    }
+  }
+
+  const handleSuspend = async (user: User) => {
+    const suspend = !user.is_suspended
+    await fetch('/api/admin/users', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: user.id, suspend }),
+    })
     load()
   }
 
@@ -180,12 +232,19 @@ export default function AdminUsersPage() {
             ) : (
               <div className="divide-y divide-border">
                 {users.map((user) => (
-                  <div key={user.id} className="flex items-center gap-4 px-5 py-3.5 hover:bg-surface">
-                    <div className="w-9 h-9 rounded-full bg-brand-green/10 flex items-center justify-center shrink-0">
-                      <span className="text-brand-green font-bold text-sm">{user.name.charAt(0).toUpperCase()}</span>
+                  <div key={user.id} className={`flex items-center gap-3 px-5 py-3.5 hover:bg-surface ${user.is_suspended ? 'opacity-60' : ''}`}>
+                    <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${user.is_suspended ? 'bg-gray-200' : 'bg-brand-green/10'}`}>
+                      <span className={`font-bold text-sm ${user.is_suspended ? 'text-text-disabled' : 'text-brand-green'}`}>
+                        {user.name.charAt(0).toUpperCase()}
+                      </span>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-text-primary truncate">{user.name}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-semibold text-text-primary truncate">{user.name}</p>
+                        {user.is_suspended === 1 && (
+                          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 shrink-0">Suspendu</span>
+                        )}
+                      </div>
                       <p className="text-xs text-text-disabled truncate">{user.email}</p>
                     </div>
                     <select
@@ -196,9 +255,24 @@ export default function AdminUsersPage() {
                       <option value="graphiste">Graphiste</option>
                       <option value="admin">Admin</option>
                     </select>
-                    <span className="text-[10px] text-text-disabled whitespace-nowrap">
-                      {new Date(user.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
-                    </span>
+                    <button
+                      onClick={() => openEdit(user)}
+                      className="text-xs px-2 py-1 rounded-[6px] border border-border text-text-secondary hover:bg-surface hover:text-text-primary transition-colors"
+                      title="Modifier"
+                    >
+                      Modifier
+                    </button>
+                    <button
+                      onClick={() => handleSuspend(user)}
+                      className={`text-xs px-2 py-1 rounded-[6px] border transition-colors ${
+                        user.is_suspended
+                          ? 'border-brand-green text-brand-green hover:bg-brand-green/10'
+                          : 'border-amber-400 text-amber-600 hover:bg-amber-50'
+                      }`}
+                      title={user.is_suspended ? 'Réactiver' : 'Suspendre'}
+                    >
+                      {user.is_suspended ? 'Réactiver' : 'Suspendre'}
+                    </button>
                     {deleteConfirm === user.id ? (
                       <div className="flex items-center gap-1.5">
                         <button
@@ -230,6 +304,80 @@ export default function AdminUsersPage() {
           </div>
         )}
       </div>
+
+      {/* Edit user modal */}
+      <AnimatePresence>
+        {editingUser && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4"
+            onClick={(e) => { if (e.target === e.currentTarget) setEditingUser(null) }}
+          >
+            <motion.form
+              onSubmit={handleEditSave}
+              initial={{ opacity: 0, scale: 0.96, y: 8 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: 8 }}
+              className="bg-white rounded-[16px] border border-border p-6 w-full max-w-[420px] space-y-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div>
+                <p className="text-base font-bold text-text-primary">Modifier l&apos;utilisateur</p>
+                <p className="text-xs text-text-secondary mt-0.5">Laissez le mot de passe vide pour ne pas le changer.</p>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-text-secondary mb-1">Nom</label>
+                <input
+                  type="text"
+                  value={editForm.name}
+                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                  required
+                  className="w-full px-3 py-2 rounded-[8px] text-sm border border-border bg-surface focus:outline-none focus:border-brand-green"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-text-secondary mb-1">Email</label>
+                <input
+                  type="email"
+                  value={editForm.email}
+                  onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                  required
+                  className="w-full px-3 py-2 rounded-[8px] text-sm border border-border bg-surface focus:outline-none focus:border-brand-green"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-text-secondary mb-1">Nouveau mot de passe</label>
+                <input
+                  type="password"
+                  value={editForm.password}
+                  onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
+                  placeholder="Laisser vide pour ne pas modifier"
+                  className="w-full px-3 py-2 rounded-[8px] text-sm border border-border bg-surface focus:outline-none focus:border-brand-green"
+                />
+              </div>
+              {editError && <p className="text-xs text-brand-red">{editError}</p>}
+              <div className="flex gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setEditingUser(null)}
+                  className="flex-1 py-2 rounded-[8px] border border-border text-sm text-text-secondary hover:bg-surface transition-colors"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  disabled={editSaving}
+                  className="flex-1 py-2 rounded-[8px] bg-brand-green text-white text-sm font-semibold hover:bg-brand-green-hover transition-colors disabled:opacity-60"
+                >
+                  {editSaving ? 'Enregistrement...' : 'Enregistrer'}
+                </button>
+              </div>
+            </motion.form>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </main>
   )
 }

@@ -156,4 +156,8 @@ function runMigrations(database: Database.Database): void {
   if (!hasColumn('sessions', 'archived')) {
     database.exec(`ALTER TABLE sessions ADD COLUMN archived INTEGER NOT NULL DEFAULT 0`)
   }
+
+  if (!hasColumn('users', 'is_suspended')) {
+    database.exec(`ALTER TABLE users ADD COLUMN is_suspended INTEGER NOT NULL DEFAULT 0`)
+  }
 }

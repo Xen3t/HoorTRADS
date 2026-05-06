@@ -17,6 +17,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Identifiants invalides' }, { status: 401 })
     }
 
+    if (user.is_suspended) {
+      return NextResponse.json({ error: 'Compte suspendu. Contactez un administrateur.' }, { status: 403 })
+    }
+
     const token = createSession(user.id)
 
     const response = NextResponse.json({ success: true, user: { id: user.id, email: user.email, name: user.name, role: user.role } })

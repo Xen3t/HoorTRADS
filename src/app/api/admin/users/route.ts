@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSession, listUsers, createUser, deleteUser, updateUserRole, changePassword } from '@/lib/auth'
+import { getSession, listUsers, createUser, deleteUser, updateUserRole, changePassword, updateUserInfo, suspendUser, unsuspendUser } from '@/lib/auth'
 
 function requireAdmin(request: NextRequest) {
   const token = request.cookies.get('hoortrad_session')?.value
@@ -29,15 +29,27 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
-  if (!requireAdmin(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+  const admin = requireAdmin(request)
+  if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
   try {
-    const { userId, role, password } = await request.json()
+    const { userId, role, password, name, email, suspend } = await request.json()
     if (!userId) return NextResponse.json({ error: 'userId requis' }, { status: 400 })
     if (role) updateUserRole(userId, role)
     if (password) changePassword(userId, password)
+    if (name !== undefined && email !== undefined) {
+      if (!name.trim() || !email.trim()) return NextResponse.json({ error: 'Nom et email requis' }, { status: 400 })
+      updateUserInfo(userId, name, email)
+    }
+    if (suspend === true) {
+      if (userId === admin.id) return NextResponse.json({ error: 'Impossible de suspendre votre propre compte' }, { status: 400 })
+      suspendUser(userId)
+    }
+    if (suspend === false) unsuspendUser(userId)
     return NextResponse.json({ success: true })
   } catch (e: unknown) {
-    return NextResponse.json({ error: e instanceof Error ? e.message : 'Failed' }, { status: 500 })
+    const msg = e instanceof Error ? e.message : 'Failed'
+    if (msg.includes('UNIQUE')) return NextResponse.json({ error: 'Email déjà utilisé' }, { status: 409 })
+    return NextResponse.json({ error: msg }, { status: 500 })
   }
 }
 
