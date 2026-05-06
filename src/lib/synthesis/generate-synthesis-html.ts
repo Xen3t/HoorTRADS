@@ -45,11 +45,6 @@ interface TaskVersionRow {
   created_at: string
 }
 
-const PROVIDER_LABEL: Record<string, string> = {
-  gemini: 'Gemini',
-  openai: 'OpenAI',
-  mixed: 'Mixte',
-}
 
 function escapeHtml(s: string): string {
   return s
@@ -60,17 +55,6 @@ function escapeHtml(s: string): string {
     .replace(/'/g, '&#39;')
 }
 
-function formatDuration(ms: number | null | undefined): string {
-  if (ms === null || ms === undefined || isNaN(ms) || ms < 0) return '—'
-  const totalSec = Math.round(ms / 1000)
-  if (totalSec === 0) return '< 1s'
-  const m = Math.floor(totalSec / 60)
-  const s = totalSec % 60
-  if (m === 0) return `${s}s`
-  if (m < 60) return `${m}'${String(s).padStart(2, '0')}"`
-  const h = Math.floor(m / 60)
-  return `${h}h${String(m % 60).padStart(2, '0')}'`
-}
 
 function formatDateTime(iso: string): string {
   if (!iso) return '—'
@@ -177,20 +161,16 @@ function esc(s) {
 }
 
 function renderHeader() {
-  const pBg  = D.provider === 'OpenAI' ? '#D1FAE5' : D.provider === 'Mixte' ? '#FEF3C7' : '#DBEAFE';
-  const pCol = D.provider === 'OpenAI' ? '#065F46'  : D.provider === 'Mixte' ? '#92400E'  : '#1E40AF';
-  const pBadge = D.provider
-    ? '<span class="item"><span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:999px;background:' + pBg + ';color:' + pCol + '">' + esc(D.provider) + '</span></span>'
+  var genLabel = D.generateProvider === 'openai' ? 'ChatGPT Image 2' : D.generateProvider === 'gemini' ? 'Nano Bana 2' : null;
+  var pBg  = D.generateProvider === 'openai' ? '#D1FAE5' : '#DBEAFE';
+  var pCol = D.generateProvider === 'openai' ? '#065F46' : '#1E40AF';
+  var pBadge = genLabel
+    ? '<span class="item"><span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:999px;background:' + pBg + ';color:' + pCol + '">' + genLabel + '</span></span>'
     : '';
-  return '<div class="report-header"><div><h1>' + esc(D.title) + '<span class="status-badge status-done">Exporté</span></h1><div class="subtitle"><span class="item">👤 ' + esc(D.user) + '</span><span class="item">📅 ' + esc(D.date) + '</span><span class="item">🌍 ' + esc(D.langues) + '</span><span class="item">🖼️ ' + esc(D.visuels) + '</span>' + pBadge + '</div></div><div class="stamp"><div class="label">Synthèse générée</div><div class="date">' + esc(D.synthesisDate) + '</div></div></div>';
+  return '<div class="report-header"><div><h1>' + esc(D.title) + '</h1><div class="subtitle"><span class="item">👤 ' + esc(D.user) + '</span><span class="item">📅 ' + esc(D.date) + '</span><span class="item">🌍 ' + esc(D.langues) + '</span><span class="item">🖼️ ' + esc(D.visuels) + '</span>' + pBadge + '</div></div><div class="stamp"><div class="label">Synthèse générée</div><div class="date">' + esc(D.synthesisDate) + '</div></div></div>';
 }
 
-function renderKpis() {
-  var k = D.kpis;
-  var failPct = k.images > 0 ? ((k.failures / k.images) * 100).toFixed(1) : '0.0';
-  var costKpi = D.cost != null ? '<div class="kpi"><span class="kpi-icon">💶</span><div class="kpi-label">Coût estimé</div><div class="kpi-value" style="font-size:22px">' + esc(D.cost) + '</div><div class="kpi-sub">APIs image + texte</div></div>' : '';
-  return '<div class="kpi-grid"><div class="kpi"><span class="kpi-icon">🖼️</span><div class="kpi-label">Images générées</div><div class="kpi-value">' + k.images + '</div><div class="kpi-sub">sur ' + k.imagesDemandees + ' demandées</div></div><div class="kpi ' + (k.failures > 0 ? 'alert' : '') + '"><span class="kpi-icon">⚠</span><div class="kpi-label">Échecs</div><div class="kpi-value">' + k.failures + '</div><div class="kpi-sub">' + failPct + '% du total</div></div><div class="kpi ' + (k.regenSource > 0 ? 'warning' : '') + '"><span class="kpi-icon">⟳</span><div class="kpi-label">Regen depuis source</div><div class="kpi-value">' + k.regenSource + '</div><div class="kpi-sub">retry sans modif</div></div><div class="kpi ' + (k.regenCorr > 0 ? 'warning' : '') + '"><span class="kpi-icon">✏️</span><div class="kpi-label">Regen correctives</div><div class="kpi-value">' + k.regenCorr + '</div><div class="kpi-sub">avec prompt utilisateur</div></div><div class="kpi success"><span class="kpi-icon">⏱</span><div class="kpi-label">Durée totale</div><div class="kpi-value">' + esc(k.duree) + '</div><div class="kpi-sub">création → export</div></div>' + costKpi + '</div>';
-}
+function renderKpis() { return ''; }
 
 function renderModels() {
   var cards = D.models.map(function(m) {
@@ -198,17 +178,20 @@ function renderModels() {
     var pLabel = m.provider === 'gemini' ? 'Gemini' : m.provider === 'openai' ? 'OpenAI' : esc(m.provider);
     return '<div class="model-card"><div class="model-icon ' + m.cls + '">' + m.icon + '</div><div class="model-info"><div class="model-step">' + esc(m.role) + '</div><div class="model-name">' + esc(m.name) + ' <span class="model-provider ' + pCls + '">' + pLabel + '</span></div><div class="model-stats">' + esc(m.stats) + '</div></div></div>';
   }).join('');
-  return '<div class="section"><div class="section-header"><h2>🧠 Modèles utilisés</h2><span class="meta">Configuration au moment de la session</span></div><div class="section-body"><div class="models-grid">' + cards + '</div></div></div>';
+  var costMeta = D.cost != null ? ' · <span style="font-weight:700;color:var(--text-primary)">💶 ' + esc(D.cost) + '</span>' : '';
+  return '<div class="section"><div class="section-header"><h2>🧠 Modèles utilisés</h2><span class="meta">Configuration au moment de la session' + costMeta + '</span></div><div class="section-body"><div class="models-grid">' + cards + '</div></div></div>';
 }
 
 
 function renderQuality() {
   var q = D.quality;
+  var k = D.kpis;
   var scoreVal  = q.avgScore !== null ? Number(q.avgScore).toFixed(1) + '<span style="font-size:14px;color:var(--text-secondary);font-weight:400;">/' + q.avgScoreMax + '</span>' : '—';
   var scoreDesc = q.avgScore !== null ? 'vérification visuelle automatique' : 'aucune vérification';
   var scorePct  = q.avgScore !== null ? (q.avgScore / q.avgScoreMax * 100).toFixed(0) : 0;
-  var iterVal   = q.avgIterations ? Number(q.avgIterations).toFixed(2) : '—';
-  return '<div class="section"><div class="section-header"><h2>📊 Qualité de la génération</h2><span class="meta">' + q.firstPassTotal + ' images analysées</span></div><div class="section-body"><div class="success-rate-bar"><span class="label">Taux de succès</span><div class="bar"><div class="ok" style="width:' + q.successRate.toFixed(1) + '%"></div><div class="ko" style="width:' + (100 - q.successRate).toFixed(1) + '%"></div></div><span class="pct">' + q.successRate.toFixed(1) + '%</span></div><div class="quality-grid"><div class="quality-card"><div class="label">Score moyen</div><div class="value">' + scoreVal + '</div><div class="desc">' + scoreDesc + '</div><div class="progress"><div class="progress-fill" style="width:' + scorePct + '%"></div></div></div><div class="quality-card"><div class="label">Validés du 1er coup</div><div class="value">' + q.firstPass + '<span style="font-size:14px;color:var(--text-secondary);font-weight:400;">/' + q.firstPassTotal + '</span></div><div class="desc">' + q.firstPassRate.toFixed(1) + '% sans régénération</div><div class="progress"><div class="progress-fill" style="width:' + q.firstPassRate.toFixed(1) + '%"></div></div></div><div class="quality-card"><div class="label">Itérations moyennes</div><div class="value">' + iterVal + '</div><div class="desc">incl. regen src + correctives</div><div class="progress"><div class="progress-fill" style="width:' + q.iterPct.toFixed(1) + '%; background:var(--amber)"></div></div></div></div></div></div>';
+  var failPct   = k.images > 0 ? ((k.failures / k.images) * 100).toFixed(1) : '0.0';
+  var firstPassPct = q.firstPassRate.toFixed(1);
+  return '<div class="section"><div class="section-header"><h2>📊 Qualité de la génération</h2><span class="meta">' + q.firstPassTotal + ' images analysées</span></div><div class="section-body"><div class="quality-grid"><div class="quality-card"><div class="label">Images générées</div><div class="value">' + k.images + '<span style="font-size:14px;color:var(--text-secondary);font-weight:400;">/' + k.imagesDemandees + '</span></div><div class="desc">images produites</div><div class="progress"><div class="progress-fill" style="width:' + (k.imagesDemandees > 0 ? (k.images / k.imagesDemandees * 100).toFixed(0) : 0) + '%"></div></div></div><div class="quality-card"><div class="label">First Pass</div><div class="value">' + q.firstPass + '<span style="font-size:14px;color:var(--text-secondary);font-weight:400;">/' + q.firstPassTotal + '</span></div><div class="desc">' + firstPassPct + '% sans régénération</div><div class="progress"><div class="progress-fill" style="width:' + firstPassPct + '%"></div></div></div><div class="quality-card"><div class="label">Score moyen</div><div class="value">' + scoreVal + '</div><div class="desc">' + scoreDesc + '</div><div class="progress"><div class="progress-fill" style="width:' + scorePct + '%"></div></div></div><div class="quality-card' + (k.failures > 0 ? ' alert' : '') + '"><div class="label">Échecs</div><div class="value">' + k.failures + '</div><div class="desc">' + failPct + '% du total</div></div><div class="quality-card' + (k.regenSource > 0 ? ' warning' : '') + '"><div class="label">Regen depuis source</div><div class="value">' + k.regenSource + '</div><div class="desc">retry sans modif</div></div><div class="quality-card' + (k.regenCorr > 0 ? ' warning' : '') + '"><div class="label">Regen correctives</div><div class="value">' + k.regenCorr + '</div><div class="desc">avec prompt utilisateur</div></div></div></div></div>';
 }
 
 function renderZones() {
@@ -303,8 +286,7 @@ export function generateSynthesisHtml(db: Database.Database, jobId: string): str
     : []
 
   const cfg = job.config ? JSON.parse(job.config) : {}
-  const log = cfg.preTranslationLog as { timings?: Record<string, string>; provider?: string; extractedZones?: Record<string, unknown>; translations?: Record<string, unknown>; configDocHints?: Record<string, unknown> } | undefined
-  const timings = log?.timings || {}
+  const log = cfg.preTranslationLog as { provider?: string; extractedZones?: Record<string, unknown>; translations?: Record<string, unknown>; configDocHints?: Record<string, unknown> } | undefined
 
   const cfgExtract = cfg.primary_model_extract || cfg.model_extract
   const cfgTranslate = cfg.primary_model_translate || cfg.model_translate
@@ -324,8 +306,6 @@ export function generateSynthesisHtml(db: Database.Database, jobId: string): str
   const totalImages = job.total_tasks
   const successCount = tasks.filter((t) => t.status === 'done').length
   const failedCount = tasks.filter((t) => t.status === 'failed').length
-  const successRate = totalImages > 0 ? (successCount / totalImages) * 100 : 0
-
   const versionsBySource = versions.filter((v) => v.regen_label === 'source' || v.regen_label === null || v.regen_label === '')
   const versionsCorrective = versions.filter((v) => v.regen_label && v.regen_label !== 'source')
   const regenSourceCount = versionsBySource.length
@@ -337,26 +317,8 @@ export function generateSynthesisHtml(db: Database.Database, jobId: string): str
     : 0
   const validatedFirstTry = tasks.filter((t) => t.status === 'done' && !versions.some((v) => v.task_id === t.id)).length
 
-  const extractingAt = timings.extracting_at ? new Date(timings.extracting_at).getTime() : 0
-  const extractedAt = timings.extracted_at ? new Date(timings.extracted_at).getTime() : 0
-  const translatingAt = timings.translating_at ? new Date(timings.translating_at).getTime() : 0
-  const translatedAt = timings.translated_at ? new Date(timings.translated_at).getTime() : 0
-  const imageGenerationDoneAt = timings.image_generation_done_at ? new Date(timings.image_generation_done_at).getTime() : 0
-
-  const startMs = extractingAt > 0 ? extractingAt : new Date(job.created_at).getTime()
-  const endMs = imageGenerationDoneAt > 0 ? imageGenerationDoneAt : new Date(job.updated_at).getTime()
-  const totalMs = Math.max(0, endMs - startMs)
-
-  const extractMs = (extractingAt > 0 && extractedAt > 0) ? Math.max(0, extractedAt - extractingAt) : 0
-  const translateMs = (translatingAt > 0 && translatedAt > 0) ? Math.max(0, translatedAt - translatingAt) : 0
-  const imageStartMs = translatedAt || extractedAt || 0
-  const imageEndMs = imageGenerationDoneAt > 0 ? imageGenerationDoneAt : endMs
-  const imageMs = (imageStartMs > 0 && imageEndMs > imageStartMs) ? imageEndMs - imageStartMs : 0
   const langs = [...new Set(tasks.map((t) => t.target_language))].sort()
   const sourceImageCount = new Set(tasks.map((t) => t.source_image_name)).size
-
-  const provider = log?.provider as string | undefined
-  const providerLabel = provider ? PROVIDER_LABEL[provider] || provider : null
 
   const sessionName = session?.name || 'Session sans nom'
   const generatedAtStr = new Date().toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
@@ -394,9 +356,9 @@ export function generateSynthesisHtml(db: Database.Database, jobId: string): str
 
   // Modèles
   const modelsData: Array<{ role: string; icon: string; cls: string; name: string; provider: string; stats: string }> = []
-  if (finalExtract) modelsData.push({ role: 'Extraction', icon: '🔎', cls: 'extract', name: finalExtract, provider: inferProvider(finalExtract), stats: `${Object.keys(extractedZones).length} zones extraites · ${formatDuration(extractMs)}` })
-  if (finalTranslate) modelsData.push({ role: 'Traduction', icon: '🌐', cls: 'translate', name: finalTranslate, provider: inferProvider(finalTranslate), stats: `${Object.keys(aiTranslations).length} langues · ${formatDuration(translateMs)}` })
-  if (finalGenerate) modelsData.push({ role: "Génération d'image", icon: '🎨', cls: 'image', name: finalGenerate, provider: inferProvider(finalGenerate), stats: `${successCount} images · ${formatDuration(imageMs)}` })
+  if (finalExtract) modelsData.push({ role: 'Extraction', icon: '🔎', cls: 'extract', name: finalExtract, provider: inferProvider(finalExtract), stats: `${Object.keys(extractedZones).length} zones extraites` })
+  if (finalTranslate) modelsData.push({ role: 'Traduction', icon: '🌐', cls: 'translate', name: finalTranslate, provider: inferProvider(finalTranslate), stats: `${Object.keys(aiTranslations).length} langues` })
+  if (finalGenerate) modelsData.push({ role: "Génération d'image", icon: '🎨', cls: 'image', name: finalGenerate, provider: inferProvider(finalGenerate), stats: `${successCount} images` })
   if (finalVerify) modelsData.push({ role: 'Vérification', icon: '🔍', cls: 'verify', name: finalVerify, provider: inferProvider(finalVerify), stats: `${verifiedTasks.length} vérifs · score moyen ${avgScore.toFixed(1)}/5` })
 
   // Échecs
@@ -423,8 +385,6 @@ export function generateSynthesisHtml(db: Database.Database, jobId: string): str
 
   // Qualité
   const firstPassRate = successCount > 0 ? (validatedFirstTry / successCount) * 100 : 0
-  const avgIterations = successCount > 0 ? 1 + (regenSourceCount + regenCorrectiveCount) / successCount : 0
-  const iterPct = successCount > 0 ? Math.min(100, ((regenSourceCount + regenCorrectiveCount) / successCount) * 100) : 0
 
   // Objet de données complet sérialisé dans le HTML
   const data = {
@@ -433,7 +393,7 @@ export function generateSynthesisHtml(db: Database.Database, jobId: string): str
     date: formatDateTime(job.created_at),
     langues: `${langs.length} langue${langs.length > 1 ? 's' : ''} (${langs.map((l) => l.toUpperCase()).join(', ')})`,
     visuels: `${sourceImageCount} visuel${sourceImageCount > 1 ? 's' : ''} source`,
-    provider: providerLabel,
+    generateProvider: finalGenerate ? inferProvider(finalGenerate) : null,
     synthesisDate: generatedAtStr,
     kpis: {
       images: successCount,
@@ -441,25 +401,21 @@ export function generateSynthesisHtml(db: Database.Database, jobId: string): str
       failures: failedCount,
       regenSource: regenSourceCount,
       regenCorr: regenCorrectiveCount,
-      duree: formatDuration(totalMs),
     },
     models: modelsData,
     quality: {
-      successRate,
       avgScore: avgScore > 0 ? avgScore : null,
       avgScoreMax: 5,
       firstPass: validatedFirstTry,
       firstPassTotal: successCount,
       firstPassRate,
-      avgIterations,
-      iterPct,
     },
     zones: zonesData,
     translations: translationsData,
     configDocHints,
     failures: failuresData,
     regens: regensData,
-    cost: null as string | null,  // ex: "1,24 €" — à renseigner manuellement après génération
+    cost: successCount > 0 ? (successCount * 0.10).toFixed(2).replace('.', ',') + ' €' : null,
     jobId,
   }
 

@@ -154,19 +154,19 @@ export async function POST(request: NextRequest) {
     }
 
     // Auto-generate synthesis HTML if enabled in admin config
-    if (firstDestinationRoot) {
-      try {
-        const enabled = getAppConfig(db, 'synthesis_html_enabled')
-        if (enabled === 'true' || enabled === '1') {
-          const html = generateSynthesisHtml(db, job.id)
-          const safeName = (campaignName || session.name || 'session').replace(/[<>:"/\\|?*]/g, '_').replace(/\s+/g, '_').slice(0, 60)
-          const dateStamp = new Date().toISOString().slice(0, 10).replace(/-/g, '')
-          const synthesisPath = path.join(firstDestinationRoot, `synthese_${safeName}_${dateStamp}.html`)
-          fs.writeFileSync(synthesisPath, html, 'utf-8')
-        }
-      } catch (err) {
-        console.error('[export] synthesis html generation failed:', err)
+    try {
+      const enabled = getAppConfig(db, 'synthesis_html_enabled')
+      if (enabled === 'true' || enabled === '1') {
+        const html = generateSynthesisHtml(db, job.id)
+        const safeName = (campaignName || session.name || 'session').replace(/[<>:"/\\|?*]/g, '_').replace(/\s+/g, '_').slice(0, 60)
+        const dateStamp = new Date().toISOString().slice(0, 10).replace(/-/g, '')
+        const rapportsDir = path.join(process.cwd(), 'rapports')
+        fs.mkdirSync(rapportsDir, { recursive: true })
+        const synthesisPath = path.join(rapportsDir, `synthese_${safeName}_${dateStamp}.html`)
+        fs.writeFileSync(synthesisPath, html, 'utf-8')
       }
+    } catch (err) {
+      console.error('[export] synthesis html generation failed:', err)
     }
 
     // Mark session as exported

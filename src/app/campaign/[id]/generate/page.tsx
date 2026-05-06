@@ -303,7 +303,15 @@ export default function GeneratePage() {
         )}
 
         {/* Logs panel (appears below the action links) */}
-        <LogPanel jobId={jobId} isActive={!isDone} enabled={showLogs} onEnabledChange={setShowLogs} hideInternalToggle currentRPM={currentRPM} />
+        <LogPanel
+          jobId={jobId}
+          isActive={!isDone}
+          enabled={showLogs}
+          onEnabledChange={setShowLogs}
+          hideInternalToggle
+          currentRPM={currentRPM}
+          isImagePhase={isRenderingPhase || currentPhase === 'image' || currentPhase === 'nb2'}
+        />
 
         {/* Auto-redirect en cours — message discret */}
         <AnimatePresence>

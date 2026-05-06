@@ -30,6 +30,7 @@ interface LogPanelProps {
   onEnabledChange?: (v: boolean) => void
   hideInternalToggle?: boolean
   currentRPM?: number | null
+  isImagePhase?: boolean
 }
 
 const LEVEL_DOT: Record<string, string> = {
@@ -117,7 +118,7 @@ function MatrixView({ tasks }: { tasks: Task[] }) {
   )
 }
 
-export default function LogPanel({ jobId, isActive, enabled: externalEnabled, onEnabledChange, hideInternalToggle, currentRPM }: LogPanelProps) {
+export default function LogPanel({ jobId, isActive, enabled: externalEnabled, onEnabledChange, hideInternalToggle, currentRPM, isImagePhase }: LogPanelProps) {
   const [internalEnabled, setInternalEnabled] = useState(false)
   const enabled = externalEnabled !== undefined ? externalEnabled : internalEnabled
   const setEnabled = (v: boolean) => {
@@ -197,22 +198,24 @@ export default function LogPanel({ jobId, isActive, enabled: externalEnabled, on
               {/* Header sticky */}
               <div className="sticky top-0 bg-white border-b border-border px-3 py-2 flex items-center justify-between z-10">
                 <div className="flex items-center gap-2">
-                  {/* Vue toggle */}
-                  <div className="flex items-center bg-surface rounded-[6px] p-0.5 gap-0.5">
-                    <button
-                      onClick={() => setView('matrix')}
-                      className={`text-[10px] font-semibold px-2 py-0.5 rounded-[4px] transition-colors ${view === 'matrix' ? 'bg-white text-text-primary shadow-sm' : 'text-text-disabled hover:text-text-secondary'}`}
-                    >
-                      Matrice
-                    </button>
-                    <button
-                      onClick={() => setView('list')}
-                      className={`text-[10px] font-semibold px-2 py-0.5 rounded-[4px] transition-colors ${view === 'list' ? 'bg-white text-text-primary shadow-sm' : 'text-text-disabled hover:text-text-secondary'}`}
-                    >
-                      Liste
-                    </button>
-                  </div>
-                  {view === 'list' && (
+                  {/* Vue toggle — uniquement pendant la génération d'images */}
+                  {isImagePhase && (
+                    <div className="flex items-center bg-surface rounded-[6px] p-0.5 gap-0.5">
+                      <button
+                        onClick={() => setView('matrix')}
+                        className={`text-[10px] font-semibold px-2 py-0.5 rounded-[4px] transition-colors ${view === 'matrix' ? 'bg-white text-text-primary shadow-sm' : 'text-text-disabled hover:text-text-secondary'}`}
+                      >
+                        Matrice
+                      </button>
+                      <button
+                        onClick={() => setView('list')}
+                        className={`text-[10px] font-semibold px-2 py-0.5 rounded-[4px] transition-colors ${view === 'list' ? 'bg-white text-text-primary shadow-sm' : 'text-text-disabled hover:text-text-secondary'}`}
+                      >
+                        Liste
+                      </button>
+                    </div>
+                  )}
+                  {(!isImagePhase || view === 'list') && (
                     <p className="text-[11px] font-bold text-text-secondary uppercase tracking-wider">
                       {events.length} événement{events.length > 1 ? 's' : ''}
                     </p>
@@ -235,15 +238,15 @@ export default function LogPanel({ jobId, isActive, enabled: externalEnabled, on
                 </div>
               </div>
 
-              {/* Vue matrice */}
-              {view === 'matrix' && (
+              {/* Vue matrice — uniquement pendant la phase image */}
+              {isImagePhase && view === 'matrix' && (
                 tasks.length === 0
                   ? <p className="text-xs text-text-disabled text-center py-6">En attente des tâches...</p>
                   : <MatrixView tasks={tasks} />
               )}
 
               {/* Vue liste */}
-              {view === 'list' && (() => {
+              {(!isImagePhase || view === 'list') && (() => {
                 if (events.length === 0) return <p className="text-xs text-text-disabled text-center py-6">En attente des premiers logs...</p>
 
                 const nonImageEvents = events.filter((e) => e.source !== 'image')
