@@ -51,7 +51,7 @@ export default function ExportPage() {
           const imgData = await imgRes.json()
           if (!cancelled) setImageCount(imgData.total || 0)
         }
-      } catch (e) { console.error('[export] load', e) }
+      } catch { /* ignore */ }
     }
     load()
     return () => { cancelled = true }
@@ -92,7 +92,7 @@ export default function ExportPage() {
               config: JSON.stringify({ ...existingConfig, campaignName: campaignName.trim() }),
             }),
           })
-        } catch (e) { console.error('[export] persist campaign name', e) }
+        } catch { /* ignore */ }
       }
     } finally {
       clearInterval(progressInterval)
@@ -127,6 +127,10 @@ export default function ExportPage() {
   }
 
   const sourcePath = session.source_path || ''
+  const isDragDrop = (() => {
+    try { return !!(session.config && JSON.parse(session.config).isDragDrop) }
+    catch { return false }
+  })()
 
   return (
     <main className="min-h-screen px-8 pt-4 pb-12">
@@ -166,77 +170,79 @@ export default function ExportPage() {
           </p>
         </motion.div>
 
-        {/* Export mode selection */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="bg-white rounded-[12px] shadow-sm p-5 mb-4"
-        >
-          <p className="text-xs font-semibold text-text-secondary mb-3">Destination</p>
-
-          {/* Auto mode */}
-          <button
-            onClick={() => setExportMode('auto')}
-            className={`
-              w-full text-left p-3 rounded-[8px] mb-2 transition-colors
-              ${exportMode === 'auto' ? 'bg-brand-green-light border border-brand-green' : 'bg-white hover:bg-surface border border-border'}
-            `}
+        {/* Export mode selection — masqué en mode drag-drop (pas de dossier source) */}
+        {!isDragDrop && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="bg-white rounded-[12px] shadow-sm p-5 mb-4"
           >
-            <div className="flex items-center gap-2">
-              <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${exportMode === 'auto' ? 'border-brand-green' : 'border-border'}`}>
-                {exportMode === 'auto' && <div className="w-2 h-2 rounded-full bg-brand-green" />}
-              </div>
-              <span className="text-sm font-semibold text-text-primary">Dossiers d&apos;origine</span>
-            </div>
-            <p className="text-xs text-text-secondary mt-1 ml-6">
-              Les images sont rangées dans un sous-dossier RENDU/ à l&apos;intérieur du dossier source, avec des sous-dossiers par pays (RENDU/DE/, RENDU/LU/, etc.)
-            </p>
-            {sourcePath && (
-              <p className="text-[10px] text-brand-teal mt-1 ml-6 truncate">📁 {sourcePath}</p>
-            )}
-          </button>
+            <p className="text-xs font-semibold text-text-secondary mb-3">Destination</p>
 
-          {/* Custom mode */}
-          <button
-            onClick={() => setExportMode('custom')}
-            className={`
-              w-full text-left p-3 rounded-[8px] transition-colors
-              ${exportMode === 'custom' ? 'bg-brand-green-light border border-brand-green' : 'bg-white hover:bg-surface border border-border'}
-            `}
-          >
-            <div className="flex items-center gap-2">
-              <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${exportMode === 'custom' ? 'border-brand-green' : 'border-border'}`}>
-                {exportMode === 'custom' && <div className="w-2 h-2 rounded-full bg-brand-green" />}
-              </div>
-              <span className="text-sm font-semibold text-text-primary">Dossier personnalisé</span>
-            </div>
-            <p className="text-xs text-text-secondary mt-1 ml-6">
-              Toutes les images exportées dans un seul dossier de votre choix
-            </p>
-          </button>
-
-          {/* Custom path input */}
-          {exportMode === 'custom' && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              className="mt-3 overflow-hidden"
+            {/* Auto mode */}
+            <button
+              onClick={() => setExportMode('auto')}
+              className={`
+                w-full text-left p-3 rounded-[8px] mb-2 transition-colors
+                ${exportMode === 'auto' ? 'bg-brand-green-light border border-brand-green' : 'bg-white hover:bg-surface border border-border'}
+              `}
             >
-              <input
-                type="text"
-                value={customPath}
-                onChange={(e) => setCustomPath(e.target.value)}
-                placeholder="ex. C:\Export\Campagne..."
-                className="
-                  w-full px-3 py-2 rounded-[8px] text-sm
-                  border border-border bg-white text-text-primary
-                  focus:border-brand-green focus:outline-none
-                "
-              />
-            </motion.div>
-          )}
-        </motion.div>
+              <div className="flex items-center gap-2">
+                <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${exportMode === 'auto' ? 'border-brand-green' : 'border-border'}`}>
+                  {exportMode === 'auto' && <div className="w-2 h-2 rounded-full bg-brand-green" />}
+                </div>
+                <span className="text-sm font-semibold text-text-primary">Dossiers d&apos;origine</span>
+              </div>
+              <p className="text-xs text-text-secondary mt-1 ml-6">
+                Les images sont rangées dans un sous-dossier RENDU/ à l&apos;intérieur du dossier source, avec des sous-dossiers par pays (RENDU/DE/, RENDU/LU/, etc.)
+              </p>
+              {sourcePath && (
+                <p className="text-[10px] text-brand-teal mt-1 ml-6 truncate">📁 {sourcePath}</p>
+              )}
+            </button>
+
+            {/* Custom mode */}
+            <button
+              onClick={() => setExportMode('custom')}
+              className={`
+                w-full text-left p-3 rounded-[8px] transition-colors
+                ${exportMode === 'custom' ? 'bg-brand-green-light border border-brand-green' : 'bg-white hover:bg-surface border border-border'}
+              `}
+            >
+              <div className="flex items-center gap-2">
+                <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${exportMode === 'custom' ? 'border-brand-green' : 'border-border'}`}>
+                  {exportMode === 'custom' && <div className="w-2 h-2 rounded-full bg-brand-green" />}
+                </div>
+                <span className="text-sm font-semibold text-text-primary">Dossier personnalisé</span>
+              </div>
+              <p className="text-xs text-text-secondary mt-1 ml-6">
+                Toutes les images exportées dans un seul dossier de votre choix
+              </p>
+            </button>
+
+            {/* Custom path input */}
+            {exportMode === 'custom' && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                className="mt-3 overflow-hidden"
+              >
+                <input
+                  type="text"
+                  value={customPath}
+                  onChange={(e) => setCustomPath(e.target.value)}
+                  placeholder="ex. C:\Export\Campagne..."
+                  className="
+                    w-full px-3 py-2 rounded-[8px] text-sm
+                    border border-border bg-white text-text-primary
+                    focus:border-brand-green focus:outline-none
+                  "
+                />
+              </motion.div>
+            )}
+          </motion.div>
+        )}
 
         {/* Compression */}
         <motion.div
@@ -281,43 +287,77 @@ export default function ExportPage() {
           transition={{ delay: 0.25 }}
           className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4"
         >
-          {/* Exporter sur disque / serveur */}
-          <div className="bg-white rounded-[12px] shadow-sm p-4 flex flex-col">
-            <div className="flex items-center gap-2 mb-1">
-              <div className="w-8 h-8 rounded-[8px] bg-brand-green-light flex items-center justify-center text-brand-green">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M22 12H2"/>
-                  <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11Z"/>
-                  <line x1="6" y1="16" x2="6.01" y2="16"/>
-                  <line x1="10" y1="16" x2="10.01" y2="16"/>
-                </svg>
+          {/* Exporter sur disque / serveur — remplacé par ZIP en mode drag-drop */}
+          {isDragDrop ? (
+            <div className="bg-white rounded-[12px] shadow-sm p-4 flex flex-col">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-8 h-8 rounded-[8px] bg-brand-green-light flex items-center justify-center text-brand-green">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                  </svg>
+                </div>
+                <h3 className="font-bold text-sm text-text-primary">Télécharger (ZIP)</h3>
               </div>
-              <h3 className="font-bold text-sm text-text-primary">Exporter</h3>
+              <p className="text-xs text-text-disabled mb-3 flex-1">
+                Archive zippée de toutes les images, triées par pays.
+              </p>
+              {jobId ? (
+                <a
+                  href={`/api/generate/${jobId}/download-all`}
+                  className="
+                    w-full px-3 py-2 rounded-[8px] text-center
+                    bg-brand-green text-white font-semibold text-xs
+                    hover:bg-brand-green-hover transition-colors
+                  "
+                >
+                  Télécharger
+                </a>
+              ) : (
+                <button disabled className="w-full px-3 py-2 rounded-[8px] bg-surface text-text-disabled font-semibold text-xs cursor-not-allowed">
+                  Indisponible
+                </button>
+              )}
             </div>
-            <p className="text-xs text-text-disabled mb-3 flex-1">
-              Vers un dossier local ou réseau (format dossier par pays).
-            </p>
-            <button
-              onClick={handleExportServer}
-              disabled={isExportingServer || (exportMode === 'custom' && !customPath.trim())}
-              className="
-                w-full px-3 py-2 rounded-[8px]
-                bg-brand-green text-white font-semibold text-xs
-                hover:bg-brand-green-hover transition-colors
-                disabled:opacity-50
-              "
-            >
-              {isExportingServer ? 'Export en cours...' : 'Exporter'}
-            </button>
-            {isExportingServer && (
-              <div className="w-full h-1 bg-border rounded-full overflow-hidden mt-2">
-                <div
-                  className="h-full bg-brand-green rounded-full transition-all duration-300"
-                  style={{ width: `${exportProgress}%` }}
-                />
+          ) : (
+            <div className="bg-white rounded-[12px] shadow-sm p-4 flex flex-col">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-8 h-8 rounded-[8px] bg-brand-green-light flex items-center justify-center text-brand-green">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M22 12H2"/>
+                    <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11Z"/>
+                    <line x1="6" y1="16" x2="6.01" y2="16"/>
+                    <line x1="10" y1="16" x2="10.01" y2="16"/>
+                  </svg>
+                </div>
+                <h3 className="font-bold text-sm text-text-primary">Exporter</h3>
               </div>
-            )}
-          </div>
+              <p className="text-xs text-text-disabled mb-3 flex-1">
+                Vers un dossier local ou réseau (format dossier par pays).
+              </p>
+              <button
+                onClick={handleExportServer}
+                disabled={isExportingServer || (exportMode === 'custom' && !customPath.trim())}
+                className="
+                  w-full px-3 py-2 rounded-[8px]
+                  bg-brand-green text-white font-semibold text-xs
+                  hover:bg-brand-green-hover transition-colors
+                  disabled:opacity-50
+                "
+              >
+                {isExportingServer ? 'Export en cours...' : 'Exporter'}
+              </button>
+              {isExportingServer && (
+                <div className="w-full h-1 bg-border rounded-full overflow-hidden mt-2">
+                  <div
+                    className="h-full bg-brand-green rounded-full transition-all duration-300"
+                    style={{ width: `${exportProgress}%` }}
+                  />
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Google Drive */}
           <div className="bg-white rounded-[12px] shadow-sm p-4 flex flex-col">
@@ -344,39 +384,41 @@ export default function ExportPage() {
             </button>
           </div>
 
-          {/* ZIP Download */}
-          <div className="bg-white rounded-[12px] shadow-sm p-4 flex flex-col">
-            <div className="flex items-center gap-2 mb-1">
-              <div className="w-8 h-8 rounded-[8px] bg-surface flex items-center justify-center text-text-primary">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                  <polyline points="7 10 12 15 17 10"/>
-                  <line x1="12" y1="15" x2="12" y2="3"/>
-                </svg>
+          {/* ZIP Download — masqué en mode drag-drop (déjà affiché à la place d'Exporter) */}
+          {!isDragDrop && (
+            <div className="bg-white rounded-[12px] shadow-sm p-4 flex flex-col">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-8 h-8 rounded-[8px] bg-surface flex items-center justify-center text-text-primary">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                  </svg>
+                </div>
+                <h3 className="font-bold text-sm text-text-primary">Télécharger (ZIP)</h3>
               </div>
-              <h3 className="font-bold text-sm text-text-primary">Télécharger (ZIP)</h3>
+              <p className="text-xs text-text-disabled mb-3 flex-1">
+                Archive zippée de toutes les images, triées par pays.
+              </p>
+              {jobId ? (
+                <a
+                  href={`/api/generate/${jobId}/download-all`}
+                  className="
+                    w-full px-3 py-2 rounded-[8px] text-center
+                    bg-white text-text-primary border border-border font-semibold text-xs
+                    hover:border-brand-green hover:text-brand-green
+                    transition-colors
+                  "
+                >
+                  Télécharger
+                </a>
+              ) : (
+                <button disabled className="w-full px-3 py-2 rounded-[8px] bg-surface text-text-disabled font-semibold text-xs cursor-not-allowed">
+                  Indisponible
+                </button>
+              )}
             </div>
-            <p className="text-xs text-text-disabled mb-3 flex-1">
-              Archive zippée de toutes les images, triées par pays.
-            </p>
-            {jobId ? (
-              <a
-                href={`/api/generate/${jobId}/download-all`}
-                className="
-                  w-full px-3 py-2 rounded-[8px] text-center
-                  bg-white text-text-primary border border-border font-semibold text-xs
-                  hover:border-brand-green hover:text-brand-green
-                  transition-colors
-                "
-              >
-                Télécharger
-              </a>
-            ) : (
-              <button disabled className="w-full px-3 py-2 rounded-[8px] bg-surface text-text-disabled font-semibold text-xs cursor-not-allowed">
-                Indisponible
-              </button>
-            )}
-          </div>
+          )}
         </motion.div>
 
         {/* Results */}

@@ -1,0 +1,13 @@
+[
+  {
+    "id": "2026-05-11-e",
+    "date": "2026-05-11",
+    "entries": [
+      { "type": "feature", "text": "Export ZIP automatique pour les sessions avec images déposées par glisser-déposer — le bouton Exporter est remplacé par le téléchargement ZIP directement" },
+      { "type": "fix", "text": "Vérification des traductions : le 2e clic sur Vérifier fonctionne correctement après avoir édité une cellule" },
+      { "type": "fix", "text": "Le bouton Corriger via IA est désormais désactivé tant que la vérification n'a pas été effectuée au moins une fois" },
+      { "type": "fix", "text": "Correction IA : un message d'erreur s'affiche correctement si la correction échoue (le modal ne se fermait pas)" },
+      { "type": "feature", "text": "Nouveau bouton dans le modal de correction : appliquer directement les retours de la vérification IA sans avoir à les recopier" }
+    ]
+  }
+]

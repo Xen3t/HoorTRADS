@@ -14,10 +14,15 @@ interface QueueSession {
   failed_tasks: number | null
 }
 
+interface ChangelogEntry { type: string; text: string }
+interface ChangelogRelease { id: string; date: string; entries: ChangelogEntry[] }
+
 export default function NotificationBell() {
   const [sessions, setSessions] = useState<QueueSession[]>([])
   const [open, setOpen] = useState(false)
   const [clearing, setClearing] = useState<string | null>(null)
+  const [newFeatures, setNewFeatures] = useState<ChangelogEntry[]>([])
+  const [changelogId, setChangelogId] = useState<string | null>(null)
   const ref = useRef<HTMLDivElement>(null)
   const pollingRef = useRef<NodeJS.Timeout | null>(null)
   const knownStatesRef = useRef<Map<string, string>>(new Map())
@@ -57,6 +62,21 @@ export default function NotificationBell() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void load()
     pollingRef.current = setInterval(() => { void load() }, 4000)
+
+    // Load unseen changelog features
+    fetch('/changelog.json')
+      .then((r) => r.json())
+      .then((data: ChangelogRelease[]) => {
+        if (!data || data.length === 0) return
+        const latest = data[0]
+        const seen = localStorage.getItem('hoortrad_seen_changelog')
+        if (seen !== latest.id) {
+          setChangelogId(latest.id)
+          setNewFeatures(latest.entries.filter((e) => e.type === 'feature'))
+        }
+      })
+      .catch(() => {})
+
     return () => { if (pollingRef.current) clearInterval(pollingRef.current) }
   }, [])
 
@@ -93,7 +113,7 @@ export default function NotificationBell() {
 
   const active = sessions.filter((s) => s.status === 'generating')
   const done = sessions.filter((s) => s.status === 'done')
-  const count = sessions.length
+  const count = sessions.length + (newFeatures.length > 0 ? 1 : 0)
 
   return (
     <div ref={ref} className="relative">
@@ -135,11 +155,54 @@ export default function NotificationBell() {
               )}
             </div>
 
-            {sessions.length === 0 ? (
+            {/* Nouveautés changelog */}
+            {newFeatures.length > 0 && (
+              <div className="border-b border-border">
+                <div className="px-4 pt-3 pb-2">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-[10px] font-bold text-brand-green uppercase tracking-wide">✨ Nouveautés</p>
+                    <div className="flex items-center gap-2">
+                      <a
+                        href="/changelog"
+                        onClick={() => {
+                          if (changelogId) localStorage.setItem('hoortrad_seen_changelog', changelogId)
+                          setNewFeatures([])
+                          setOpen(false)
+                        }}
+                        className="text-[10px] text-text-disabled hover:text-brand-green transition-colors"
+                      >
+                        Tout voir →
+                      </a>
+                      <button
+                        onClick={() => {
+                          if (changelogId) localStorage.setItem('hoortrad_seen_changelog', changelogId)
+                          setNewFeatures([])
+                          window.dispatchEvent(new Event('changelog-dismissed'))
+                        }}
+                        title="Ignorer"
+                        className="text-text-disabled hover:text-text-primary transition-colors text-sm leading-none"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    {newFeatures.slice(0, 3).map((f, i) => (
+                      <p key={i} className="text-xs text-text-secondary leading-snug">• {f.text}</p>
+                    ))}
+                    {newFeatures.length > 3 && (
+                      <p className="text-[10px] text-text-disabled">+ {newFeatures.length - 3} autres nouveautés</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {sessions.length === 0 && newFeatures.length === 0 ? (
               <div className="px-4 py-8 text-center">
                 <p className="text-sm text-text-disabled">Aucune activité</p>
               </div>
-            ) : (
+            ) : sessions.length === 0 ? null : (
               <div className="max-h-80 overflow-y-auto divide-y divide-border">
 
                 {active.map((s) => {

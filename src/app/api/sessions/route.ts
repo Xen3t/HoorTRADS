@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { name, image_count, source_path, selected_paths, current_step, configFileName, configFileContent } = body
+    const { name, image_count, source_path, selected_paths, current_step, configFileName, configFileContent, isDragDrop } = body
 
     if (!name) {
       return NextResponse.json({ error: 'Session name is required' }, { status: 400 })
@@ -36,10 +36,11 @@ export async function POST(request: NextRequest) {
       source_path,
       current_step,
       user_id: authUser?.id || null,
-      config: (selected_paths || configFileName)
+      config: (selected_paths || configFileName || isDragDrop)
         ? JSON.stringify({
             ...(selected_paths ? { selected_paths } : {}),
             ...(configFileName ? { configFileName, configFileContent } : {}),
+            ...(isDragDrop ? { isDragDrop: true } : {}),
           })
         : undefined,
     })

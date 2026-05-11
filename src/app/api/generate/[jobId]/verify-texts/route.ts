@@ -11,7 +11,7 @@ export async function POST(
     const { jobId } = await params
     const body = await request.json()
     // Can verify a single language or all. Body: { targetLanguage?: string }
-    const { targetLanguage } = body
+    const { targetLanguage, translations: bodyTranslations } = body
 
     const db = getDb()
     const jobRow = db.prepare('SELECT config FROM generation_jobs WHERE id = ?').get(jobId) as { config: string } | undefined
@@ -19,7 +19,8 @@ export async function POST(
 
     const jobConfig = jobRow.config ? JSON.parse(jobRow.config) : {}
     const log = jobConfig.preTranslationLog
-    const translations = jobConfig.approvedTranslations || log?.translations || {}
+    // Prefer translations sent from the UI (includes unsaved cell edits); fall back to DB
+    const translations: Record<string, Record<string, string>> = bodyTranslations || jobConfig.approvedTranslations || log?.translations || {}
     // extractedZones can be { text, weight, case, color, size } objects — flatten to text strings for verifier
     const rawZones = log?.extractedZones || {}
     const frenchZones: Record<string, string> = Object.fromEntries(

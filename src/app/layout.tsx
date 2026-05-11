@@ -1,4 +1,3 @@
-import packageJson from '../../package.json'
 import type { Metadata } from 'next'
 import { Titillium_Web } from 'next/font/google'
 import { headers, cookies } from 'next/headers'
@@ -6,6 +5,7 @@ import { redirect } from 'next/navigation'
 import 'flag-icons/css/flag-icons.min.css'
 import './globals.css'
 import UserBar from '@/components/UserBar'
+import ChangelogBadge from '@/components/home/ChangelogBadge'
 import FeedbackButton from '@/components/shared/FeedbackButton'
 import { getDb } from '@/lib/db/database'
 import { getAppConfig } from '@/lib/db/queries'
@@ -59,7 +59,8 @@ export default async function RootLayout({
       <body className="min-h-full flex flex-col">
         <div className="flex-1">{children}</div>
         <footer className="flex items-center justify-between px-8 py-3 text-[11px] text-text-disabled border-t border-border/50">
-          <span>© 2026 - HOORTRADE <span className="opacity-50 ml-1">v{packageJson.version}</span></span>
+          <span>© 2026 - HOORTRADE</span>
+          <ChangelogBadge />
           <UserBar />
         </footer>
         {showFeedback && <FeedbackButton />}

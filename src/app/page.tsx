@@ -168,6 +168,7 @@ export default function Home() {
           source_path: dragImages[0]?.path ? dragImages[0].path.replace(/[\\/][^\\/]+$/, '') : '',
           selected_paths: dragImages.map((img) => img.path),
           current_step: 'configure',
+          isDragDrop: true,
         }),
       })
       const result = await res.json()
@@ -512,6 +513,7 @@ export default function Home() {
           />
         )}
       </AnimatePresence>
+
     </main>
   )
 }

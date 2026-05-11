@@ -208,7 +208,7 @@ export default function TextReviewPage() {
     })
   }
 
-  // Verify all languages (or the active one)
+  // Verify all languages (or the active one) — sends current UI translations so cell edits are included
   const handleVerify = async (lang?: string) => {
     if (!jobId || isVerifying) return
     setIsVerifying(true)
@@ -216,8 +216,9 @@ export default function TextReviewPage() {
       const res = await fetch(`/api/generate/${jobId}/verify-texts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ targetLanguage: lang || null }),
+        body: JSON.stringify({ targetLanguage: lang || null, translations }),
       })
+      if (!res.ok) throw new Error('Verification failed')
       const data = await res.json()
       if (data.results) {
         const map: VerifyResults = {}
@@ -234,22 +235,31 @@ export default function TextReviewPage() {
 
   const openRetranslate = (lang: string) => setRetranslateModal({ lang, comment: '' })
 
-  const handleRetranslate = async () => {
+  const handleRetranslate = async (overrideComment?: string) => {
     if (!jobId || !retranslateModal) return
     setIsRetranslating(true)
+    const commentToSend = overrideComment ?? retranslateModal.comment
     try {
       const res = await fetch(`/api/generate/${jobId}/retranslate-text`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ targetLanguage: retranslateModal.lang, comment: retranslateModal.comment }),
+        body: JSON.stringify({ targetLanguage: retranslateModal.lang, comment: commentToSend }),
       })
       const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Retranslation failed')
       if (data.translations) {
         setTranslations((prev) => ({ ...prev, [retranslateModal.lang]: data.translations }))
+        // Reset verification result for this lang so user re-verifies after correction
+        setVerifyResults((prev) => {
+          const next = { ...prev }
+          delete next[retranslateModal.lang]
+          return next
+        })
       }
       setRetranslateModal(null)
-    } catch {
-      setToast({ message: 'Erreur lors de la correction IA. Réessayez.', variant: 'error' })
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Erreur lors de la correction IA.'
+      setToast({ message, variant: 'error' })
     } finally {
       setIsRetranslating(false)
     }
@@ -528,7 +538,9 @@ export default function TextReviewPage() {
                     </button>
                     <button
                       onClick={() => openRetranslate(lang)}
-                      className="text-xs px-2.5 py-1 rounded-[8px] bg-surface text-text-secondary hover:bg-border transition-colors"
+                      disabled={!verifyResults[lang]}
+                      title={!verifyResults[lang] ? 'Vérifiez d\'abord cette langue avant de corriger' : 'Corriger via IA'}
+                      className="text-xs px-2.5 py-1 rounded-[8px] bg-surface text-text-secondary hover:bg-border transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       ✨ Corriger <span className={`fi fi-${(LANG_TO_FLAG[lang] || lang).toLowerCase()}`} style={{ fontSize: '10px' }} /> {langToCountryCode(lang)} via IA
                     </button>
@@ -636,6 +648,31 @@ export default function TextReviewPage() {
               <p className="text-xs text-text-secondary mb-4">
                 Indiquez ce qui ne va pas. Le modèle re-traduira en tenant compte de vos remarques.
               </p>
+
+              {/* AI verification feedback shortcut */}
+              {(() => {
+                const r = verifyResults[retranslateModal.lang]
+                if (!r) return null
+                const aiComment = [
+                  r.commentaire,
+                  r.correction && r.correction !== 'RAS. Le texte est clair et correctement traduit' ? r.correction : null,
+                ].filter(Boolean).join(' ')
+                if (!aiComment) return null
+                return (
+                  <div className={`mb-4 p-3 rounded-[8px] border text-xs ${r.score >= 4 ? 'border-brand-green/30 bg-brand-green-light' : r.score >= 3 ? 'border-amber-200 bg-amber-50' : 'border-red-200 bg-red-50'}`}>
+                    <p className="font-semibold text-text-primary mb-1">Retours de la vérification IA</p>
+                    <p className="text-text-secondary italic">{aiComment}</p>
+                    <button
+                      onClick={() => handleRetranslate(aiComment)}
+                      disabled={isRetranslating}
+                      className="mt-3 w-full py-2 rounded-[8px] bg-amber-500 hover:bg-amber-600 text-white font-semibold text-xs transition-colors disabled:opacity-50"
+                    >
+                      {isRetranslating ? '⏳ Correction...' : '✨ Corriger en appliquant ces retours'}
+                    </button>
+                  </div>
+                )
+              })()}
+
               <textarea
                 autoFocus
                 value={retranslateModal.comment}
@@ -652,7 +689,7 @@ export default function TextReviewPage() {
                   Annuler
                 </button>
                 <button
-                  onClick={handleRetranslate}
+                  onClick={() => handleRetranslate()}
                   disabled={isRetranslating || !retranslateModal.comment.trim()}
                   className="flex-1 py-2.5 rounded-[8px] bg-brand-teal text-white font-semibold text-sm hover:bg-brand-teal-hover transition-colors disabled:opacity-50"
                 >
