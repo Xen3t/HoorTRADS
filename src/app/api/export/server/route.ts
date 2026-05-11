@@ -88,14 +88,19 @@ export async function POST(request: NextRequest) {
       }
 
       try {
-        // Destination rooted at the source image's own folder — not the session root.
-        // This ensures e.g. C:\Campagnes\visuel_générique\ → C:\Campagnes\visuel_générique\RENDU\
-        // even when multiple subfolders are part of the same job.
         const sourceDir = path.dirname(task.source_image_path)
+        // When files come from upload (temp folder), we can't use the temp dir as export destination.
+        // Fall back to data/exports/{sessionName}/ so exports land somewhere predictable on the server.
+        const tempDir = path.resolve(process.cwd(), 'data', 'temp')
+        const isFromTemp = path.resolve(sourceDir).startsWith(tempDir)
+        const safeName = sanitizeFilename(session.name || sessionId)
+        const defaultSourceDir = isFromTemp
+          ? path.join(process.cwd(), 'data', 'exports', safeName)
+          : sourceDir
         // If the source is already inside a RENDU-like folder (ADS structure, variations: RENDU / Rendu / Rendus / RENDU_FR…),
         // use it directly to avoid creating a nested RENDU/RENDU.
-        const isAlreadyInRendu = /rendu/i.test(path.basename(sourceDir))
-        const destinationRoot = customPath?.trim() || (isAlreadyInRendu ? sourceDir : path.join(sourceDir, 'RENDU'))
+        const isAlreadyInRendu = !isFromTemp && /rendu/i.test(path.basename(sourceDir))
+        const destinationRoot = customPath?.trim() || (isAlreadyInRendu ? sourceDir : path.join(defaultSourceDir, 'RENDU'))
         if (!firstDestinationRoot) firstDestinationRoot = destinationRoot
 
         const ext = path.extname(task.source_image_name).toLowerCase()

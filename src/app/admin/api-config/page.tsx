@@ -426,35 +426,6 @@ export default function AdminApiConfigPage() {
           })()}
         </motion.div>
 
-
-        {/* Rapport Automatique */}
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }} className="bg-white rounded-[12px] shadow-sm p-5 mb-4">
-          <div className="flex items-center justify-between">
-            <div className="min-w-0 pr-4">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-xl">📄</span>
-                <h2 className="font-bold text-text-primary">Rapport Automatique</h2>
-              </div>
-              <p className="text-xs text-text-disabled">
-                Génère un fichier HTML autonome à côté des images après chaque export. Contient le tableau des zones extraites,
-                les traductions IA et celles validées par l&apos;utilisateur, plus les durées par étape.
-              </p>
-            </div>
-            <label className="inline-flex items-center gap-2 cursor-pointer select-none shrink-0">
-              <div className="relative">
-                <input
-                  type="checkbox"
-                  checked={(config.synthesis_html_enabled || 'false') === 'true'}
-                  onChange={(e) => update('synthesis_html_enabled', e.target.checked ? 'true' : 'false')}
-                  className="sr-only peer"
-                />
-                <div className="w-10 h-5 bg-border rounded-full peer-checked:bg-brand-green transition-colors" />
-                <div className="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow peer-checked:translate-x-5 transition-transform" />
-              </div>
-            </label>
-          </div>
-        </motion.div>
-
         {/* Google Drive */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.16 }} className="bg-white rounded-[12px] shadow-sm p-5 mb-6">
           <div className="flex items-center gap-2 mb-1">

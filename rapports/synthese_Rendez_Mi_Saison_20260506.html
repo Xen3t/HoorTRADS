@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Synthèse — BANNIERE</title>
+<style>:root { --green:#2EB872; --green-light:#E8F7F0; --teal:#19A7CE; --teal-light:#E1F4FA; --red:#E15554; --red-light:#FCEBEB; --amber:#F59E0B; --amber-light:#FEF3C7; --bg:#F8F9FA; --surface:#F2F4F6; --border:#E4E7EA; --text-primary:#1F2937; --text-secondary:#6B7280; --text-disabled:#9CA3AF; --blue:#3B82F6; --blue-light:#DBEAFE; --purple:#8B5CF6; --emerald:#10B981; --emerald-light:#D1FAE5; }
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Titillium Web',-apple-system,BlinkMacSystemFont,system-ui,sans-serif; background:var(--bg); color:var(--text-primary); font-size:14px; line-height:1.5; }
+.container { max-width:1100px; margin:0 auto; padding:36px 24px 60px; }
+.report-header { background:white; border:1px solid var(--border); border-radius:14px; padding:24px 28px; margin-bottom:24px; display:flex; justify-content:space-between; align-items:center; gap:24px; }
+.report-header h1 { font-size:24px; font-weight:700; line-height:1.2; }
+.report-header .subtitle { display:flex; flex-wrap:wrap; gap:14px; margin-top:8px; font-size:13px; color:var(--text-secondary); }
+.report-header .subtitle .item { display:inline-flex; align-items:center; gap:5px; }
+.report-header .stamp { text-align:right; flex-shrink:0; }
+.report-header .stamp .label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-disabled); margin-bottom:4px; }
+.report-header .stamp .date { font-size:13px; font-weight:600; color:var(--text-primary); font-family:'JetBrains Mono',monospace; }
+.status-badge { display:inline-block; font-size:11px; font-weight:700; padding:4px 10px; border-radius:999px; margin-left:8px; vertical-align:middle; }
+.status-done { background:var(--green-light); color:var(--green); }
+.kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; margin-bottom:24px; }
+.kpi { background:white; border-radius:12px; padding:18px; border:1px solid var(--border); }
+.kpi-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-disabled); margin-bottom:8px; }
+.kpi-value { font-size:30px; font-weight:700; line-height:1; }
+.kpi-sub { font-size:11px; color:var(--text-secondary); margin-top:6px; }
+.kpi-icon { float:right; font-size:20px; opacity:0.4; }
+.kpi.alert .kpi-value { color:var(--red); }
+.kpi.success .kpi-value { color:var(--green); }
+.kpi.warning .kpi-value { color:var(--amber); }
+.section { background:white; border-radius:12px; border:1px solid var(--border); margin-bottom:20px; }
+.section-header { padding:14px 18px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
+.section-header h2 { font-size:14px; font-weight:700; }
+.section-header .meta { font-size:11px; color:var(--text-disabled); }
+.section-body { padding:18px; }
+.models-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
+.model-card { display:flex; align-items:center; gap:12px; padding:12px 14px; background:var(--surface); border-radius:10px; }
+.model-icon { width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; }
+.model-icon.extract { background:var(--blue-light); }
+.model-icon.translate { background:var(--teal-light); }
+.model-icon.image { background:var(--green-light); }
+.model-icon.verify { background:var(--amber-light); }
+.model-info { flex:1; min-width:0; }
+.model-step { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-disabled); }
+.model-name { font-size:13px; font-weight:600; font-family:'JetBrains Mono',monospace; color:var(--text-primary); margin-top:2px; word-break:break-all; }
+.model-provider { display:inline-block; font-size:9px; font-weight:700; padding:2px 6px; border-radius:999px; margin-left:6px; vertical-align:middle; }
+.provider-gemini { background:var(--blue-light); color:#1E40AF; }
+.provider-openai { background:var(--emerald-light); color:#065F46; }
+.provider-mixed { background:var(--amber-light); color:#92400E; }
+.model-stats { font-size:10px; color:var(--text-secondary); margin-top:4px; }
+.quality-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; }
+.quality-card { padding:14px; border-radius:10px; border:1px solid var(--border); }
+.quality-card .label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.04em; color:var(--text-disabled); margin-bottom:4px; }
+.quality-card .value { font-size:22px; font-weight:700; }
+.quality-card .desc { font-size:11px; color:var(--text-secondary); margin-top:4px; }
+.quality-card .progress { height:4px; background:var(--surface); border-radius:999px; margin-top:10px; overflow:hidden; }
+.quality-card .progress-fill { height:100%; background:var(--green); border-radius:999px; }
+.success-rate-bar { display:flex; align-items:center; gap:10px; padding:10px 14px; background:var(--surface); border-radius:10px; margin-bottom:14px; }
+.success-rate-bar .label { font-size:12px; font-weight:600; flex-shrink:0; min-width:110px; }
+.success-rate-bar .bar { flex:1; height:10px; background:white; border-radius:999px; overflow:hidden; display:flex; }
+.success-rate-bar .bar .ok { background:var(--green); }
+.success-rate-bar .bar .ko { background:var(--red); }
+.success-rate-bar .pct { font-size:12px; font-weight:700; min-width:50px; text-align:right; }
+.failures-table, .regen-table { width:100%; }
+.failures-table thead th, .regen-table thead th { text-align:left; padding:10px 12px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-disabled); border-bottom:1px solid var(--border); }
+.failures-table tbody td, .regen-table tbody td { padding:10px 12px; font-size:12px; border-bottom:1px solid var(--border); vertical-align:top; }
+.failures-table tbody tr:last-child td, .regen-table tbody tr:last-child td { border-bottom:none; }
+.failures-table .file-name, .regen-table .file-name { font-family:'JetBrains Mono',monospace; font-size:11px; }
+.lang-tag { display:inline-block; font-weight:700; font-size:11px; padding:2px 6px; border-radius:4px; background:var(--surface); }
+.failures-table .err-msg { color:var(--red); font-family:'JetBrains Mono',monospace; font-size:11px; word-break:break-word; }
+.regen-tag { display:inline-block; font-size:10px; font-weight:700; padding:2px 7px; border-radius:999px; }
+.regen-source { background:var(--blue-light); color:#1E40AF; }
+.regen-corr { background:var(--amber-light); color:#92400E; }
+.regen-prompt { font-size:11px; color:var(--text-secondary); font-style:italic; margin-top:2px; }
+.empty-row td { text-align:center; color:var(--text-disabled); padding:20px; font-style:italic; }
+.zones-list { display:flex; flex-direction:column; gap:6px; }
+.zone-row { display:flex; gap:10px; padding:8px 12px; background:var(--surface); border-radius:8px; align-items:center; }
+.zone-label { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-disabled); width:140px; flex-shrink:0; }
+.zone-text { flex:1; font-size:13px; color:var(--text-primary); font-weight:500; }
+.zone-meta { font-size:10px; color:var(--text-disabled); font-family:'JetBrains Mono',monospace; flex-shrink:0; }
+.translations-block { display:flex; flex-direction:column; gap:14px; }
+.lang-block { background:var(--surface); border-radius:10px; padding:12px 14px; }
+.lang-header { display:flex; align-items:center; gap:8px; margin-bottom:8px; padding-bottom:8px; border-bottom:1px solid var(--border); }
+.lang-header .flag { font-weight:700; font-size:11px; color:var(--teal); text-transform:uppercase; letter-spacing:0.06em; padding:3px 8px; background:var(--teal-light); border-radius:999px; }
+.lang-header .count { font-size:11px; color:var(--text-disabled); }
+.trans-table { display:flex; flex-direction:column; gap:2px; }
+.trans-header-row { display:grid; grid-template-columns:130px 1fr 1fr 1fr; gap:10px; padding:6px 0; border-bottom:1px solid var(--border); margin-bottom:4px; }
+.trans-row { display:grid; grid-template-columns:130px 1fr 1fr 1fr; gap:10px; padding:6px 0; align-items:start; font-size:12px; }
+.trans-row.edited { background:#FFFBEB; border-radius:6px; padding:6px 8px; margin:0 -8px; }
+.trans-key { font-family:'JetBrains Mono',monospace; color:var(--text-disabled); font-size:11px; }
+.trans-cell { color:var(--text-primary); word-break:break-word; }
+.trans-source { color:var(--text-secondary); font-style:italic; }
+.trans-ai { color:var(--text-secondary); }
+.trans-approved { color:var(--text-primary); font-weight:600; }
+.edited-badge { display:inline-block; margin-left:6px; font-size:9px; font-weight:700; padding:1px 5px; border-radius:999px; background:var(--amber-light); color:#92400E; vertical-align:middle; }
+.footer { text-align:center; margin-top:32px; font-size:11px; color:var(--text-disabled); }
+.footer code { font-family:'JetBrains Mono',monospace; padding:1px 5px; background:var(--surface); border-radius:4px; }</style>
+<script>
+// ╔══════════════════════════════════════════════════════════╗
+//   DONNÉES — modifiez uniquement cette section
+// ╚══════════════════════════════════════════════════════════╝
+const D = {
+  "title": "BANNIERE",
+  "user": "Mathias Vinet",
+  "date": "06 mai 2026 à 14:49",
+  "langues": "7 langues (EL, FI, LT, LV, PL, RO, SL)",
+  "visuels": "2 visuels source",
+  "generateProvider": "gemini",
+  "synthesisDate": "06/05/2026 15:08",
+  "kpis": {
+    "images": 14,
+    "imagesDemandees": 14,
+    "failures": 0,
+    "regenSource": 0,
+    "regenCorr": 0
+  },
+  "models": [
+    {
+      "role": "Extraction",
+      "icon": "🔎",
+      "cls": "extract",
+      "name": "gemini-3.1-flash-lite-preview",
+      "provider": "gemini",
+      "stats": "5 zones extraites"
+    },
+    {
+      "role": "Traduction",
+      "icon": "🌐",
+      "cls": "translate",
+      "name": "gpt-5",
+      "provider": "openai",
+      "stats": "7 langues"
+    },
+    {
+      "role": "Génération d'image",
+      "icon": "🎨",
+      "cls": "image",
+      "name": "gemini-3.1-flash-image-preview",
+      "provider": "gemini",
+      "stats": "14 images"
+    },
+    {
+      "role": "Vérification",
+      "icon": "🔍",
+      "cls": "verify",
+      "name": "gpt-5-mini",
+      "provider": "openai",
+      "stats": "0 vérifs · score moyen 0.0/5"
+    }
+  ],
+  "quality": {
+    "avgScore": null,
+    "avgScoreMax": 5,
+    "firstPass": 14,
+    "firstPassTotal": 14,
+    "firstPassRate": 100
+  },
+  "zones": [
+    {
+      "key": "headline_part1",
+      "text": "Rendez-vous",
+      "meta": "regular · mixed · white · large"
+    },
+    {
+      "key": "headline_part2",
+      "text": "DE MI-SAISON",
+      "meta": "bold · uppercase · white · large"
+    },
+    {
+      "key": "discount_label",
+      "text": "jusqu'à",
+      "meta": "regular · mixed · white · medium"
+    },
+    {
+      "key": "discount_percent",
+      "text": "-50%",
+      "meta": "bold · uppercase · white · large"
+    },
+    {
+      "key": "cta",
+      "text": "J'EN PROFITE",
+      "meta": "bold · uppercase · white · medium"
+    }
+  ],
+  "translations": {
+    "fi": [
+      {
+        "key": "headline_part1",
+        "source": "Rendez-vous",
+        "ai": "Tapahtuma",
+        "approved": "Tapahtuma",
+        "edited": false
+      },
+      {
+        "key": "headline_part2",
+        "source": "DE MI-SAISON",
+        "ai": "VÄLIKAUDEN",
+        "approved": "VÄLIKAUDEN",
+        "edited": false
+      },
+      {
+        "key": "discount_label",
+        "source": "jusqu'à",
+        "ai": "jopa",
+        "approved": "jopa",
+        "edited": false
+      },
+      {
+        "key": "discount_percent",
+        "source": "-50%",
+        "ai": "-50%",
+        "approved": "-50%",
+        "edited": false
+      },
+      {
+        "key": "cta",
+        "source": "J'EN PROFITE",
+        "ai": "HYÖDYNNÄN",
+        "approved": "HYÖDYNNÄN",
+        "edited": false
+      }
+    ],
+    "el": [
+      {
+        "key": "headline_part1",
+        "source": "Rendez-vous",
+        "ai": "Ραντεβού",
+        "approved": "Ραντεβού",
+        "edited": false
+      },
+      {
+        "key": "headline_part2",
+        "source": "DE MI-SAISON",
+        "ai": "ΤΗΣ ΜΕΣΗΣ ΣΕΖΟΝ",
+        "approved": "ΤΗΣ ΜΕΣΗΣ ΣΕΖΟΝ",
+        "edited": false
+      },
+      {
+        "key": "discount_label",
+        "source": "jusqu'à",
+        "ai": "έως",
+        "approved": "έως",
+        "edited": false
+      },
+      {
+        "key": "discount_percent",
+        "source": "-50%",
+        "ai": "-50%",
+        "approved": "-50%",
+        "edited": false
+      },
+      {
+        "key": "cta",
+        "source": "J'EN PROFITE",
+        "ai": "ΤΟ ΑΠΟΚΤΩ",
+        "approved": "ΤΟ ΑΠΟΚΤΩ",
+        "edited": false
+      }
+    ],
+    "lt": [
+      {
+        "key": "headline_part1",
+        "source": "Rendez-vous",
+        "ai": "Susitikimas",
+        "approved": "Susitikimas",
+        "edited": false
+      },
+      {
+        "key": "headline_part2",
+        "source": "DE MI-SAISON",
+        "ai": "SEZONO VIDURIO",
+        "approved": "SEZONO VIDURIO",
+        "edited": false
+      },
+      {
+        "key": "discount_label",
+        "source": "jusqu'à",
+        "ai": "iki",
+        "approved": "iki",
+        "edited": false
+      },
+      {
+        "key": "discount_percent",
+        "source": "-50%",
+        "ai": "-50%",
+        "approved": "-50%",
+        "edited": false
+      },
+      {
+        "key": "cta",
+        "source": "J'EN PROFITE",
+        "ai": "PASINAUDOJU",
+        "approved": "PASINAUDOJU",
+        "edited": false
+      }
+    ],
+    "lv": [
+      {
+        "key": "headline_part1",
+        "source": "Rendez-vous",
+        "ai": "Tikšanās",
+        "approved": "Tikšanās",
+        "edited": false
+      },
+      {
+        "key": "headline_part2",
+        "source": "DE MI-SAISON",
+        "ai": "STARPSEZONAS",
+        "approved": "STARPSEZONAS",
+        "edited": false
+      },
+      {
+        "key": "discount_label",
+        "source": "jusqu'à",
+        "ai": "līdz",
+        "approved": "līdz",
+        "edited": false
+      },
+      {
+        "key": "discount_percent",
+        "source": "-50%",
+        "ai": "-50%",
+        "approved": "-50%",
+        "edited": false
+      },
+      {
+        "key": "cta",
+        "source": "J'EN PROFITE",
+        "ai": "IZMANTOJU",
+        "approved": "IZMANTOJU",
+        "edited": false
+      }
+    ],
+    "pl": [
+      {
+        "key": "headline_part1",
+        "source": "Rendez-vous",
+        "ai": "Spotkanie",
+        "approved": "Spotkanie",
+        "edited": false
+      },
+      {
+        "key": "headline_part2",
+        "source": "DE MI-SAISON",
+        "ai": "MIĘDZYSEZONOWE",
+        "approved": "MIĘDZYSEZONOWE",
+        "edited": false
+      },
+      {
+        "key": "discount_label",
+        "source": "jusqu'à",
+        "ai": "do",
+        "approved": "do",
+        "edited": false
+      },
+      {
+        "key": "discount_percent",
+        "source": "-50%",
+        "ai": "-50%",
+        "approved": "-50%",
+        "edited": false
+      },
+      {
+        "key": "cta",
+        "source": "J'EN PROFITE",
+        "ai": "KORZYSTAM",
+        "approved": "KORZYSTAM",
+        "edited": false
+      }
+    ],
+    "ro": [
+      {
+        "key": "headline_part1",
+        "source": "Rendez-vous",
+        "ai": "Întâlnire",
+        "approved": "Întâlnire",
+        "edited": false
+      },
+      {
+        "key": "headline_part2",
+        "source": "DE MI-SAISON",
+        "ai": "DE MIJLOC DE SEZON",
+        "approved": "DE MIJLOC DE SEZON",
+        "edited": false
+      },
+      {
+        "key": "discount_label",
+        "source": "jusqu'à",
+        "ai": "până la",
+        "approved": "până la",
+        "edited": false
+      },
+      {
+        "key": "discount_percent",
+        "source": "-50%",
+        "ai": "-50%",
+        "approved": "-50%",
+        "edited": false
+      },
+      {
+        "key": "cta",
+        "source": "J'EN PROFITE",
+        "ai": "PROFIT",
+        "approved": "PROFIT",
+        "edited": false
+      }
+    ],
+    "sl": [
+      {
+        "key": "headline_part1",
+        "source": "Rendez-vous",
+        "ai": "Dogodek",
+        "approved": "Dogodek",
+        "edited": false
+      },
+      {
+        "key": "headline_part2",
+        "source": "DE MI-SAISON",
+        "ai": "SREDINE SEZONE",
+        "approved": "SREDINE SEZONE",
+        "edited": false
+      },
+      {
+        "key": "discount_label",
+        "source": "jusqu'à",
+        "ai": "do",
+        "approved": "do",
+        "edited": false
+      },
+      {
+        "key": "discount_percent",
+        "source": "-50%",
+        "ai": "-50%",
+        "approved": "-50%",
+        "edited": false
+      },
+      {
+        "key": "cta",
+        "source": "J'EN PROFITE",
+        "ai": "IZKORISTIM",
+        "approved": "IZKORISTIM",
+        "edited": false
+      }
+    ]
+  },
+  "configDocHints": {},
+  "failures": [],
+  "regens": [],
+  "cost": "1,40 €",
+  "jobId": "2e64bb1a-a04b-489c-9e03-a9695db1b72c"
+};
+// ╚══════════════════════════════════════════════════════════╝
+</script>
+</head>
+<body>
+<div class="container" id="root"></div>
+<script>
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function renderHeader() {
+  var genLabel = D.generateProvider === 'openai' ? 'ChatGPT Image 2' : D.generateProvider === 'gemini' ? 'Nano Bana 2' : null;
+  var pBg  = D.generateProvider === 'openai' ? '#D1FAE5' : '#DBEAFE';
+  var pCol = D.generateProvider === 'openai' ? '#065F46' : '#1E40AF';
+  var pBadge = genLabel
+    ? '<span class="item"><span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:999px;background:' + pBg + ';color:' + pCol + '">' + genLabel + '</span></span>'
+    : '';
+  return '<div class="report-header"><div><h1>' + esc(D.title) + '</h1><div class="subtitle"><span class="item">👤 ' + esc(D.user) + '</span><span class="item">📅 ' + esc(D.date) + '</span><span class="item">🌍 ' + esc(D.langues) + '</span><span class="item">🖼️ ' + esc(D.visuels) + '</span>' + pBadge + '</div></div><div class="stamp"><div class="label">Synthèse générée</div><div class="date">' + esc(D.synthesisDate) + '</div></div></div>';
+}
+
+function renderKpis() { return ''; }
+
+function renderModels() {
+  var cards = D.models.map(function(m) {
+    var pCls   = m.provider === 'gemini' ? 'provider-gemini' : m.provider === 'openai' ? 'provider-openai' : 'provider-mixed';
+    var pLabel = m.provider === 'gemini' ? 'Gemini' : m.provider === 'openai' ? 'OpenAI' : esc(m.provider);
+    return '<div class="model-card"><div class="model-icon ' + m.cls + '">' + m.icon + '</div><div class="model-info"><div class="model-step">' + esc(m.role) + '</div><div class="model-name">' + esc(m.name) + ' <span class="model-provider ' + pCls + '">' + pLabel + '</span></div><div class="model-stats">' + esc(m.stats) + '</div></div></div>';
+  }).join('');
+  var costMeta = D.cost != null ? ' · <span style="font-weight:700;color:var(--text-primary)">💶 ' + esc(D.cost) + '</span>' : '';
+  return '<div class="section"><div class="section-header"><h2>🧠 Modèles utilisés</h2><span class="meta">Configuration au moment de la session' + costMeta + '</span></div><div class="section-body"><div class="models-grid">' + cards + '</div></div></div>';
+}
+
+
+function renderQuality() {
+  var q = D.quality;
+  var k = D.kpis;
+  var scoreVal  = q.avgScore !== null ? Number(q.avgScore).toFixed(1) + '<span style="font-size:14px;color:var(--text-secondary);font-weight:400;">/' + q.avgScoreMax + '</span>' : '—';
+  var scoreDesc = q.avgScore !== null ? 'vérification visuelle automatique' : 'aucune vérification';
+  var scorePct  = q.avgScore !== null ? (q.avgScore / q.avgScoreMax * 100).toFixed(0) : 0;
+  var failPct   = k.images > 0 ? ((k.failures / k.images) * 100).toFixed(1) : '0.0';
+  var firstPassPct = q.firstPassRate.toFixed(1);
+  return '<div class="section"><div class="section-header"><h2>📊 Qualité de la génération</h2><span class="meta">' + q.firstPassTotal + ' images analysées</span></div><div class="section-body"><div class="quality-grid"><div class="quality-card"><div class="label">Images générées</div><div class="value">' + k.images + '<span style="font-size:14px;color:var(--text-secondary);font-weight:400;">/' + k.imagesDemandees + '</span></div><div class="desc">images produites</div><div class="progress"><div class="progress-fill" style="width:' + (k.imagesDemandees > 0 ? (k.images / k.imagesDemandees * 100).toFixed(0) : 0) + '%"></div></div></div><div class="quality-card"><div class="label">First Pass</div><div class="value">' + q.firstPass + '<span style="font-size:14px;color:var(--text-secondary);font-weight:400;">/' + q.firstPassTotal + '</span></div><div class="desc">' + firstPassPct + '% sans régénération</div><div class="progress"><div class="progress-fill" style="width:' + firstPassPct + '%"></div></div></div><div class="quality-card"><div class="label">Score moyen</div><div class="value">' + scoreVal + '</div><div class="desc">' + scoreDesc + '</div><div class="progress"><div class="progress-fill" style="width:' + scorePct + '%"></div></div></div><div class="quality-card' + (k.failures > 0 ? ' alert' : '') + '"><div class="label">Échecs</div><div class="value">' + k.failures + '</div><div class="desc">' + failPct + '% du total</div></div><div class="quality-card' + (k.regenSource > 0 ? ' warning' : '') + '"><div class="label">Regen depuis source</div><div class="value">' + k.regenSource + '</div><div class="desc">retry sans modif</div></div><div class="quality-card' + (k.regenCorr > 0 ? ' warning' : '') + '"><div class="label">Regen correctives</div><div class="value">' + k.regenCorr + '</div><div class="desc">avec prompt utilisateur</div></div></div></div></div>';
+}
+
+function renderZones() {
+  if (!D.zones || D.zones.length === 0) return '';
+  var rows = D.zones.map(function(z) { return '<div class="zone-row"><span class="zone-label">' + esc(z.key) + '</span><span class="zone-text">' + esc(z.text) + '</span>' + (z.meta ? '<span class="zone-meta">' + esc(z.meta) + '</span>' : '') + '</div>'; }).join('');
+  return '<div class="section"><div class="section-header"><h2>🔎 Zones extraites (' + D.zones.length + ')</h2><span class="meta">texte source français · propriétés typographiques</span></div><div class="section-body"><div class="zones-list">' + rows + '</div></div></div>';
+}
+
+function renderDocHints() {
+  var hints = D.configDocHints;
+  if (!hints || Object.keys(hints).length === 0) return '';
+  var count = Object.keys(hints).length;
+  var blocks = Object.entries(hints).map(function(e) { return '<div class="lang-block"><div class="lang-header"><span class="flag">' + esc(e[0].toUpperCase()) + '</span></div><div style="font-size:12px;color:var(--text-secondary);white-space:pre-wrap;">' + esc(e[1]) + '</div></div>'; }).join('');
+  return '<div class="section"><div class="section-header"><h2>📄 Doc config filtré par langue</h2><span class="meta">' + count + ' langue' + (count > 1 ? 's' : '') + '</span></div><div class="section-body"><div class="translations-block">' + blocks + '</div></div></div>';
+}
+
+function renderTranslations() {
+  var langs = Object.keys(D.translations);
+  if (langs.length === 0) return '';
+  var totalEdited = langs.reduce(function(s, l) { return s + D.translations[l].filter(function(t) { return t.edited; }).length; }, 0);
+  var h2 = totalEdited > 0
+    ? '🌐 Traductions (' + langs.length + ' langue' + (langs.length > 1 ? 's' : '') + ' · ' + totalEdited + ' édition' + (totalEdited > 1 ? 's' : '') + ' utilisateur)'
+    : '🌐 Traductions (' + langs.length + ' langue' + (langs.length > 1 ? 's' : '') + ')';
+  var colHdr = '<div class="trans-header-row"><div class="trans-key" style="font-size:9px;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-disabled);font-weight:700">Zone</div><div class="trans-cell" style="font-size:9px;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-disabled);font-weight:700">Source FR</div><div class="trans-cell" style="font-size:9px;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-disabled);font-weight:700">Traduction IA</div><div class="trans-cell" style="font-size:9px;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-disabled);font-weight:700">Validée</div></div>';
+  var blocks = langs.map(function(lang) {
+    var zones = D.translations[lang];
+    var editedCount = zones.filter(function(t) { return t.edited; }).length;
+    var editedLabel = editedCount > 0 ? '<span style="color:var(--amber);font-weight:700">' + editedCount + ' modifié' + (editedCount > 1 ? 's' : '') + '</span>' : '';
+    var rows = zones.map(function(t) {
+      var aiHtml = t.ai ? esc(t.ai) : '<span style="color:var(--text-disabled)">—</span>';
+      var apprHtml = t.approved ? esc(t.approved) : '<span style="color:var(--text-disabled)">—</span>';
+      return '<div class="trans-row' + (t.edited ? ' edited' : '') + '"><div class="trans-key">' + esc(t.key) + '</div><div class="trans-cell trans-source">' + esc(t.source) + '</div><div class="trans-cell trans-ai">' + aiHtml + '</div><div class="trans-cell trans-approved">' + apprHtml + (t.edited ? '<span class="edited-badge">modifié</span>' : '') + '</div></div>';
+    }).join('');
+    return '<div class="lang-block"><div class="lang-header"><span class="flag">' + esc(lang.toUpperCase()) + '</span><span class="count">' + zones.length + ' zone' + (zones.length > 1 ? 's' : '') + (editedLabel ? ' · ' + editedLabel : '') + '</span></div><div class="trans-table">' + colHdr + rows + '</div></div>';
+  }).join('');
+  return '<div class="section"><div class="section-header"><h2>' + h2 + '</h2><span class="meta">Source FR · Traduction IA · Validée (modifiée par utilisateur)</span></div><div class="section-body"><div class="translations-block">' + blocks + '</div></div></div>';
+}
+
+function renderFailures() {
+  var rows = D.failures.length === 0
+    ? '<tr class="empty-row"><td colspan="3">Aucun échec — toutes les images ont été générées</td></tr>'
+    : D.failures.map(function(f) { return '<tr><td class="file-name">' + esc(f.file) + '</td><td><span class="lang-tag">' + esc(f.lang) + '</span></td><td class="err-msg">' + esc(f.error) + '</td></tr>'; }).join('');
+  return '<div class="section"><div class="section-header"><h2>⚠ Images en échec (' + D.failures.length + ')</h2><span class="meta">après auto-retry</span></div><table class="failures-table"><thead><tr><th>Image</th><th>Langue</th><th>Erreur</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+}
+
+function renderRegens() {
+  var srcCount  = D.regens.filter(function(r) { return r.type === 'source'; }).length;
+  var corrCount = D.regens.filter(function(r) { return r.type === 'corr'; }).length;
+  var rows = D.regens.length === 0
+    ? '<tr class="empty-row"><td colspan="5">Aucune régénération</td></tr>'
+    : D.regens.map(function(r) {
+        var detail = r.type === 'source' ? '—' : (r.prompt ? '<div class="regen-prompt">"' + esc(r.prompt) + '"</div>' : '<div class="regen-prompt">—</div>');
+        return '<tr><td class="file-name">' + esc(r.file) + '</td><td><span class="lang-tag">' + esc(r.lang) + '</span></td><td><span class="regen-tag ' + (r.type === 'source' ? 'regen-source' : 'regen-corr') + '">' + (r.type === 'source' ? 'Depuis source' : 'Corrective') + '</span></td><td>' + detail + '</td><td><span style="color:#6B7280;font-family:\'JetBrains Mono\',monospace;font-size:11px;">' + esc(r.time) + '</span></td></tr>';
+      }).join('');
+  return '<div class="section"><div class="section-header"><h2>⟳ Historique des régénérations (' + D.regens.length + ')</h2><span class="meta">' + srcCount + ' depuis source · ' + corrCount + ' correctives</span></div><table class="regen-table"><thead><tr><th>Image</th><th>Langue</th><th>Type</th><th>Détails</th><th>Heure</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+}
+
+function renderFooter() {
+  return '<div class="footer">Synthèse autonome générée par <code>HoorTRADS</code> · job <code>' + esc(D.jobId) + '</code><br>Fichier indépendant — peut être ouvert sans serveur, archivé, partagé.</div>';
+}
+
+document.title = D.title + ' — Synthèse HoorTRADS';
+document.getElementById('root').innerHTML =
+  renderHeader() + renderKpis() + renderModels() +
+  renderQuality() + renderZones() + renderDocHints() + renderTranslations() +
+  renderFailures() + renderRegens() + renderFooter();
+</script>
+</body>
+</html>

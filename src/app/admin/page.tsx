@@ -11,6 +11,7 @@ const adminGroups: { label: string; items: { name: string; href: string; icon: s
       { name: 'Logs IA', href: '/admin/logs', icon: '🔬', description: 'Prompts, scores de vérification, erreurs' },
       { name: 'Utilisation API', href: '/admin/usage', icon: '📊', description: 'Coûts et statistiques de génération' },
       { name: 'Feedback', href: '/admin/feedback', icon: '💬', description: 'Bugs et suggestions depuis l\'app' },
+      { name: 'Rapports', href: '/admin/reports', icon: '📋', description: 'Synthèses HTML générées à l\'export' },
     ],
   },
   {
