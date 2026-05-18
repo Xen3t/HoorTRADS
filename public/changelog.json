@@ -1,5 +1,12 @@
 [
   {
+    "id": "2026-05-18-a",
+    "date": "2026-05-18",
+    "entries": [
+      { "type": "feature", "text": "Ajout de l'Autriche (AT) dans la liste des marchés disponibles — langue allemande, incluse dans les presets CASANOOV et CAZEBOO" }
+    ]
+  },
+  {
     "id": "2026-05-11-e",
     "date": "2026-05-11",
     "entries": [
