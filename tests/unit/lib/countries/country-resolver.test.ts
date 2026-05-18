@@ -25,15 +25,15 @@ describe('getCountryByCode', () => {
 })
 
 describe('getAllCountries', () => {
-  it('returns all 23 countries', () => {
-    expect(getAllCountries().length).toBe(23)
+  it('returns all 24 countries', () => {
+    expect(getAllCountries().length).toBe(24)
   })
 })
 
 describe('getPreset', () => {
   it('returns all markets except FR (source language)', () => {
     const all = getPreset('All markets')
-    expect(all.length).toBe(22)
+    expect(all.length).toBe(23)
     expect(all).not.toContain('FR')
   })
 
@@ -43,12 +43,12 @@ describe('getPreset', () => {
     expect(preset).toContain('SK')
     expect(preset).toContain('DK')
     expect(preset).not.toContain('FR')
-    expect(preset.length).toBe(12)
+    expect(preset.length).toBe(13)
   })
 
   it('returns CAZEBOO preset with correct countries', () => {
     const preset = getPreset('CAZEBOO')
-    expect(preset.length).toBe(8)
+    expect(preset.length).toBe(9)
     expect(preset).toContain('DE')
     expect(preset).not.toContain('FR')
   })

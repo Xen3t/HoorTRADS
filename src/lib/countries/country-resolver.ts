@@ -24,6 +24,7 @@ const LANGUAGE_NAMES: Record<string, string> = {
 }
 
 const COUNTRY_MAP: Record<string, CountryInfo> = {
+  AT: { code: 'AT', name: 'Austria', flagEmoji: '🇦🇹', languages: ['de'] },
   BE: { code: 'BE', name: 'Belgium', flagEmoji: '🇧🇪', languages: ['fr', 'nl'] },
   CZ: { code: 'CZ', name: 'Czech Republic', flagEmoji: '🇨🇿', languages: ['cs'] },
   DE: { code: 'DE', name: 'Germany', flagEmoji: '🇩🇪', languages: ['de'] },
@@ -51,8 +52,8 @@ const COUNTRY_MAP: Record<string, CountryInfo> = {
 
 const PRESETS: Record<string, string[]> = {
   'Tous les marchés': Object.keys(COUNTRY_MAP).filter((c) => c !== 'FR'),
-  'CASANOOV': ['DE', 'GB', 'ES', 'IT', 'BE', 'NL', 'PT', 'IE', 'SK', 'CZ', 'SE', 'DK'],
-  'CAZEBOO': ['DE', 'GB', 'ES', 'IT', 'BE', 'NL', 'PT', 'IE'],
+  'CASANOOV': ['DE', 'AT', 'GB', 'ES', 'IT', 'BE', 'NL', 'PT', 'IE', 'SK', 'CZ', 'SE', 'DK'],
+  'CAZEBOO': ['DE', 'AT', 'GB', 'ES', 'IT', 'BE', 'NL', 'PT', 'IE'],
   'SICAAN': ['DE', 'ES', 'GR'],
 }
 
