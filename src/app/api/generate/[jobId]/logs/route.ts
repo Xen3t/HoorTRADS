@@ -208,15 +208,46 @@ export async function GET(
 
     // ── IMAGE GENERATION (per task) ────────────────────────────────────────
     const tasks = db.prepare(`
-      SELECT id, target_language, country_code, status, error_message, output_path, source_image_name, prompt_sent
+      SELECT id, target_language, country_code, status, error_message, output_path, source_image_name, prompt_sent, attempts_log, started_at
       FROM generation_tasks
       WHERE job_id = ?
       ORDER BY rowid ASC
     `).all(jobId) as {
       id: string; target_language: string; country_code: string; status: string
       error_message: string | null; output_path: string | null; source_image_name: string
-      prompt_sent: string | null
+      prompt_sent: string | null; attempts_log: string | null; started_at: string | null
     }[]
+
+    // SQLite datetime('now') returns UTC "YYYY-MM-DD HH:MM:SS" — append Z so Date parses it as UTC
+    const formatElapsed = (startedAt: string | null): string => {
+      if (!startedAt) return ''
+      const start = new Date(startedAt.includes('T') ? startedAt : startedAt.replace(' ', 'T') + 'Z').getTime()
+      if (isNaN(start)) return ''
+      const elapsedSec = Math.max(0, Math.round((Date.now() - start) / 1000))
+      if (elapsedSec < 60) return `${elapsedSec}s`
+      const m = Math.floor(elapsedSec / 60)
+      const s = elapsedSec % 60
+      return `${m}m${s.toString().padStart(2, '0')}s`
+    }
+
+    // Format attempts JSON into a human-readable block for display under each image event
+    const formatAttempts = (attemptsJson: string | null): string => {
+      if (!attemptsJson) return ''
+      try {
+        const arr = JSON.parse(attemptsJson) as Array<{
+          provider: string; model: string; startedAt: string; durationMs: number
+          success: boolean; error?: string; httpStatus?: number
+        }>
+        if (!Array.isArray(arr) || arr.length === 0) return ''
+        if (arr.length === 1 && arr[0].success) return ''  // hide noise when first try worked
+        const lines = arr.map((a, i) => {
+          const dur = a.durationMs >= 1000 ? `${(a.durationMs / 1000).toFixed(1)}s` : `${a.durationMs}ms`
+          const status = a.success ? 'OK' : `échec${a.httpStatus ? ` HTTP ${a.httpStatus}` : ''}${a.error ? ` — ${a.error}` : ''}`
+          return `  ${i + 1}. [${a.provider} · ${a.model}] ${dur} → ${status}`
+        })
+        return `\n\n──────── Tentatives (${arr.length}) ────────\n${lines.join('\n')}`
+      } catch { return '' }
+    }
 
     const generateProvider = inferProvider(cfgGenerate || '')
 
@@ -235,9 +266,18 @@ export async function GET(
     for (const t of tasks) {
       const format = t.source_image_name.match(/(\d+x\d+)/)?.[1] ?? t.source_image_name.replace(/\.[^.]+$/, '')
       const taskLabel = `${format} — ${t.target_language}`
-      const baseDetails = t.prompt_sent
+      const attemptsBlock = formatAttempts(t.attempts_log)
+      const baseDetails = (t.prompt_sent
         ? `Source : ${t.source_image_name}\n\n──────── Prompt envoyé ────────\n${t.prompt_sent.slice(0, 1500)}${t.prompt_sent.length > 1500 ? '\n…[tronqué]' : ''}`
-        : `Source : ${t.source_image_name}`
+        : `Source : ${t.source_image_name}`) + attemptsBlock
+
+      // Surface retry count in the message itself so it's visible without expanding
+      let attemptCount = 0
+      try {
+        const parsed = t.attempts_log ? JSON.parse(t.attempts_log) : []
+        if (Array.isArray(parsed)) attemptCount = parsed.length
+      } catch {}
+      const retrySuffix = attemptCount > 1 ? ` (${attemptCount} tentatives)` : ''
 
       if (t.status === 'done') {
         events.push({
@@ -247,7 +287,7 @@ export async function GET(
           provider: generateProvider,
           modelLabel: cfgGenerate || undefined,
           label: taskLabel,
-          message: 'Image générée',
+          message: `Image générée${retrySuffix}`,
           details: baseDetails,
         })
       } else if (t.status === 'failed') {
@@ -258,10 +298,12 @@ export async function GET(
           provider: generateProvider,
           modelLabel: cfgGenerate || undefined,
           label: taskLabel,
-          message: 'Échec',
+          message: `Échec${retrySuffix}`,
           details: `${t.error_message || 'Erreur inconnue'}\n\n${baseDetails}`,
         })
       } else if (t.status === 'running') {
+        const elapsed = formatElapsed(t.started_at)
+        const elapsedSuffix = elapsed ? ` · ${elapsed}` : ''
         events.push({
           ts: job.updated_at,
           level: 'info',
@@ -269,7 +311,7 @@ export async function GET(
           provider: generateProvider,
           modelLabel: cfgGenerate || undefined,
           label: taskLabel,
-          message: 'Génération en cours',
+          message: `Génération en cours${elapsedSuffix}${retrySuffix}`,
           details: baseDetails,
         })
       } else if (t.status === 'pending' && !allPending) {
@@ -324,7 +366,7 @@ export async function DELETE(
     delete cfg.renderError
     db.prepare('UPDATE generation_jobs SET config = ?, updated_at = datetime(\'now\') WHERE id = ?').run(JSON.stringify(cfg), jobId)
 
-    db.prepare('UPDATE generation_tasks SET error_message = NULL WHERE job_id = ?').run(jobId)
+    db.prepare('UPDATE generation_tasks SET error_message = NULL, attempts_log = NULL WHERE job_id = ?').run(jobId)
 
     return NextResponse.json({ success: true })
   } catch (error: unknown) {

@@ -1,5 +1,5 @@
 import type Database from 'better-sqlite3'
-import type { ImageGenerator, GenerationTask } from '@/types/generation'
+import type { ImageGenerator, GenerationTask, GenerationAttempt } from '@/types/generation'
 import { buildTranslationPrompt, buildGoogleModePrompt } from '@/lib/gemini/prompt-builder'
 import { preValidateTranslations } from '@/lib/gemini/text-extractor'
 import type { ExpertTranslations, PreTranslationResult, ExtractedZone } from '@/lib/gemini/text-extractor'
@@ -117,7 +117,7 @@ async function processTask(
   extractedZones?: Record<string, ExtractedZone>,
   backupGenerator?: ImageGenerator
 ): Promise<void> {
-  db.prepare("UPDATE generation_tasks SET status = 'running' WHERE id = ?").run(task.id)
+  db.prepare("UPDATE generation_tasks SET status = 'running', started_at = datetime('now') WHERE id = ?").run(task.id)
 
   try {
     // Natif pipeline: pre-translated zones by text model → quoted in image prompt with typographic hints.
@@ -144,20 +144,34 @@ async function processTask(
       task.id
     )
 
-    // Try generation — on failure, auto-retry once after a short delay
-    let result = await generator.generateImage(task.source_image_path, task.target_language, prompt, resolution)
-    if (!result.success) {
-      console.log(`[processTask] ${task.id} failed (${result.error}), auto-retry in 5s...`)
-      await new Promise((r) => setTimeout(r, 5000))
-      result = await generator.generateImage(task.source_image_path, task.target_language, prompt, resolution)
-      if (result.success) console.log(`[processTask] ${task.id} retry OK`)
+    // Accumulate attempts across primary call + retry + backup. Persist on each new attempt
+    // so the user can see retries appear LIVE — not only after generateImage finally returns.
+    const allAttempts: GenerationAttempt[] = []
+    const persistAttempts = () => {
+      try {
+        db.prepare('UPDATE generation_tasks SET attempts_log = ? WHERE id = ?').run(JSON.stringify(allAttempts), task.id)
+      } catch { /* best-effort */ }
+    }
+    const onAttempt = (a: GenerationAttempt) => {
+      allAttempts.push(a)
+      persistAttempts()
     }
 
-    // If still failing and a backup generator is configured, try it
+    // Strategy: 1 Gemini call → 1 retry if it failed → fall back to OpenAI → give up.
+    // No artificial 5s wait, no inner fetch-retry loop: the 10-min timeout in gemini-client is
+    // generous enough to let slow-but-valid responses through, so a fast retry is only useful
+    // when Google's queue genuinely shifts between calls.
+    let result = await generator.generateImage(task.source_image_path, task.target_language, prompt, resolution, onAttempt)
+    if (!result.success) {
+      console.log(`[processTask] ${task.id} Gemini failed (${result.error}), 1 retry...`)
+      result = await generator.generateImage(task.source_image_path, task.target_language, prompt, resolution, onAttempt)
+      if (result.success) console.log(`[processTask] ${task.id} Gemini retry OK`)
+    }
+
     if (!result.success && backupGenerator) {
-      console.log(`[processTask] ${task.id} primary failed — switching to backup generator`)
-      result = await backupGenerator.generateImage(task.source_image_path, task.target_language, prompt, resolution)
-      if (result.success) console.log(`[processTask] ${task.id} backup generator OK`)
+      console.log(`[processTask] ${task.id} Gemini exhausted — falling back to OpenAI`)
+      result = await backupGenerator.generateImage(task.source_image_path, task.target_language, prompt, resolution, onAttempt)
+      if (result.success) console.log(`[processTask] ${task.id} OpenAI backup OK`)
     }
 
     if (result.success) {
@@ -251,7 +265,7 @@ export async function renderJobTasks(
         return { id: task.id, sourceImagePath: task.source_image_path, targetLanguage: task.target_language, prompt }
       })
       for (const t of tasks) {
-        db.prepare("UPDATE generation_tasks SET status = 'running' WHERE id = ?").run(t.id)
+        db.prepare("UPDATE generation_tasks SET status = 'running', started_at = datetime('now') WHERE id = ?").run(t.id)
       }
       const sessionName = db.prepare('SELECT s.name FROM sessions s JOIN generation_jobs j ON j.session_id = s.id WHERE j.id = ?').get(jobId) as { name: string } | undefined
       const displayName = `hoortrad-${sessionName?.name || jobId}`
@@ -491,7 +505,7 @@ export async function processJob(
 
       // Mark all tasks as running
       for (const t of tasks) {
-        db.prepare("UPDATE generation_tasks SET status = 'running' WHERE id = ?").run(t.id)
+        db.prepare("UPDATE generation_tasks SET status = 'running', started_at = datetime('now') WHERE id = ?").run(t.id)
       }
 
       const sessionName = db.prepare('SELECT s.name FROM sessions s JOIN generation_jobs j ON j.session_id = s.id WHERE j.id = ?').get(jobId) as { name: string } | undefined

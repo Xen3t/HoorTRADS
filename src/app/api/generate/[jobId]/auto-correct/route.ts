@@ -61,7 +61,7 @@ export async function POST(
       const prompt = buildGoogleModeCorrectionPrompt(correctionNotes)
 
       // Always regenerate from the original French source
-      db.prepare("UPDATE generation_tasks SET status = 'running' WHERE id = ?").run(task.id)
+      db.prepare("UPDATE generation_tasks SET status = 'running', started_at = datetime('now') WHERE id = ?").run(task.id)
       const result = await generator.generateImage(task.source_image_path, task.target_language, prompt)
 
       if (result.success) {

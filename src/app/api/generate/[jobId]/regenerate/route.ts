@@ -78,11 +78,20 @@ export async function POST(
       }
     }
 
-    // Mark as running and save prompt
-    db.prepare("UPDATE generation_tasks SET status = 'running', prompt_sent = ? WHERE id = ?").run(prompt, taskId)
+    // Mark as running and save prompt — clear previous attempts_log so the user sees this regen fresh
+    db.prepare("UPDATE generation_tasks SET status = 'running', prompt_sent = ?, attempts_log = NULL WHERE id = ?").run(prompt, taskId)
+
+    // Persist each attempt live so the user sees retries appear in real time, not only at the end
+    const liveAttempts: import('@/types/generation').GenerationAttempt[] = []
+    const onAttempt = (a: import('@/types/generation').GenerationAttempt) => {
+      liveAttempts.push(a)
+      try {
+        db.prepare('UPDATE generation_tasks SET attempts_log = ? WHERE id = ?').run(JSON.stringify(liveAttempts), taskId)
+      } catch { /* best-effort */ }
+    }
 
     const generator = createImageGenerator()
-    const result = await generator.generateImage(imageToEdit, task.target_language, prompt, resolution)
+    const result = await generator.generateImage(imageToEdit, task.target_language, prompt, resolution, onAttempt)
 
     if (result.success) {
       if (task.output_path) {

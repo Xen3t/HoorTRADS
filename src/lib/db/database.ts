@@ -142,6 +142,8 @@ function runMigrations(database: Database.Database): void {
     ['generation_tasks', 'verification_status'],
     ['generation_tasks', 'verification_notes'],
     ['generation_tasks', 'prompt_sent'],
+    ['generation_tasks', 'attempts_log'],
+    ['generation_tasks', 'started_at'],
     ['generation_task_versions', 'prompt_sent'],
     ['generation_task_versions', 'regen_label'],
     ['sessions', 'user_id'],

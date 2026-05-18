@@ -39,10 +39,21 @@ export interface GenerationProgress {
   pendingCountries: string[]
 }
 
+export interface GenerationAttempt {
+  provider: 'gemini' | 'openai'
+  model: string
+  startedAt: string       // ISO timestamp
+  durationMs: number
+  success: boolean
+  error?: string
+  httpStatus?: number     // for HTTP errors (429, 503, etc.)
+}
+
 export interface GeneratedImage {
   success: boolean
   outputPath: string
   error?: string
+  attempts?: GenerationAttempt[]
 }
 
 export interface ImageGenerator {
@@ -50,6 +61,7 @@ export interface ImageGenerator {
     sourceImagePath: string,
     targetLanguage: string,
     prompt: string,
-    resolution?: string
+    resolution?: string,
+    onAttempt?: (attempt: GenerationAttempt) => void
   ): Promise<GeneratedImage>
 }

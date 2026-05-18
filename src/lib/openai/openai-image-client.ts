@@ -4,7 +4,7 @@ import sharp from 'sharp'
 import OpenAI, { toFile } from 'openai'
 import { getDb } from '@/lib/db/database'
 import { getAppConfig } from '@/lib/db/queries'
-import type { ImageGenerator, GeneratedImage } from '@/types/generation'
+import type { ImageGenerator, GeneratedImage, GenerationAttempt } from '@/types/generation'
 import { getOpenAiKey } from '@/lib/openai/openai-client'
 import { isTestModel } from '@/lib/provider-utils'
 
@@ -82,17 +82,26 @@ export class OpenAiImageClient implements ImageGenerator {
     sourceImagePath: string,
     targetLanguage: string,
     prompt: string,
-    resolution: string = '1K'
+    resolution: string = '1K',
+    onAttempt?: (attempt: GenerationAttempt) => void
   ): Promise<GeneratedImage> {
     let croppedPath: string | undefined
+    const attempts: GenerationAttempt[] = []
+    const recordAttempt = (a: GenerationAttempt) => {
+      attempts.push(a)
+      try { onAttempt?.(a) } catch { /* callback must never break the generator */ }
+    }
+    const model = this.modelId || getOpenAiImageModel()
     try {
       ensureOutputDir()
       if (!fs.existsSync(sourceImagePath)) {
-        return { success: false, outputPath: '', error: `Source image not found: ${sourceImagePath}` }
+        return { success: false, outputPath: '', error: `Source image not found: ${sourceImagePath}`, attempts }
       }
 
-      const model = this.modelId || getOpenAiImageModel()
-      if (isTestModel(model)) return { success: false, outputPath: '', error: 'TEST model — toujours en échec (test backup)' }
+      if (isTestModel(model)) {
+        recordAttempt({ provider: 'openai', model, startedAt: new Date().toISOString(), durationMs: 0, success: false, error: 'TEST model' })
+        return { success: false, outputPath: '', error: 'TEST model — toujours en échec (test backup)', attempts }
+      }
 
       const { size, quality, croppedPath: cp } = await computeOpenAiParams(sourceImagePath, resolution)
       croppedPath = cp
@@ -113,15 +122,21 @@ export class OpenAiImageClient implements ImageGenerator {
       let result
       const maxRetries = 3
       for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        const startedAt = new Date().toISOString()
+        const startMs = Date.now()
         try {
           result = await client.images.edit({ model, image: imageFile, prompt, size, quality, n: 1 } as Parameters<typeof client.images.edit>[0])
+          recordAttempt({ provider: 'openai', model, startedAt, durationMs: Date.now() - startMs, success: true })
           break
         } catch (err: unknown) {
+          const errMsg = err instanceof Error ? err.message : String(err)
+          const httpStatus = err instanceof Error ? (err as { status?: number }).status : undefined
           const isRateLimit = err instanceof Error && (
-            (err as { status?: number }).status === 429 ||
+            httpStatus === 429 ||
             err.message.includes('429') ||
             err.message.toLowerCase().includes('rate limit')
           )
+          recordAttempt({ provider: 'openai', model, startedAt, durationMs: Date.now() - startMs, success: false, error: errMsg.slice(0, 200), httpStatus })
           if (isRateLimit && attempt < maxRetries) {
             const waitSec = 60 * (attempt + 1)
             console.log(`[openai-image] 429 rate limit — attente ${waitSec}s (tentative ${attempt + 1}/${maxRetries})`)
@@ -135,7 +150,7 @@ export class OpenAiImageClient implements ImageGenerator {
 
       const b64 = result && 'data' in result ? result.data?.[0]?.b64_json : undefined
       if (!b64) {
-        return { success: false, outputPath: '', error: 'Aucune image dans la réponse OpenAI' }
+        return { success: false, outputPath: '', error: 'Aucune image dans la réponse OpenAI', attempts }
       }
 
       const sourceName = path.basename(sourceImagePath, path.extname(sourceImagePath))
@@ -143,10 +158,10 @@ export class OpenAiImageClient implements ImageGenerator {
       const outputPath = path.join(OUTPUT_DIR, outputFilename)
       fs.writeFileSync(outputPath, Buffer.from(b64, 'base64'))
 
-      return { success: true, outputPath }
+      return { success: true, outputPath, attempts }
     } catch (error: unknown) {
       const errMsg = error instanceof Error ? error.message : String(error)
-      return { success: false, outputPath: '', error: `OpenAI image: ${errMsg}` }
+      return { success: false, outputPath: '', error: `OpenAI image: ${errMsg}`, attempts }
     } finally {
       if (croppedPath && fs.existsSync(croppedPath)) {
         try { fs.unlinkSync(croppedPath) } catch {}

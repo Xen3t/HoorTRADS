@@ -2,7 +2,7 @@ import fs from 'fs'
 import path from 'path'
 import { getDb } from '@/lib/db/database'
 import { getAppConfig } from '@/lib/db/queries'
-import type { ImageGenerator, GeneratedImage } from '@/types/generation'
+import type { ImageGenerator, GeneratedImage, GenerationAttempt } from '@/types/generation'
 import { isTestModel } from '@/lib/provider-utils'
 
 const OUTPUT_DIR = path.join(process.cwd(), 'data', 'generated')
@@ -74,13 +74,22 @@ export class GeminiClient implements ImageGenerator {
     sourceImagePath: string,
     targetLanguage: string,
     prompt: string,
-    resolution: string = '1K'
+    resolution: string = '1K',
+    onAttempt?: (attempt: GenerationAttempt) => void
   ): Promise<GeneratedImage> {
+    const attempts: GenerationAttempt[] = []
+    const recordAttempt = (a: GenerationAttempt) => {
+      attempts.push(a)
+      try { onAttempt?.(a) } catch { /* callback must never break the generator */ }
+    }
+    const modelId = this.modelId || getModel('model_generate')
     try {
       ensureOutputDir()
 
-      const modelId = this.modelId || getModel('model_generate')
-      if (isTestModel(modelId)) return { success: false, outputPath: '', error: 'TEST model — toujours en échec (test backup)' }
+      if (isTestModel(modelId)) {
+        recordAttempt({ provider: 'gemini', model: modelId, startedAt: new Date().toISOString(), durationMs: 0, success: false, error: 'TEST model' })
+        return { success: false, outputPath: '', error: 'TEST model — toujours en échec (test backup)', attempts }
+      }
 
       const mimeType = getMimeType(sourceImagePath)
       const fileUri = this.fileUriCache.get(sourceImagePath)
@@ -109,29 +118,34 @@ export class GeminiClient implements ImageGenerator {
         },
       }
 
-      // Retry up to 2 times on network errors (fetch failed / connection reset)
-      let res: Response | null = null
-      let lastFetchError: string = ''
-      for (let attempt = 0; attempt < 3; attempt++) {
-        try {
-          const controller = new AbortController()
-          const timer = setTimeout(() => controller.abort(), 3 * 60 * 1000) // 3 min timeout
-          res = await fetch(
-            `${GEMINI_BASE}/models/${modelId}:generateContent?key=${this.apiKey}`,
-            { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: controller.signal }
-          )
-          clearTimeout(timer)
-          break
-        } catch (fetchErr: unknown) {
-          lastFetchError = fetchErr instanceof Error ? fetchErr.message : String(fetchErr)
-          if (attempt < 2) await new Promise((r) => setTimeout(r, 3000 * (attempt + 1)))
+      // Single fetch with a generous 10-min timeout — Gemini NB2 preview can legitimately queue
+      // requests for several minutes. The timeout exists only to prevent zombie sockets, not
+      // to cut off slow-but-valid responses. Retries are handled one level up in processTask.
+      const startedAt = new Date().toISOString()
+      const startMs = Date.now()
+      let res: Response
+      let successAttemptDurationMs = 0
+      try {
+        const controller = new AbortController()
+        const timer = setTimeout(() => controller.abort(), 10 * 60 * 1000) // 10 min timeout
+        res = await fetch(
+          `${GEMINI_BASE}/models/${modelId}:generateContent?key=${this.apiKey}`,
+          { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: controller.signal }
+        )
+        clearTimeout(timer)
+        successAttemptDurationMs = Date.now() - startMs
+        if (!res.ok) {
+          recordAttempt({ provider: 'gemini', model: modelId, startedAt, durationMs: successAttemptDurationMs, success: false, error: `HTTP ${res.status}`, httpStatus: res.status })
         }
+      } catch (fetchErr: unknown) {
+        const lastFetchError = fetchErr instanceof Error ? fetchErr.message : String(fetchErr)
+        recordAttempt({ provider: 'gemini', model: modelId, startedAt, durationMs: Date.now() - startMs, success: false, error: `fetch: ${lastFetchError}` })
+        return { success: false, outputPath: '', error: `fetch failed: ${lastFetchError}`, attempts }
       }
-      if (!res) return { success: false, outputPath: '', error: `fetch failed (3 attempts): ${lastFetchError}` }
 
       if (!res.ok) {
         const err = await res.text()
-        return { success: false, outputPath: '', error: `Gemini API ${res.status}: ${err.slice(0, 200)}` }
+        return { success: false, outputPath: '', error: `Gemini API ${res.status}: ${err.slice(0, 200)}`, attempts }
       }
 
       const data = await res.json()
@@ -140,7 +154,8 @@ export class GeminiClient implements ImageGenerator {
       )
 
       if (!responsePart?.inlineData?.data) {
-        return { success: false, outputPath: '', error: 'Aucune image dans la réponse Gemini' }
+        recordAttempt({ provider: 'gemini', model: modelId, startedAt, durationMs: successAttemptDurationMs, success: false, error: 'no image in response' })
+        return { success: false, outputPath: '', error: 'Aucune image dans la réponse Gemini', attempts }
       }
 
       const sourceName = path.basename(sourceImagePath, path.extname(sourceImagePath))
@@ -149,9 +164,11 @@ export class GeminiClient implements ImageGenerator {
 
       fs.writeFileSync(outputPath, Buffer.from(responsePart.inlineData.data, 'base64'))
 
-      return { success: true, outputPath }
+      recordAttempt({ provider: 'gemini', model: modelId, startedAt, durationMs: successAttemptDurationMs, success: true })
+
+      return { success: true, outputPath, attempts }
     } catch (error: unknown) {
-      return { success: false, outputPath: '', error: error instanceof Error ? error.message : 'Gemini generation failed' }
+      return { success: false, outputPath: '', error: error instanceof Error ? error.message : 'Gemini generation failed', attempts }
     }
   }
 }
